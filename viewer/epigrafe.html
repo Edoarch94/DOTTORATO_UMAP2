@@ -2,155 +2,110 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Modello 3D — Epigrafe (viewer avanzato)</title>
+  <title>Epigrafe — viewer avanzato v2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- model-viewer -->
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    :root {
-      --bg: #111;
-      --card: #1b1b1b;
-      --ink: #e9e9e9;
-      --muted: #b6b6b6;
-      --accent: #4ade80;
-      --danger: #ef4444;
+    :root { --bg:#111; --ink:#e9e9e9; --muted:#b6b6b6; --card:#1b1b1b; --accent:#4ade80; }
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px}
+    model-viewer{
+      width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;background:#111;
+      border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);outline:1px solid rgba(255,255,255,.06)
     }
-    html, body { height:100%; margin:0; background:var(--bg); color:var(--ink); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    .wrap { min-height: 100dvh; display:flex; flex-direction:column; gap:12px; padding:12px; }
-    model-viewer {
-      width: min(96vw, 1200px);
-      height: min(80vh, 760px);
-      margin: 0 auto;
-      background: var(--bg);
-      border-radius: 14px;
-      box-shadow: 0 8px 28px rgba(0,0,0,.45);
-      outline: 1px solid rgba(255,255,255,.06);
+    .panel{
+      width:min(96vw,1200px);margin:0 auto;background:var(--card);border-radius:12px;
+      box-shadow:0 6px 20px rgba(0,0,0,.35);padding:12px;display:grid;gap:10px;
+      grid-template-columns:repeat(6,1fr);align-items:center
     }
-    .panel {
-      width: min(96vw, 1200px);
-      margin: 0 auto;
-      background: var(--card);
-      border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(0,0,0,.35);
-      padding: 12px;
-      display: grid;
-      gap: 10px;
-      grid-template-columns: repeat(6, 1fr);
-      align-items: center;
+    .group{display:flex;flex-direction:column;gap:6px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:10px}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    label{font-size:12px;color:var(--muted)}
+    input[type="range"]{width:100%}
+    button{appearance:none;border:0;border-radius:10px;padding:10px 12px;cursor:pointer;background:#2a2a2a;color:#fff;font-weight:600}
+    .btn-accent{background:var(--accent);color:#0b2514}
+    .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.2)}
+    /* Hotspot button */
+    .hotspot-btn{background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.35);padding:4px 6px;border-radius:6px;font-size:12px}
+    /* Pop-up all’interno del viewer (legate al singolo hotspot) */
+    .popup{
+      position:absolute; transform: translate(-50%,-110%); pointer-events:auto;
+      background:rgba(20,20,20,.92); color:#fff; border:1px solid rgba(255,255,255,.25);
+      padding:8px 10px; border-radius:8px; font-size:12px; line-height:1.35;
+      max-width:220px; display:none;
     }
-    .panel label { font-size: 12px; color: var(--muted); display:block; }
-    .panel .group { display:flex; flex-direction:column; gap:6px; padding:6px 8px; background: rgba(255,255,255,.03); border-radius:10px; }
-    .panel input[type="range"] { width:100%; }
-    .row { grid-column: 1 / -1; display:flex; gap:8px; flex-wrap:wrap; }
-    button, .btn {
-      appearance: none; border:0; border-radius: 10px; padding:10px 12px; cursor:pointer;
-      background:#2a2a2a; color:#fff; font-weight:600;
-    }
-    .btn-accent { background: var(--accent); color: #0b2514; }
-    .btn-ghost { background: transparent; outline:1px solid rgba(255,255,255,.2); }
-    .hotspot {
-      background: rgba(0,0,0,.6);
-      color:#fff; border:1px solid rgba(255,255,255,.35);
-      padding:4px 6px; border-radius:6px; font-size:12px;
-      backdrop-filter: blur(2px);
-    }
-    .legend {
-      width: min(96vw, 1200px);
-      margin: 0 auto; color: var(--muted); font-size: 12px; text-align:center;
-    }
-    @media (max-width: 900px) {
-      .panel { grid-template-columns: repeat(3, 1fr); }
-    }
-    @media (max-width: 520px) {
-      .panel { grid-template-columns: repeat(2, 1fr); }
-    }
+    .popup.show{display:block}
+    @media (max-width:900px){ .panel{grid-template-columns:repeat(3,1fr)} }
+    @media (max-width:520px){ .panel{grid-template-columns:repeat(2,1fr)} }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <!-- ==== MODEL-VIEWER =================================================== -->
-  <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8" />
-  <title>Test Epigrafe</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <style>
-    html,body{height:100%;margin:0;background:#111;font-family:system-ui,sans-serif}
-    model-viewer{width:min(96vw,1200px);height:min(88vh,800px);display:block;margin:2vh auto;background:#111;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
-    #log{position:fixed;left:12px;right:12px;bottom:12px;color:#eee;background:rgba(0,0,0,.55);padding:8px 12px;border-radius:8px;font-size:12px;white-space:pre-wrap;display:none}
-  </style>
-</head>
-<body>
+    <!-- ===================== MODEL VIEWER ===================== -->
+    <model-viewer id="mv"
+      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=3"
+      camera-controls touch-action="pan-y"
+      auto-rotate auto-rotate-delay="0" auto-rotate-speed="20deg/s"
+      environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
+      shadow-intensity="0.9" exposure="1.15"
+      bounds="tight" camera-target="auto" camera-orbit="0deg 70deg auto"
+      min-field-of-view="20deg" max-field-of-view="90deg" field-of-view="35deg"
+      ar ar-modes="webxr scene-viewer quick-look">
 
-<model-viewer id="mv"
-  src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=3"
-  camera-controls
-  autoplay
-  auto-rotate
-  environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
-  shadow-intensity="0.9"
-  exposure="1.15"
-  bounds="tight"
-  camera-target="auto"
-  camera-orbit="0deg 70deg auto"
-  min-field-of-view="20deg"
-  max-field-of-view="90deg"
-  field-of-view="35deg"
-  ar
-  ar-modes="webxr scene-viewer quick-look">
-</model-viewer>
+      <!-- Hotspot 1 -->
+      <button class="hotspot-btn" slot="hotspot-1"
+        data-position="0m 0.08m 0.02m"
+        data-normal="0m 1m 0m"
+        data-hotspot="h1">Iscrizione</button>
+      <div class="popup" slot="hotspot-1"
+        data-position="0m 0.11m 0.02m"
+        data-normal="0m 1m 0m"
+        data-popup="h1">Testo principale dell’epigrafe.</div>
 
-<div id="log"></div>
-<script>
-  const mv = document.getElementById('mv');
-  const log = document.getElementById('log');
-  const say = m => { log.style.display='block'; log.textContent = m; };
+      <!-- Hotspot 2 -->
+      <button class="hotspot-btn" slot="hotspot-2"
+        data-position="0.05m 0.02m 0m"
+        data-normal="0m 1m 0m"
+        data-hotspot="h2">Bordo</button>
+      <div class="popup" slot="hotspot-2"
+        data-position="0.05m 0.05m 0m"
+        data-normal="0m 1m 0m"
+        data-popup="h2">Dettaglio del bordo della lastra.</div>
 
-  mv.addEventListener('load', () => say('✅ Modello caricato (Epigrafe.glb)'));
-  mv.addEventListener('error', (e) => {
-    const d = e.detail || {};
-    say(`❌ Errore nel caricamento\n- type: ${d.type || 'n/d'}\n- source: ${d.source || 'n/d'}\nControlla l’URL e le MAIUSCOLE del file.`);
-    console.error('model-viewer error', e, d);
-  });
-</script>
+    </model-viewer>
 
-</body>
-</html>
-
-
-    <!-- ==== CONTROLLI ====================================================== -->
+    <!-- ===================== CONTROLLI ======================== -->
     <div class="panel" role="region" aria-label="Controlli viewer">
       <div class="group">
         <label>Auto-rotate</label>
         <div class="row">
-          <button id="btn-rotate-on" class="btn btn-accent">ON</button>
-          <button id="btn-rotate-off" class="btn">OFF</button>
+          <button id="btn-rot-on"  class="btn-accent">ON</button>
+          <button id="btn-rot-off" class="">OFF</button>
         </div>
       </div>
 
       <div class="group">
         <label>Esposizione</label>
-        <input id="exp" type="range" min="0.2" max="2.0" step="0.05" value="1.1"/>
+        <input id="exp" type="range" min="0.2" max="2.0" step="0.05" value="1.15">
       </div>
 
       <div class="group">
         <label>Ombre</label>
-        <input id="shadow" type="range" min="0" max="1" step="0.05" value="0.9"/>
+        <input id="shadow" type="range" min="0" max="1" step="0.05" value="0.9">
       </div>
 
       <div class="group">
         <label>FOV (zoom)</label>
-        <input id="fov" type="range" min="20" max="75" step="1" value="35"/>
+        <input id="fov" type="range" min="20" max="90" step="1" value="35">
       </div>
 
       <div class="group">
         <label>Ambiente</label>
         <div class="row">
-          <button class="btn" data-hdr="https://modelviewer.dev/shared-assets/environments/moon_1k.hdr">Moon</button>
-          <button class="btn" data-hdr="https://modelviewer.dev/shared-assets/environments/neutral.hdr">Neutral</button>
-          <button class="btn" data-hdr="https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr">Sunrise</button>
+          <button class="btn-ghost" data-hdr="https://modelviewer.dev/shared-assets/environments/neutral.hdr">Neutral</button>
+          <button class="btn-ghost" data-hdr="https://modelviewer.dev/shared-assets/environments/moon_1k.hdr">Moon</button>
+          <button class="btn-ghost" data-hdr="https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr">Sunrise</button>
         </div>
       </div>
 
@@ -161,43 +116,53 @@
         </div>
       </div>
     </div>
-
-    <div class="legend">
-      Suggerimento: in uMap usa un iframe con <code>height:75vh</code> nel pannello laterale per una migliore fruizione su smartphone.
-    </div>
   </div>
 
   <script>
     const mv = document.getElementById('mv');
 
-    // Auto-rotate
-    document.getElementById('btn-rotate-on').addEventListener('click', () => mv.autoRotate = true);
-    document.getElementById('btn-rotate-off').addEventListener('click', () => mv.autoRotate = false);
+    // --- Autorotate ON/OFF (riattiva anche dopo interazione) ---
+    document.getElementById('btn-rot-on').addEventListener('click', () => {
+      mv.autoRotate = true;
+      if (mv.resetTurntableRotation) mv.resetTurntableRotation();
+    });
+    document.getElementById('btn-rot-off').addEventListener('click', () => mv.autoRotate = false);
 
-    // Esposizione / Ombre / FOV
-    const exp = document.getElementById('exp');
-    const shadow = document.getElementById('shadow');
-    const fov = document.getElementById('fov');
-
+    // --- Sliders ---
     exp.addEventListener('input', () => mv.exposure = parseFloat(exp.value));
     shadow.addEventListener('input', () => mv.shadowIntensity = parseFloat(shadow.value));
     fov.addEventListener('input', () => mv.fieldOfView = `${parseFloat(fov.value)}deg`);
 
-    // Cambia HDRI ambiente
+    // --- Cambia HDRI ambiente ---
     document.querySelectorAll('[data-hdr]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        mv.environmentImage = btn.getAttribute('data-hdr');
-      });
+      btn.addEventListener('click', () => { mv.environmentImage = btn.getAttribute('data-hdr'); });
     });
 
-    // Reset vista (torna a orbit/FOV iniziali)
+    // --- Reset vista ---
     document.getElementById('btn-reset').addEventListener('click', () => {
       mv.cameraOrbit = '0deg 70deg auto';
       mv.fieldOfView = '35deg';
       mv.cameraTarget = 'auto';
+      if (mv.resetTurntableRotation) mv.resetTurntableRotation();
     });
 
-    // Log basilare per capire se carica
+    // --- Hotspot pop-up toggle ---
+    // clic su un hotspot-btn: mostra/nasconde il relativo .popup con lo stesso id (h1/h2…)
+    mv.addEventListener('click', (e) => {
+      const target = e.composedPath()[0];
+      const id = target?.dataset?.hotspot;
+      if (!id) return;
+      const pop = mv.querySelector(`.popup[data-popup="${id}"]`);
+      if (pop) pop.classList.toggle('show');
+      e.stopPropagation();
+    });
+    // clic fuori: chiude tutti
+    window.addEventListener('click', (e) => {
+      if (!mv.contains(e.target)) return;
+      mv.querySelectorAll('.popup.show').forEach(p => p.classList.remove('show'));
+    });
+
+    // Log basilare
     mv.addEventListener('load', () => console.log('✅ Modello caricato'));
     mv.addEventListener('error', (e) => console.error('❌ Errore model-viewer', e.detail || e));
   </script>
