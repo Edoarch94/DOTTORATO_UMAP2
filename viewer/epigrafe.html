@@ -69,19 +69,56 @@
 <body>
   <div class="wrap">
     <!-- ==== MODEL-VIEWER =================================================== -->
-   <model-viewer id="mv"
-  src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=2"
-  poster="https://edoarch94.github.io/DOTTORATO_UMAP2/immagini/epigrafe_poster.jpg"
+  <!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test Epigrafe</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    html,body{height:100%;margin:0;background:#111;font-family:system-ui,sans-serif}
+    model-viewer{width:min(96vw,1200px);height:min(88vh,800px);display:block;margin:2vh auto;background:#111;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+    #log{position:fixed;left:12px;right:12px;bottom:12px;color:#eee;background:rgba(0,0,0,.55);padding:8px 12px;border-radius:8px;font-size:12px;white-space:pre-wrap;display:none}
+  </style>
+</head>
+<body>
+
+<model-viewer id="mv"
+  src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=3"
   camera-controls
+  autoplay
   auto-rotate
+  environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
   shadow-intensity="0.9"
-  exposure="1.1"
-  environment-image="https://modelviewer.dev/shared-assets/environments/moon_1k.hdr"
+  exposure="1.15"
+  bounds="tight"
+  camera-target="auto"
   camera-orbit="0deg 70deg auto"
+  min-field-of-view="20deg"
+  max-field-of-view="90deg"
   field-of-view="35deg"
   ar
   ar-modes="webxr scene-viewer quick-look">
 </model-viewer>
+
+<div id="log"></div>
+<script>
+  const mv = document.getElementById('mv');
+  const log = document.getElementById('log');
+  const say = m => { log.style.display='block'; log.textContent = m; };
+
+  mv.addEventListener('load', () => say('✅ Modello caricato (Epigrafe.glb)'));
+  mv.addEventListener('error', (e) => {
+    const d = e.detail || {};
+    say(`❌ Errore nel caricamento\n- type: ${d.type || 'n/d'}\n- source: ${d.source || 'n/d'}\nControlla l’URL e le MAIUSCOLE del file.`);
+    console.error('model-viewer error', e, d);
+  });
+</script>
+
+</body>
+</html>
+
 
     <!-- ==== CONTROLLI ====================================================== -->
     <div class="panel" role="region" aria-label="Controlli viewer">
