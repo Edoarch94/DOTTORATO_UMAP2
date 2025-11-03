@@ -197,21 +197,26 @@
       if (!mv.contains(e.target)) return;
       mv.querySelectorAll('.popup.show').forEach(p => p.classList.remove('show'));
     });
-  </script>
+  <!-- SCRIPT PER LEGGERE COORDINATE DAL MODELLO -->
+<script>
+  const mv = document.getElementById('mv');
 
-  <!-- (FACOLTATIVO) Lettura coordinate per posizionare hotspot. RIMUOVI quando hai finito. -->
-  <!--
-  <script>
-    mv.addEventListener('click', async (e) => {
-      const r = mv.getBoundingClientRect();
-      const hit = await mv.positionAndNormalFromPoint(e.clientX - r.left, e.clientY - r.top);
-      if (hit) {
-        const p = hit.position, n = hit.normal;
-        console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"`);
-        console.log(`data-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
-      }
-    });
-  </script>
+  // Clicca su un punto del modello per leggerne coordinate e normale
+  mv.addEventListener('click', async (e) => {
+    const rect = mv.getBoundingClientRect();
+    const hit = await mv.positionAndNormalFromPoint(
+      e.clientX - rect.left,
+      e.clientY - rect.top
+    );
+    if (hit) {
+      const p = hit.position;
+      const n = hit.normal;
+      console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"`);
+      console.log(`data-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
+    }
+  });
+</script>
+
   -->
 </body>
 </html>
