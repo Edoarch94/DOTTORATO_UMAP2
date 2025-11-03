@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Epigrafe di Peltuinum — Viewer 3D (controlli)</title>
+  <title>Epigrafe di Peltuinum — Viewer 3D</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
@@ -11,13 +11,13 @@
     .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px}
     model-viewer{
       width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;
-      background:#111; /* verrà modificato dai pulsanti SFONDO */
-      border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);outline:1px solid rgba(255,255,255,.06)
+      background:#111;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);outline:1px solid rgba(255,255,255,.06);
+      pointer-events:auto; /* assicura che il drag arrivi al viewer */
     }
     .panel{
       width:min(96vw,1200px);margin:0 auto;background:var(--card);border-radius:12px;
       box-shadow:0 6px 20px rgba(0,0,0,.35);padding:12px;display:grid;gap:10px;
-      grid-template-columns:repeat(6,1fr);align-items:center
+      grid-template-columns:repeat(6,1fr);align-items:center;position:static
     }
     .group{display:flex;flex-direction:column;gap:6px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:10px}
     .row{display:flex;gap:8px;flex-wrap:wrap}
@@ -26,7 +26,10 @@
     button{appearance:none;border:0;border-radius:10px;padding:10px 12px;cursor:pointer;background:#2a2a2a;color:#fff;font-weight:600}
     .btn-accent{background:var(--accent);color:#0b2514}
     .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.2)}
-    .hotspot-btn{background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.35);padding:4px 6px;border-radius:6px;font-size:12px}
+    .hotspot-btn{
+      background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.35);
+      padding:4px 6px;border-radius:6px;font-size:12px;pointer-events:auto
+    }
     .popup{
       position:absolute;transform:translate(-50%,-110%);pointer-events:auto;
       background:rgba(20,20,20,.92);color:#fff;border:1px solid rgba(255,255,255,.25);
@@ -41,9 +44,11 @@
   <div class="wrap">
     <!-- MODEL-VIEWER -->
     <model-viewer id="mv"
-      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=5"
-      orientation="-90deg 0deg 0deg"           <!-- mette la lastra in verticale -->
-      camera-controls touch-action="pan-y"
+      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=6"
+      orientation="-90deg 0deg 0deg"   <!-- verticale -->
+      camera-controls
+      touch-action="none"               <!-- drag libero anche su desktop -->
+      interaction-prompt="none"         <!-- rimuove la scritta di suggerimento -->
       auto-rotate auto-rotate-delay="0" auto-rotate-speed="20deg/s"
       environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
       shadow-intensity="0.9" exposure="1.15"
@@ -143,9 +148,6 @@
     document.getElementById('btn-rot-off').addEventListener('click', () => mv.autoRotate = false);
 
     // Sliders
-    const exp = document.getElementById('exp');
-    const shadow = document.getElementById('shadow');
-    const fov = document.getElementById('fov');
     exp.addEventListener('input', () => mv.exposure = parseFloat(exp.value));
     shadow.addEventListener('input', () => mv.shadowIntensity = parseFloat(shadow.value));
     fov.addEventListener('input', () => mv.fieldOfView = `${parseFloat(fov.value)}deg`);
@@ -160,19 +162,10 @@
 
     // Sfondo viewer
     const setBg = (mode) => {
-      if (mode === 'dark') {
-        mv.style.background = '#111';
-        document.body.style.background = '#111';
-      } else if (mode === 'light') {
-        mv.style.background = '#f5f5f5';
-        document.body.style.background = '#222';
-      } else if (mode === 'gradient') {
-        mv.style.background = 'radial-gradient(1200px 600px at 50% 10%, #2a2a2a, #0f0f0f)';
-        document.body.style.background = '#111';
-      } else if (mode === 'transparent') {
-        mv.style.background = 'transparent';
-        document.body.style.background = '#111';
-      }
+      if (mode === 'dark') { mv.style.background = '#111'; document.body.style.background = '#111'; }
+      else if (mode === 'light') { mv.style.background = '#f5f5f5'; document.body.style.background = '#222'; }
+      else if (mode === 'gradient') { mv.style.background = 'radial-gradient(1200px 600px at 50% 10%, #2a2a2a, #0f0f0f)'; document.body.style.background = '#111'; }
+      else if (mode === 'transparent') { mv.style.background = 'transparent'; document.body.style.background = '#111'; }
     };
     document.querySelectorAll('.bg').forEach(b => b.addEventListener('click', () => setBg(b.dataset.bg)));
 
@@ -198,18 +191,14 @@
       if (!mv.contains(e.target)) return;
       mv.querySelectorAll('.popup.show').forEach(p => p.classList.remove('show'));
     });
-
-    // Log base (opzionale)
-    mv.addEventListener('load', () => console.log('✅ Modello caricato'));
-    mv.addEventListener('error', (e) => console.error('❌ Errore model-viewer', e.detail || e));
   </script>
 
-  <!-- (FACOLTATIVO) SCRIPT DI LETTURA COORDINATE. RIMUOVILO QUANDO HAI FINITO. -->
+  <!-- (FACOLTATIVO) Lettura coordinate per posizionare hotspot. RIMUOVI quando hai finito. -->
+  <!--
   <script>
-    // Clicca sul modello per leggere coordinate/normale del punto
     mv.addEventListener('click', async (e) => {
-      const rect = mv.getBoundingClientRect();
-      const hit = await mv.positionAndNormalFromPoint(e.clientX - rect.left, e.clientY - rect.top);
+      const r = mv.getBoundingClientRect();
+      const hit = await mv.positionAndNormalFromPoint(e.clientX - r.left, e.clientY - r.top);
       if (hit) {
         const p = hit.position, n = hit.normal;
         console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"`);
@@ -217,5 +206,6 @@
       }
     });
   </script>
+  -->
 </body>
 </html>
