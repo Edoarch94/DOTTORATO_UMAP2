@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Epigrafe di Peltuinum — Viewer 3D</title>
+  <title>Epigrafe di Peltuinum — Viewer 3D (controlli)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
@@ -10,7 +10,8 @@
     html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
     .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px}
     model-viewer{
-      width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;background:#111;
+      width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;
+      background:#111; /* verrà modificato dai pulsanti SFONDO */
       border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);outline:1px solid rgba(255,255,255,.06)
     }
     .panel{
@@ -25,23 +26,23 @@
     button{appearance:none;border:0;border-radius:10px;padding:10px 12px;cursor:pointer;background:#2a2a2a;color:#fff;font-weight:600}
     .btn-accent{background:var(--accent);color:#0b2514}
     .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.2)}
-    /* Hotspot button */
     .hotspot-btn{background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.35);padding:4px 6px;border-radius:6px;font-size:12px}
     .popup{
       position:absolute;transform:translate(-50%,-110%);pointer-events:auto;
       background:rgba(20,20,20,.92);color:#fff;border:1px solid rgba(255,255,255,.25);
-      padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.35;
-      max-width:220px;display:none;
+      padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.35;max-width:220px;display:none;
     }
     .popup.show{display:block}
+    @media (max-width:900px){ .panel{grid-template-columns:repeat(3,1fr)} }
+    @media (max-width:520px){ .panel{grid-template-columns:repeat(2,1fr)} }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <!-- MODEL VIEWER -->
+    <!-- MODEL-VIEWER -->
     <model-viewer id="mv"
-      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=4"
-      orientation="-90deg 0deg 0deg"
+      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=5"
+      orientation="-90deg 0deg 0deg"           <!-- mette la lastra in verticale -->
       camera-controls touch-action="pan-y"
       auto-rotate auto-rotate-delay="0" auto-rotate-speed="20deg/s"
       environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
@@ -54,47 +55,31 @@
 
       <!-- HOTSPOT 1 -->
       <button class="hotspot-btn" slot="hotspot-1"
-        data-position="0.00m 0.12m 0.03m"
-        data-normal="0m 1m 0m"
-        data-hotspot="h1">1</button>
+        data-position="0.00m 0.12m 0.03m" data-normal="0m 1m 0m" data-hotspot="h1">1</button>
       <div class="popup" slot="hotspot-1"
-        data-position="0.00m 0.15m 0.03m"
-        data-normal="0m 1m 0m"
-        data-popup="h1">Inizio iscrizione: formula dedicativa.</div>
+        data-position="0.00m 0.15m 0.03m" data-normal="0m 1m 0m" data-popup="h1">Inizio iscrizione: formula dedicativa.</div>
 
       <!-- HOTSPOT 2 -->
       <button class="hotspot-btn" slot="hotspot-2"
-        data-position="0.00m 0.06m 0.03m"
-        data-normal="0m 1m 0m"
-        data-hotspot="h2">2</button>
+        data-position="0.00m 0.06m 0.03m" data-normal="0m 1m 0m" data-hotspot="h2">2</button>
       <div class="popup" slot="hotspot-2"
-        data-position="0.00m 0.09m 0.03m"
-        data-normal="0m 1m 0m"
-        data-popup="h2">Parte centrale dell’iscrizione.</div>
+        data-position="0.00m 0.09m 0.03m" data-normal="0m 1m 0m" data-popup="h2">Parte centrale dell’iscrizione.</div>
 
       <!-- HOTSPOT 3 -->
       <button class="hotspot-btn" slot="hotspot-3"
-        data-position="0.00m 0.00m 0.03m"
-        data-normal="0m 1m 0m"
-        data-hotspot="h3">3</button>
+        data-position="0.00m 0.00m 0.03m" data-normal="0m 1m 0m" data-hotspot="h3">3</button>
       <div class="popup" slot="hotspot-3"
-        data-position="0.00m 0.03m 0.03m"
-        data-normal="0m 1m 0m"
-        data-popup="h3">Sezione inferiore dell’iscrizione.</div>
+        data-position="0.00m 0.03m 0.03m" data-normal="0m 1m 0m" data-popup="h3">Sezione inferiore dell’iscrizione.</div>
 
       <!-- HOTSPOT 4 -->
       <button class="hotspot-btn" slot="hotspot-4"
-        data-position="0.05m 0.12m 0.03m"
-        data-normal="0m 1m 0m"
-        data-hotspot="h4">4</button>
+        data-position="0.05m 0.12m 0.03m" data-normal="0m 1m 0m" data-hotspot="h4">4</button>
       <div class="popup" slot="hotspot-4"
-        data-position="0.05m 0.15m 0.03m"
-        data-normal="0m 1m 0m"
-        data-popup="h4">Bordo destro con tracce di lavorazione.</div>
+        data-position="0.05m 0.15m 0.03m" data-normal="0m 1m 0m" data-popup="h4">Bordo destro con tracce di lavorazione.</div>
     </model-viewer>
 
-    <!-- PANNELLO BASE -->
-    <div class="panel">
+    <!-- PANNELLO CONTROLLI -->
+    <div class="panel" role="region" aria-label="Controlli viewer">
       <div class="group">
         <label>Auto-rotate</label>
         <div class="row">
@@ -102,19 +87,105 @@
           <button id="btn-rot-off" class="">OFF</button>
         </div>
       </div>
+
+      <div class="group">
+        <label>Esposizione</label>
+        <input id="exp" type="range" min="0.2" max="2.0" step="0.05" value="1.15">
+      </div>
+
+      <div class="group">
+        <label>Ombre</label>
+        <input id="shadow" type="range" min="0" max="1" step="0.05" value="0.9">
+      </div>
+
+      <div class="group">
+        <label>FOV (zoom)</label>
+        <input id="fov" type="range" min="20" max="90" step="1" value="35">
+      </div>
+
+      <div class="group">
+        <label>Ambiente (HDR)</label>
+        <div class="row">
+          <button class="btn-ghost env" data-hdr="https://modelviewer.dev/shared-assets/environments/neutral.hdr">Neutral</button>
+          <button class="btn-ghost env" data-hdr="https://modelviewer.dev/shared-assets/environments/moon_1k.hdr">Moon</button>
+          <button class="btn-ghost env" data-hdr="https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr">Sunrise</button>
+          <button class="btn-ghost env" data-hdr="none">None</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <label>Sfondo</label>
+        <div class="row">
+          <button class="btn-ghost bg" data-bg="dark">Dark</button>
+          <button class="btn-ghost bg" data-bg="light">Light</button>
+          <button class="btn-ghost bg" data-bg="gradient">Gradient</button>
+          <button class="btn-ghost bg" data-bg="transparent">Transparent</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <label>Camera</label>
+        <div class="row">
+          <button id="btn-reset" class="btn-ghost">Reset vista</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     const mv = document.getElementById('mv');
+
     // Autorotate
     document.getElementById('btn-rot-on').addEventListener('click', () => {
       mv.autoRotate = true;
-      if (mv.resetTurntableRotation) mv.resetTurntableRotation();
+      mv.resetTurntableRotation && mv.resetTurntableRotation();
     });
     document.getElementById('btn-rot-off').addEventListener('click', () => mv.autoRotate = false);
 
-    // Popup toggle
+    // Sliders
+    const exp = document.getElementById('exp');
+    const shadow = document.getElementById('shadow');
+    const fov = document.getElementById('fov');
+    exp.addEventListener('input', () => mv.exposure = parseFloat(exp.value));
+    shadow.addEventListener('input', () => mv.shadowIntensity = parseFloat(shadow.value));
+    fov.addEventListener('input', () => mv.fieldOfView = `${parseFloat(fov.value)}deg`);
+
+    // Ambiente HDR
+    document.querySelectorAll('.env').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const hdr = btn.getAttribute('data-hdr');
+        mv.environmentImage = hdr === 'none' ? 'none' : hdr;
+      });
+    });
+
+    // Sfondo viewer
+    const setBg = (mode) => {
+      if (mode === 'dark') {
+        mv.style.background = '#111';
+        document.body.style.background = '#111';
+      } else if (mode === 'light') {
+        mv.style.background = '#f5f5f5';
+        document.body.style.background = '#222';
+      } else if (mode === 'gradient') {
+        mv.style.background = 'radial-gradient(1200px 600px at 50% 10%, #2a2a2a, #0f0f0f)';
+        document.body.style.background = '#111';
+      } else if (mode === 'transparent') {
+        mv.style.background = 'transparent';
+        document.body.style.background = '#111';
+      }
+    };
+    document.querySelectorAll('.bg').forEach(b => b.addEventListener('click', () => setBg(b.dataset.bg)));
+
+    // Reset vista
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      mv.cameraOrbit = '0deg 90deg auto';
+      mv.fieldOfView = '35deg';
+      mv.cameraTarget = 'auto';
+      mv.autoRotate = true;
+      mv.resetTurntableRotation && mv.resetTurntableRotation();
+    });
+
+    // Popup toggle sugli hotspot
     mv.addEventListener('click', (e) => {
       const t = e.composedPath()[0];
       const id = t?.dataset?.hotspot;
@@ -127,20 +198,20 @@
       if (!mv.contains(e.target)) return;
       mv.querySelectorAll('.popup.show').forEach(p => p.classList.remove('show'));
     });
+
+    // Log base (opzionale)
+    mv.addEventListener('load', () => console.log('✅ Modello caricato'));
+    mv.addEventListener('error', (e) => console.error('❌ Errore model-viewer', e.detail || e));
   </script>
 
-  <!-- SCRIPT FACOLTATIVO PER LETTURA COORDINATE -->
+  <!-- (FACOLTATIVO) SCRIPT DI LETTURA COORDINATE. RIMUOVILO QUANDO HAI FINITO. -->
   <script>
-    // Rimuovi dopo aver rilevato le coordinate
+    // Clicca sul modello per leggere coordinate/normale del punto
     mv.addEventListener('click', async (e) => {
       const rect = mv.getBoundingClientRect();
-      const hit = await mv.positionAndNormalFromPoint(
-        e.clientX - rect.left,
-        e.clientY - rect.top
-      );
+      const hit = await mv.positionAndNormalFromPoint(e.clientX - rect.left, e.clientY - rect.top);
       if (hit) {
-        const p = hit.position;
-        const n = hit.normal;
+        const p = hit.position, n = hit.normal;
         console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"`);
         console.log(`data-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
       }
