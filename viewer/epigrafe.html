@@ -44,44 +44,50 @@
   <div class="wrap">
     <!-- MODEL-VIEWER -->
     <model-viewer id="mv"
-      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=6"
-      orientation="-90deg 0deg 0deg"   <!-- verticale -->
-      camera-controls
-      touch-action="none"               <!-- drag libero anche su desktop -->
-      interaction-prompt="none"         <!-- rimuove la scritta di suggerimento -->
-      auto-rotate auto-rotate-delay="0" auto-rotate-speed="20deg/s"
-      environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
-      shadow-intensity="0.9" exposure="1.15"
-      bounds="tight" camera-target="auto"
-      camera-orbit="0deg 90deg auto"
-      field-of-view="35deg"
-      min-field-of-view="20deg" max-field-of-view="90deg"
-      ar ar-modes="webxr scene-viewer quick-look">
+  src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=7"
+  orientation="-90deg 0deg 0deg"
+  camera-controls
+  touch-action="pan-y"
+  interaction-prompt="none"
+  auto-rotate
+  auto-rotate-delay="0"
+  auto-rotate-speed="20deg/s"
+  environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
+  shadow-intensity="0.9"
+  exposure="1.15"
+  bounds="tight"
+  camera-target="auto"
+  camera-orbit="0deg 90deg auto"
+  field-of-view="35deg"
+  min-field-of-view="20deg"
+  max-field-of-view="90deg"
+  ar
+  ar-modes="webxr scene-viewer quick-look">
 
-      <!-- HOTSPOT 1 -->
-      <button class="hotspot-btn" slot="hotspot-1"
-        data-position="0.00m 0.12m 0.03m" data-normal="0m 1m 0m" data-hotspot="h1">1</button>
-      <div class="popup" slot="hotspot-1"
-        data-position="0.00m 0.15m 0.03m" data-normal="0m 1m 0m" data-popup="h1">Inizio iscrizione: formula dedicativa.</div>
+  <!-- HOTSPOT 1 -->
+  <button class="hotspot-btn" slot="hotspot-1"
+    data-position="0.00m 0.12m 0.03m" data-normal="0m 1m 0m" data-hotspot="h1">1</button>
+  <div class="popup" slot="hotspot-1"
+    data-position="0.00m 0.15m 0.03m" data-normal="0m 1m 0m" data-popup="h1">Inizio iscrizione: formula dedicativa.</div>
 
-      <!-- HOTSPOT 2 -->
-      <button class="hotspot-btn" slot="hotspot-2"
-        data-position="0.00m 0.06m 0.03m" data-normal="0m 1m 0m" data-hotspot="h2">2</button>
-      <div class="popup" slot="hotspot-2"
-        data-position="0.00m 0.09m 0.03m" data-normal="0m 1m 0m" data-popup="h2">Parte centrale dell’iscrizione.</div>
+  <!-- HOTSPOT 2 -->
+  <button class="hotspot-btn" slot="hotspot-2"
+    data-position="0.00m 0.06m 0.03m" data-normal="0m 1m 0m" data-hotspot="h2">2</button>
+  <div class="popup" slot="hotspot-2"
+    data-position="0.00m 0.09m 0.03m" data-normal="0m 1m 0m" data-popup="h2">Parte centrale dell’iscrizione.</div>
 
-      <!-- HOTSPOT 3 -->
-      <button class="hotspot-btn" slot="hotspot-3"
-        data-position="0.00m 0.00m 0.03m" data-normal="0m 1m 0m" data-hotspot="h3">3</button>
-      <div class="popup" slot="hotspot-3"
-        data-position="0.00m 0.03m 0.03m" data-normal="0m 1m 0m" data-popup="h3">Sezione inferiore dell’iscrizione.</div>
+  <!-- HOTSPOT 3 -->
+  <button class="hotspot-btn" slot="hotspot-3"
+    data-position="0.00m 0.00m 0.03m" data-normal="0m 1m 0m" data-hotspot="h3">3</button>
+  <div class="popup" slot="hotspot-3"
+    data-position="0.00m 0.03m 0.03m" data-normal="0m 1m 0m" data-popup="h3">Sezione inferiore dell’iscrizione.</div>
 
-      <!-- HOTSPOT 4 -->
-      <button class="hotspot-btn" slot="hotspot-4"
-        data-position="0.05m 0.12m 0.03m" data-normal="0m 1m 0m" data-hotspot="h4">4</button>
-      <div class="popup" slot="hotspot-4"
-        data-position="0.05m 0.15m 0.03m" data-normal="0m 1m 0m" data-popup="h4">Bordo destro con tracce di lavorazione.</div>
-    </model-viewer>
+  <!-- HOTSPOT 4 -->
+  <button class="hotspot-btn" slot="hotspot-4"
+    data-position="0.05m 0.12m 0.03m" data-normal="0m 1m 0m" data-hotspot="h4">4</button>
+  <div class="popup" slot="hotspot-4"
+    data-position="0.05m 0.15m 0.03m" data-normal="0m 1m 0m" data-popup="h4">Bordo destro con tracce di lavorazione.</div>
+</model-viewer>
 
     <!-- PANNELLO CONTROLLI -->
     <div class="panel" role="region" aria-label="Controlli viewer">
