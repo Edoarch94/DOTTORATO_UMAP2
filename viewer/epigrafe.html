@@ -11,13 +11,12 @@
     .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px}
     model-viewer{
       width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;
-      background:#111;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);outline:1px solid rgba(255,255,255,.06);
-      pointer-events:auto; /* assicura che il drag arrivi al viewer */
+      background:#111;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);outline:1px solid rgba(255,255,255,.06)
     }
     .panel{
       width:min(96vw,1200px);margin:0 auto;background:var(--card);border-radius:12px;
       box-shadow:0 6px 20px rgba(0,0,0,.35);padding:12px;display:grid;gap:10px;
-      grid-template-columns:repeat(6,1fr);align-items:center;position:static
+      grid-template-columns:repeat(6,1fr);align-items:center
     }
     .group{display:flex;flex-direction:column;gap:6px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:10px}
     .row{display:flex;gap:8px;flex-wrap:wrap}
@@ -26,10 +25,7 @@
     button{appearance:none;border:0;border-radius:10px;padding:10px 12px;cursor:pointer;background:#2a2a2a;color:#fff;font-weight:600}
     .btn-accent{background:var(--accent);color:#0b2514}
     .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.2)}
-    .hotspot-btn{
-      background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.35);
-      padding:4px 6px;border-radius:6px;font-size:12px;pointer-events:auto
-    }
+    .hotspot-btn{background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.35);padding:4px 6px;border-radius:6px;font-size:12px}
     .popup{
       position:absolute;transform:translate(-50%,-110%);pointer-events:auto;
       background:rgba(20,20,20,.92);color:#fff;border:1px solid rgba(255,255,255,.25);
@@ -42,60 +38,54 @@
 </head>
 <body>
   <div class="wrap">
-    <!-- MODEL-VIEWER -->
+    <!-- MODEL VIEWER -->
     <model-viewer id="mv"
-  src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=7"
-  orientation="0deg 90deg 0deg"
-  camera-controls
-  touch-action="pan-y"
-  interaction-prompt="none"
-  auto-rotate
-  auto-rotate-delay="0"
-  auto-rotate-speed="20deg/s"
-  environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
-  shadow-intensity="0.9"
-  exposure="1.15"
-  bounds="tight"
-  camera-target="auto"
-  camera-orbit="0deg 90deg auto"
-  field-of-view="35deg"
-  min-field-of-view="20deg"
-  max-field-of-view="90deg"
-  ar
-  ar-modes="webxr scene-viewer quick-look">
+      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=11"
+      orientation="0deg 90deg 0deg"
+      camera-controls
+      touch-action="pan-y"
+      interaction-prompt="none"
+      auto-rotate auto-rotate-delay="0" auto-rotate-speed="20deg/s"
+      environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
+      shadow-intensity="0.9" exposure="1.15"
+      bounds="tight" camera-target="auto"
+      camera-orbit="0deg 90deg auto"
+      field-of-view="35deg"
+      min-field-of-view="20deg" max-field-of-view="90deg"
+      ar ar-modes="webxr scene-viewer quick-look">
 
-  <!-- HOTSPOT 1 -->
-  <button class="hotspot-btn" slot="hotspot-1"
-    data-position="0.00m 0.12m 0.03m" data-normal="0m 1m 0m" data-hotspot="h1">1</button>
-  <div class="popup" slot="hotspot-1"
-    data-position="0.00m 0.15m 0.03m" data-normal="0m 1m 0m" data-popup="h1">Inizio iscrizione: formula dedicativa.</div>
+      <!-- HOTSPOT 1 -->
+      <button class="hotspot-btn" slot="hotspot-1"
+        data-position="0.00m 0.12m 0.03m" data-normal="0m 1m 0m" data-hotspot="h1">1</button>
+      <div class="popup" slot="hotspot-1"
+        data-position="0.00m 0.15m 0.03m" data-normal="0m 1m 0m" data-popup="h1">Inizio iscrizione: formula dedicativa.</div>
 
-  <!-- HOTSPOT 2 -->
-  <button class="hotspot-btn" slot="hotspot-2"
-    data-position="0.00m 0.06m 0.03m" data-normal="0m 1m 0m" data-hotspot="h2">2</button>
-  <div class="popup" slot="hotspot-2"
-    data-position="0.00m 0.09m 0.03m" data-normal="0m 1m 0m" data-popup="h2">Parte centrale dell’iscrizione.</div>
+      <!-- HOTSPOT 2 -->
+      <button class="hotspot-btn" slot="hotspot-2"
+        data-position="0.00m 0.06m 0.03m" data-normal="0m 1m 0m" data-hotspot="h2">2</button>
+      <div class="popup" slot="hotspot-2"
+        data-position="0.00m 0.09m 0.03m" data-normal="0m 1m 0m" data-popup="h2">Parte centrale dell’iscrizione.</div>
 
-  <!-- HOTSPOT 3 -->
-  <button class="hotspot-btn" slot="hotspot-3"
-    data-position="0.00m 0.00m 0.03m" data-normal="0m 1m 0m" data-hotspot="h3">3</button>
-  <div class="popup" slot="hotspot-3"
-    data-position="0.00m 0.03m 0.03m" data-normal="0m 1m 0m" data-popup="h3">Sezione inferiore dell’iscrizione.</div>
+      <!-- HOTSPOT 3 -->
+      <button class="hotspot-btn" slot="hotspot-3"
+        data-position="0.00m 0.00m 0.03m" data-normal="0m 1m 0m" data-hotspot="h3">3</button>
+      <div class="popup" slot="hotspot-3"
+        data-position="0.00m 0.03m 0.03m" data-normal="0m 1m 0m" data-popup="h3">Sezione inferiore dell’iscrizione.</div>
 
-  <!-- HOTSPOT 4 -->
-  <button class="hotspot-btn" slot="hotspot-4"
-    data-position="0.05m 0.12m 0.03m" data-normal="0m 1m 0m" data-hotspot="h4">4</button>
-  <div class="popup" slot="hotspot-4"
-    data-position="0.05m 0.15m 0.03m" data-normal="0m 1m 0m" data-popup="h4">Bordo destro con tracce di lavorazione.</div>
-</model-viewer>
+      <!-- HOTSPOT 4 -->
+      <button class="hotspot-btn" slot="hotspot-4"
+        data-position="0.05m 0.12m 0.03m" data-normal="0m 1m 0m" data-hotspot="h4">4</button>
+      <div class="popup" slot="hotspot-4"
+        data-position="0.05m 0.15m 0.03m" data-normal="0m 1m 0m" data-popup="h4">Bordo destro con tracce di lavorazione.</div>
+    </model-viewer>
 
     <!-- PANNELLO CONTROLLI -->
-    <div class="panel" role="region" aria-label="Controlli viewer">
+    <div class="panel">
       <div class="group">
         <label>Auto-rotate</label>
         <div class="row">
-          <button id="btn-rot-on"  class="btn-accent">ON</button>
-          <button id="btn-rot-off" class="">OFF</button>
+          <button id="btn-rot-on" class="btn-accent">ON</button>
+          <button id="btn-rot-off">OFF</button>
         </div>
       </div>
 
@@ -143,48 +133,42 @@
     </div>
   </div>
 
+  <!-- SCRIPT FUNZIONALE -->
   <script>
     const mv = document.getElementById('mv');
-
-    // Autorotate
+    // Rotazione automatica
     document.getElementById('btn-rot-on').addEventListener('click', () => {
       mv.autoRotate = true;
       mv.resetTurntableRotation && mv.resetTurntableRotation();
     });
     document.getElementById('btn-rot-off').addEventListener('click', () => mv.autoRotate = false);
 
-    // Sliders
-    exp.addEventListener('input', () => mv.exposure = parseFloat(exp.value));
-    shadow.addEventListener('input', () => mv.shadowIntensity = parseFloat(shadow.value));
-    fov.addEventListener('input', () => mv.fieldOfView = `${parseFloat(fov.value)}deg`);
+    // Slider
+    document.getElementById('exp').addEventListener('input', e => mv.exposure = +e.target.value);
+    document.getElementById('shadow').addEventListener('input', e => mv.shadowIntensity = +e.target.value);
+    document.getElementById('fov').addEventListener('input', e => mv.fieldOfView = `${+e.target.value}deg`);
 
     // Ambiente HDR
-    document.querySelectorAll('.env').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const hdr = btn.getAttribute('data-hdr');
-        mv.environmentImage = hdr === 'none' ? 'none' : hdr;
-      });
-    });
+    document.querySelectorAll('.env').forEach(b => b.addEventListener('click', () => {
+      const hdr = b.dataset.hdr; mv.environmentImage = hdr === 'none' ? 'none' : hdr;
+    }));
 
-    // Sfondo viewer
-    const setBg = (mode) => {
-      if (mode === 'dark') { mv.style.background = '#111'; document.body.style.background = '#111'; }
-      else if (mode === 'light') { mv.style.background = '#f5f5f5'; document.body.style.background = '#222'; }
-      else if (mode === 'gradient') { mv.style.background = 'radial-gradient(1200px 600px at 50% 10%, #2a2a2a, #0f0f0f)'; document.body.style.background = '#111'; }
-      else if (mode === 'transparent') { mv.style.background = 'transparent'; document.body.style.background = '#111'; }
+    // Sfondo
+    const setBg = m => {
+      if (m==='dark'){ mv.style.background='#111'; document.body.style.background='#111'; }
+      else if (m==='light'){ mv.style.background='#f5f5f5'; document.body.style.background='#222'; }
+      else if (m==='gradient'){ mv.style.background='radial-gradient(1200px 600px at 50% 10%, #2a2a2a, #0f0f0f)'; document.body.style.background='#111'; }
+      else if (m==='transparent'){ mv.style.background='transparent'; document.body.style.background='#111'; }
     };
     document.querySelectorAll('.bg').forEach(b => b.addEventListener('click', () => setBg(b.dataset.bg)));
 
     // Reset vista
     document.getElementById('btn-reset').addEventListener('click', () => {
-      mv.cameraOrbit = '0deg 90deg auto';
-      mv.fieldOfView = '35deg';
-      mv.cameraTarget = 'auto';
-      mv.autoRotate = true;
+      mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='35deg'; mv.cameraTarget='auto'; mv.autoRotate=true;
       mv.resetTurntableRotation && mv.resetTurntableRotation();
     });
 
-    // Popup toggle sugli hotspot
+    // Popup hotspot
     mv.addEventListener('click', (e) => {
       const t = e.composedPath()[0];
       const id = t?.dataset?.hotspot;
@@ -197,42 +181,27 @@
       if (!mv.contains(e.target)) return;
       mv.querySelectorAll('.popup.show').forEach(p => p.classList.remove('show'));
     });
-<script>
-(function () {
-  var mv = document.getElementById('mv');
-  if (!mv) {
-    console.error('model-viewer con id="mv" non trovato');
-    return;
-  }
+  </script>
 
-  mv.addEventListener('click', function (ev) {
-    var rect = mv.getBoundingClientRect();
-    var x = ev.clientX - rect.left;
-    var y = ev.clientY - rect.top;
-
-    // Usa la Promise senza async/await (più compatibile)
-    mv.positionAndNormalFromPoint(x, y).then(function (hit) {
-      if (!hit) {
-        console.warn('Nessuna mesh sotto il cursore (hai cliccato nel vuoto?).');
-        return;
-      }
-
-      var p = hit.position;
-      var n = hit.normal;
-
-      // Prepara le stringhe pronte-da-incollare
-      var pos = p.x.toFixed(3) + 'm ' + p.y.toFixed(3) + 'm ' + p.z.toFixed(3) + 'm';
-      var nor = n.x.toFixed(3) + 'm ' + n.y.toFixed(3) + 'm ' + n.z.toFixed(3) + 'm';
-
-      console.log('data-position="' + pos + '"');
-      console.log('data-normal="' + nor + '"');
-    }).catch(function (err) {
-      console.error('Errore positionAndNormalFromPoint:', err);
-    });
-  });
-})();
-</script>
-
-  -->
+  <!-- SCRIPT PER LETTURA COORDINATE -->
+  <script>
+    (function () {
+      var mv = document.getElementById('mv');
+      if (!mv) return;
+      mv.addEventListener('click', function (ev) {
+        var rect = mv.getBoundingClientRect();
+        var x = ev.clientX - rect.left;
+        var y = ev.clientY - rect.top;
+        mv.positionAndNormalFromPoint(x, y).then(function (hit) {
+          if (!hit) return console.warn('Nessun punto rilevato');
+          var p = hit.position, n = hit.normal;
+          var pos = p.x.toFixed(3)+'m '+p.y.toFixed(3)+'m '+p.z.toFixed(3)+'m';
+          var nor = n.x.toFixed(3)+'m '+n.y.toFixed(3)+'m '+n.z.toFixed(3)+'m';
+          console.log('data-position="'+pos+'"');
+          console.log('data-normal="'+nor+'"');
+        }).catch(function (err){ console.error(err); });
+      });
+    })();
+  </script>
 </body>
 </html>
