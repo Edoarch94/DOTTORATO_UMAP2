@@ -28,29 +28,29 @@
     .btn-accent{background:var(--accent);color:#0b2514}
     .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.2)}
 
-    /* Hotspot: solo il cerchio è cliccabile */
+    /* Hotspot: solo il pallino è cliccabile, ma propaghiamo l’id dal bottone */
     .hotspot-btn{
       background:transparent;border:none;padding:0;margin:0;line-height:1;
-      display:inline-flex;align-items:center;justify-content:center;
+      display:inline-flex;align-items:center;justify-content:center;pointer-events:auto
     }
     .hotspot-btn .num{
       width:22px;height:22px;border-radius:50%;
       display:inline-flex;align-items:center;justify-content:center;
-      background:#2b74ff;border:1px solid rgba(255,255,255,.8);
-      color:#fff;font-size:12px;font-weight:800;
-      box-shadow:0 2px 6px rgba(0,0,0,.45);
-      pointer-events:auto; /* clic solo sul numero */
+      background:#2b74ff;border:1px solid rgba(255,255,255,.85);
+      color:#fff;font-size:12px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.45);
+      pointer-events:auto
     }
 
-    /* Popup molto più ampio e leggibile */
+    /* Popup ampio e leggibile */
     .popup{
       position:absolute;transform:translate(-50%,-112%);pointer-events:auto;
       background:rgba(18,18,18,.97);color:#fff;border:1px solid rgba(255,255,255,.25);
       padding:14px 16px;border-radius:12px;font-size:14px;line-height:1.6;
-      max-width:560px;display:none;box-shadow:0 18px 34px rgba(0,0,0,.55)
+      max-width:600px;display:none;box-shadow:0 18px 34px rgba(0,0,0,.55)
     }
     .popup.show{display:block}
     .popup strong{font-weight:800}
+
     @media (max-width:900px){ .panel{grid-template-columns:repeat(3,1fr)} }
     @media (max-width:520px){ .panel{grid-template-columns:repeat(2,1fr)} }
   </style>
@@ -60,7 +60,7 @@
     <h1>Epigrafe Claudia Nova</h1>
 
     <model-viewer id="mv"
-      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=2"
+      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=3"
       orientation="0deg 90deg 0deg"
       camera-controls interaction-prompt="none" touch-action="pan-y"
       auto-rotate auto-rotate-delay="0" auto-rotate-speed="20deg/s"
@@ -73,12 +73,12 @@
 
       <!-- HOTSPOT 1 -->
       <button class="hotspot-btn" slot="hotspot-1"
-        data-position="0.280m 0.306m -1.067m"
-        data-normal="0.480m 0.379m 0.791m"
+        data-position="0.304m 0.179m -1.065m"
+        data-normal="0.006m 0.065m 0.998m"
         data-hotspot="h1"><span class="num">1</span></button>
       <div class="popup" slot="hotspot-1"
-        data-position="0.280m 0.336m -1.067m"
-        data-normal="0.480m 0.379m 0.791m"
+        data-position="0.304m 0.209m -1.065m"
+        data-normal="0.006m 0.065m 0.998m"
         data-popup="h1">
         <strong>Lettera S</strong><br>
         In questo punto, in fase di stesura dell’epigrafe, l’errato calcolo dello spazio che avrebbe dovuto
@@ -88,12 +88,12 @@
 
       <!-- HOTSPOT 2 -->
       <button class="hotspot-btn" slot="hotspot-2"
-        data-position="0.284m 0.033m -1.061m"
-        data-normal="0.453m 0.323m 0.831m"
+        data-position="0.297m -0.112m -1.060m"
+        data-normal="0.544m 0.017m 0.839m"
         data-hotspot="h2"><span class="num">2</span></button>
       <div class="popup" slot="hotspot-2"
-        data-position="0.284m 0.063m -1.061m"
-        data-normal="0.453m 0.323m 0.831m"
+        data-position="0.297m -0.082m -1.060m"
+        data-normal="0.544m 0.017m 0.839m"
         data-popup="h2">
         <strong>Lettera M</strong><br>
         L’errato calcolo della dimensione dei caratteri rispetto alla lunghezza della riga ha portato
@@ -103,12 +103,12 @@
 
       <!-- HOTSPOT 3 -->
       <button class="hotspot-btn" slot="hotspot-3"
-        data-position="-0.192m -0.102m -1.009m"
-        data-normal="0.102m 0.135m 0.986m"
+        data-position="-0.144m -0.275m -1.009m"
+        data-normal="0.075m 0.053m 0.996m"
         data-hotspot="h3"><span class="num">3</span></button>
       <div class="popup" slot="hotspot-3"
-        data-position="-0.192m -0.072m -1.009m"
-        data-normal="0.102m 0.135m 0.986m"
+        data-position="-0.144m -0.245m -1.009m"
+        data-normal="0.075m 0.053m 0.996m"
         data-popup="h3">
         <strong>ATTERNUM</strong><br>
         La variante <em>ATTERNUM</em> (fiume Aterno), rispetto alla forma più comune <em>ATERNUM</em>,
@@ -118,12 +118,12 @@
 
       <!-- HOTSPOT 4 -->
       <button class="hotspot-btn" slot="hotspot-4"
-        data-position="0.341m 0.449m -1.073m"
-        data-normal="0.081m -0.046m 0.996m"
+        data-position="0.347m 0.325m -1.072m"
+        data-normal="0.162m -0.003m 0.987m"
         data-hotspot="h4"><span class="num">4</span></button>
       <div class="popup" slot="hotspot-4"
-        data-position="0.341m 0.479m -1.073m"
-        data-normal="0.081m -0.046m 0.996m"
+        data-position="0.347m 0.355m -1.072m"
+        data-normal="0.162m -0.003m 0.987m"
         data-popup="h4">
         <strong>Supporto lapideo</strong><br>
         Pietra calcarea con tonalità rossastra evidente nello specchio epigrafico e nella doppia cornice.
@@ -168,7 +168,7 @@
     document.getElementById('btn-rot-on').addEventListener('click', () => { mv.autoRotate = true; mv.resetTurntableRotation && mv.resetTurntableRotation(); });
     document.getElementById('btn-rot-off').addEventListener('click', () => mv.autoRotate = false);
 
-    // Sliders
+    // Slider
     document.getElementById('exp').addEventListener('input', e => mv.exposure = +e.target.value);
     document.getElementById('shadow').addEventListener('input', e => mv.shadowIntensity = +e.target.value);
     document.getElementById('fov').addEventListener('input', e => mv.fieldOfView = `${+e.target.value}deg`);
@@ -191,52 +191,61 @@
     document.getElementById('btn-reset').addEventListener('click', () => { mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='28deg'; mv.cameraTarget='auto'; mv.autoRotate=true; mv.resetTurntableRotation && mv.resetTurntableRotation(); mv.jumpCameraToGoal && mv.jumpCameraToGoal(); });
     mv.addEventListener('load', fitModel);
 
-    // --- Hotspot: apertura popup + zoom sul punto ---
-    const FOCUS_FOV = 22;        // FOV più stretto durante lo zoom
-    const FOCUS_DIST = '0.35m';  // distanza camera dal target durante lo zoom
+    // ===== Hotspot: click SOLO sul numero, apri popup + zoom sul punto =====
+    const FOCUS_FOV = 22;        // più piccolo = zoom maggiore
+    const FOCUS_DIST = '0.35m';  // distanza dal target durante il focus
 
-    function parsePos(str){ // "x m y m z m" -> "xm ym zm" numeri
-      const [x,y,z] = str.split(' ').map(s => parseFloat(s));
-      return {x, y, z};
+    function getHotspotIdFromPath(path){
+      for (const el of path){
+        if (el && el.dataset && el.dataset.hotspot) return el.dataset.hotspot;
+      }
+      return null;
     }
-    function toPosStr(obj){ return `${obj.x}m ${obj.y}m ${obj.z}m`; }
-
-    function focusOnHotspot(btn){
-      // prendi la posizione dal bottone (uguale a quella del popup)
+    function getHotspotBtnFromPath(path){
+      for (const el of path){
+        if (el && el.dataset && el.dataset.hotspot) return el;
+      }
+      return null;
+    }
+    function focusOn(btn){
       const posStr = btn.getAttribute('data-position');
-      if(!posStr) return;
+      if (!posStr) return;
       mv.cameraTarget = posStr;
       mv.cameraOrbit  = `0deg 90deg ${FOCUS_DIST}`;
       mv.fieldOfView  = `${FOCUS_FOV}deg`;
       mv.jumpCameraToGoal && mv.jumpCameraToGoal();
     }
 
-    // Toggle popup e zoom quando si clicca il NUMERO
     mv.addEventListener('click', (e) => {
-      const el = e.composedPath()[0];
-      const id = el && el.dataset ? el.dataset.hotspot : null;
-      if (!id) return;
-      focusOnHotspot(el);
+      const path = e.composedPath ? e.composedPath() : [e.target];
+      const id = getHotspotIdFromPath(path);
+      if (!id) return; // non hai cliccato un numero/bottone hotspot
+
+      const btn = getHotspotBtnFromPath(path);
+      if (btn) focusOn(btn);
+
       const pop = mv.querySelector(`.popup[data-popup="${id}"]`);
       if (pop) pop.classList.toggle('show');
       e.stopPropagation();
     });
 
-    // chiudi popup cliccando altrove dentro il viewer
+    // chiudi popup cliccando altrove
     window.addEventListener('click', (e) => {
       if (!mv.contains(e.target)) return;
       mv.querySelectorAll('.popup.show').forEach(p => p.classList.remove('show'));
     });
   </script>
 
-  <!-- (Facoltativo) Lettura coordinate: clicca la mesh e guarda la Console -->
+  <!-- Lettura coordinate per eventuali correzioni -->
   <script>
     (function(){
       var mv = document.getElementById('mv');
       if(!mv) return;
       mv.addEventListener('click', function (ev) {
-        const t = ev.composedPath()[0];
-        if (t && t.dataset && (t.dataset.hotspot || t.dataset.popup)) return; // ignora click sui bottoni
+        // ignora click sugli hotspot/popup
+        const path = ev.composedPath ? ev.composedPath() : [ev.target];
+        if (path.some(el => el && el.dataset && (el.dataset.hotspot || el.dataset.popup))) return;
+
         const r = mv.getBoundingClientRect();
         const x = ev.clientX - r.left, y = ev.clientY - r.top;
         const hit = mv.positionAndNormalFromPoint(x, y);
