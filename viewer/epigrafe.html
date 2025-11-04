@@ -27,8 +27,9 @@
     button{appearance:none;border:0;border-radius:10px;padding:10px 12px;cursor:pointer;background:#2a2a2a;color:#fff;font-weight:600}
     .btn-accent{background:var(--accent);color:#0b2514}
     .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.2)}
+    .btn-on{box-shadow:0 0 0 2px rgba(74,222,128,.5) inset}
 
-    /* Hotspot: solo il pallino è cliccabile, ma propaghiamo l’id dal bottone */
+    /* Hotspot: pallino cliccabile */
     .hotspot-btn{
       background:transparent;border:none;padding:0;margin:0;line-height:1;
       display:inline-flex;align-items:center;justify-content:center;pointer-events:auto
@@ -41,16 +42,28 @@
       pointer-events:auto
     }
 
-    /* Popup ampio e leggibile */
+    /* Popup larghi con anti-clipping gestito via translate */
     .popup{
-      position:absolute;transform:translate(-50%,-112%);pointer-events:auto;
-      background:rgba(18,18,18,.97);color:#fff;border:1px solid rgba(255,255,255,.25);
-      padding:14px 16px;border-radius:12px;font-size:14px;line-height:1.6;
-      max-width:600px;display:none;box-shadow:0 18px 34px rgba(0,0,0,.55)
+      position:absolute;transform:translate(-50%,-112%);
+      pointer-events:auto;background:rgba(18,18,18,.97);color:#fff;
+      border:1px solid rgba(255,255,255,.25);padding:14px 16px;border-radius:12px;
+      font-size:14px;line-height:1.55;max-width:680px;display:none;
+      box-shadow:0 18px 34px rgba(0,0,0,.55);white-space:normal
     }
     .popup.show{display:block}
     .popup strong{font-weight:800}
 
+    /* Marker misura */
+    .measure-dot{
+      width:16px;height:16px;border-radius:50%;background:#22c55e;border:2px solid #fff;
+      box-shadow:0 2px 8px rgba(0,0,0,.55)
+    }
+    .measure-label{
+      position:absolute;transform:translate(-50%,-120%);background:#111;color:#fff;
+      border:1px solid rgba(255,255,255,.25);padding:6px 8px;border-radius:8px;font-size:12px;
+      white-space:nowrap;display:none
+    }
+    .measure-label.show{display:block}
     @media (max-width:900px){ .panel{grid-template-columns:repeat(3,1fr)} }
     @media (max-width:520px){ .panel{grid-template-columns:repeat(2,1fr)} }
   </style>
@@ -60,7 +73,7 @@
     <h1>Epigrafe Claudia Nova</h1>
 
     <model-viewer id="mv"
-      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=3"
+      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=5"
       orientation="0deg 90deg 0deg"
       camera-controls interaction-prompt="none" touch-action="pan-y"
       auto-rotate auto-rotate-delay="0" auto-rotate-speed="20deg/s"
@@ -128,6 +141,14 @@
         <strong>Supporto lapideo</strong><br>
         Pietra calcarea con tonalità rossastra evidente nello specchio epigrafico e nella doppia cornice.
       </div>
+
+      <!-- Marker misura A/B e label distanza -->
+      <div class="measure-dot" slot="hotspot-meas-a" style="display:none"
+           data-position="0m 0m 0m"></div>
+      <div class="measure-dot" slot="hotspot-meas-b" style="display:none"
+           data-position="0m 0m 0m"></div>
+      <div class="measure-label" id="measureLabel" slot="hotspot-meas-mid"
+           style="display:none" data-position="0m 0m 0m">0.000 m</div>
     </model-viewer>
 
     <!-- PANNELLO SOTTO -->
@@ -157,6 +178,13 @@
           <button class="btn-ghost bg" data-bg="gradient">Gradiente</button>
         </div>
       </div>
+      <div class="group"><label>Misurazione</label>
+        <div class="row">
+          <button id="btn-measure" class="btn-accent">Misura A–B</button>
+          <button id="btn-measure-reset" class="btn-ghost">Reset</button>
+        </div>
+        <small id="measureHelp" style="opacity:.75">Clicca due punti sulla mesh (A poi B).</small>
+      </div>
     </div>
   </div>
 
@@ -164,19 +192,16 @@
   <script>
     const mv = document.getElementById('mv');
 
-    // Autorotate
+    // ---------- Controlli base ----------
     document.getElementById('btn-rot-on').addEventListener('click', () => { mv.autoRotate = true; mv.resetTurntableRotation && mv.resetTurntableRotation(); });
     document.getElementById('btn-rot-off').addEventListener('click', () => mv.autoRotate = false);
 
-    // Slider
     document.getElementById('exp').addEventListener('input', e => mv.exposure = +e.target.value);
     document.getElementById('shadow').addEventListener('input', e => mv.shadowIntensity = +e.target.value);
     document.getElementById('fov').addEventListener('input', e => mv.fieldOfView = `${+e.target.value}deg`);
 
-    // HDR
     document.querySelectorAll('.env').forEach(b => b.addEventListener('click', () => { const hdr=b.dataset.hdr; mv.environmentImage = hdr==='none' ? 'none' : hdr; }));
 
-    // Sfondi
     const setBg = m => {
       if (m==='dark'){ mv.style.background='#111'; document.body.style.background='#111'; }
       else if (m==='light'){ mv.style.background='#f5f5f5'; document.body.style.background='#d9d9d9'; }
@@ -185,76 +210,143 @@
     };
     document.querySelectorAll('.bg').forEach(b => b.addEventListener('click', () => setBg(b.dataset.bg)));
 
-    // Fit & Reset
     function fitModel(){ mv.cameraTarget='auto'; mv.cameraOrbit='0deg 90deg auto'; mv.jumpCameraToGoal && mv.jumpCameraToGoal(); }
     document.getElementById('btn-fit').addEventListener('click', fitModel);
     document.getElementById('btn-reset').addEventListener('click', () => { mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='28deg'; mv.cameraTarget='auto'; mv.autoRotate=true; mv.resetTurntableRotation && mv.resetTurntableRotation(); mv.jumpCameraToGoal && mv.jumpCameraToGoal(); });
     mv.addEventListener('load', fitModel);
 
-    // ===== Hotspot: click SOLO sul numero, apri popup + zoom sul punto =====
-    const FOCUS_FOV = 22;        // più piccolo = zoom maggiore
-    const FOCUS_DIST = '0.35m';  // distanza dal target durante il focus
-
-    function getHotspotIdFromPath(path){
-      for (const el of path){
-        if (el && el.dataset && el.dataset.hotspot) return el.dataset.hotspot;
-      }
-      return null;
+    // ---------- Hotspot: zoom frontale & popup anti-clipping ----------
+    const FOCUS_FOV  = 22;
+    const FOCUS_DIST = '0.35m';
+    function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+    function rad2deg(r){ return r * 180 / Math.PI; }
+    function orbitFromNormal(normalStr){
+      const [nx, ny, nz] = normalStr.split(' ').map(s => parseFloat(s));
+      const dx = -nx, dy = -ny, dz = -nz; // guardiamo frontalmente
+      const len = Math.hypot(dx, dy, dz) || 1;
+      const ux = dx/len, uy = dy/len, uz = dz/len;
+      const theta = rad2deg(Math.atan2(ux, uz));
+      const phi   = rad2deg(Math.acos(clamp(uy, -1, 1)));
+      return `${theta.toFixed(1)}deg ${phi.toFixed(1)}deg ${FOCUS_DIST}`;
+    }
+    function nudgeIntoView(el){
+      const pad = 12;
+      const r = el.getBoundingClientRect();
+      let dx=0, dy=0;
+      if (r.left < pad) dx = pad - r.left;
+      if (r.right > innerWidth - pad) dx = (innerWidth - pad) - r.right;
+      if (r.top < pad) dy = pad - r.top;
+      if (r.bottom > innerHeight - pad) dy = (innerHeight - pad) - r.bottom;
+      el.style.transform = `translate(calc(-50% + ${dx}px), calc(-112% + ${dy}px))`;
     }
     function getHotspotBtnFromPath(path){
-      for (const el of path){
-        if (el && el.dataset && el.dataset.hotspot) return el;
-      }
+      for (const el of path){ if (el && el.dataset && el.dataset.hotspot) return el; }
       return null;
     }
-    function focusOn(btn){
-      const posStr = btn.getAttribute('data-position');
-      if (!posStr) return;
-      mv.cameraTarget = posStr;
-      mv.cameraOrbit  = `0deg 90deg ${FOCUS_DIST}`;
+    mv.addEventListener('click', (e) => {
+      if (measuring.active) return; // se stai misurando, ignora hotspot
+      const path = e.composedPath ? e.composedPath() : [e.target];
+      const btn  = getHotspotBtnFromPath(path);
+      if (!btn) return;
+
+      const pos = btn.getAttribute('data-position');
+      const nor = btn.getAttribute('data-normal');
+      if (pos) mv.cameraTarget = pos;
+      if (nor) mv.cameraOrbit  = orbitFromNormal(nor);
       mv.fieldOfView  = `${FOCUS_FOV}deg`;
       mv.jumpCameraToGoal && mv.jumpCameraToGoal();
-    }
 
-    mv.addEventListener('click', (e) => {
-      const path = e.composedPath ? e.composedPath() : [e.target];
-      const id = getHotspotIdFromPath(path);
-      if (!id) return; // non hai cliccato un numero/bottone hotspot
-
-      const btn = getHotspotBtnFromPath(path);
-      if (btn) focusOn(btn);
-
+      const id  = btn.dataset.hotspot;
       const pop = mv.querySelector(`.popup[data-popup="${id}"]`);
-      if (pop) pop.classList.toggle('show');
+      if (pop){
+        pop.classList.toggle('show');
+        requestAnimationFrame(()=>nudgeIntoView(pop));
+      }
       e.stopPropagation();
     });
-
-    // chiudi popup cliccando altrove
     window.addEventListener('click', (e) => {
       if (!mv.contains(e.target)) return;
       mv.querySelectorAll('.popup.show').forEach(p => p.classList.remove('show'));
     });
-  </script>
 
-  <!-- Lettura coordinate per eventuali correzioni -->
-  <script>
+    // ---------- Misurazione A–B ----------
+    const btnMeasure = document.getElementById('btn-measure');
+    const btnMeasureReset = document.getElementById('btn-measure-reset');
+    const help = document.getElementById('measureHelp');
+    const dotA = mv.querySelector('[slot="hotspot-meas-a"]');
+    const dotB = mv.querySelector('[slot="hotspot-meas-b"]');
+    const label = document.getElementById('measureLabel');
+
+    const measuring = { active:false, step:0, A:null, B:null };
+
+    function setDot(el, p){ el.style.display='block'; el.setAttribute('data-position', `${p.x}m ${p.y}m ${p.z}m`); }
+    function midPoint(a,b){ return { x:(a.x+b.x)/2, y:(a.y+b.y)/2, z:(a.z+b.z)/2 }; }
+    function dist(a,b){ const dx=a.x-b.x, dy=a.y-b.y, dz=a.z-b.z; return Math.sqrt(dx*dx+dy*dy+dz*dz); }
+    function posToObj(str){ const [x,y,z]=str.split(' ').map(s=>parseFloat(s)); return {x,y,z}; }
+
+    function startMeasure(){
+      measuring.active = !measuring.active;
+      btnMeasure.classList.toggle('btn-on', measuring.active);
+      help.textContent = measuring.active ? 'Clicca punto A, poi punto B sulla mesh.' : 'Clicca due punti sulla mesh (A poi B).';
+      if (!measuring.active) return;
+      measuring.step = 0; measuring.A = null; measuring.B = null;
+      dotA.style.display='none'; dotB.style.display='none'; label.style.display='none';
+    }
+    function resetMeasure(){
+      measuring.active=false; measuring.step=0; measuring.A=measuring.B=null;
+      btnMeasure.classList.remove('btn-on');
+      help.textContent='Clicca due punti sulla mesh (A poi B).';
+      dotA.style.display='none'; dotB.style.display='none'; label.style.display='none';
+    }
+    btnMeasure.addEventListener('click', startMeasure);
+    btnMeasureReset.addEventListener('click', resetMeasure);
+
+    mv.addEventListener('click', function (ev) {
+      if (!measuring.active) return;
+
+      // ignora click su hotspot/popup
+      const path = ev.composedPath ? ev.composedPath() : [ev.target];
+      if (path.some(el => el && el.dataset && (el.dataset.hotspot || el.dataset.popup))) return;
+
+      const r = mv.getBoundingClientRect();
+      const x = ev.clientX - r.left, y = ev.clientY - r.top;
+      const hit = mv.positionAndNormalFromPoint(x, y);
+      if (!hit){ console.warn('Nessun punto rilevato'); return; }
+
+      const p = { x:+hit.position.x.toFixed(3), y:+hit.position.y.toFixed(3), z:+hit.position.z.toFixed(3) };
+
+      if (measuring.step === 0){
+        measuring.A = p; measuring.step = 1;
+        setDot(dotA, p);
+      } else {
+        measuring.B = p; measuring.step = 2;
+        setDot(dotB, p);
+        const d = dist(measuring.A, measuring.B);
+        // posizione label a metà
+        const m = midPoint(measuring.A, measuring.B);
+        label.setAttribute('data-position', `${m.x}m ${m.y}m ${m.z}m`);
+        label.textContent = d.toFixed(3) + ' m';
+        label.style.display='block';
+      }
+    });
+
+    // ---------- Lettura coordinate (console) ----------
     (function(){
-      var mv = document.getElementById('mv');
-      if(!mv) return;
       mv.addEventListener('click', function (ev) {
-        // ignora click sugli hotspot/popup
+        if (measuring.active) return; // non sporcare la console durante la misura
         const path = ev.composedPath ? ev.composedPath() : [ev.target];
         if (path.some(el => el && el.dataset && (el.dataset.hotspot || el.dataset.popup))) return;
-
         const r = mv.getBoundingClientRect();
         const x = ev.clientX - r.left, y = ev.clientY - r.top;
         const hit = mv.positionAndNormalFromPoint(x, y);
-        if(!hit){ console.warn('⚠️ Nessun punto rilevato: clicca sulla mesh'); return; }
+        if(!hit) return;
         const p = hit.position, n = hit.normal;
         const pos = p.x.toFixed(3)+'m '+p.y.toFixed(3)+'m '+p.z.toFixed(3)+'m';
         const nor = n.x.toFixed(3)+'m '+n.y.toFixed(3)+'m '+n.z.toFixed(3)+'m';
         console.log('data-position="'+pos+'"');
         console.log('data-normal="'+nor+'"');
+        // blocco pronto (puoi copiarlo dalla console)
+        console.log(`\n<!-- NUOVO HOTSPOT -->\n<button class="hotspot-btn" slot="hotspot-X"\n  data-position="${pos}"\n  data-normal="${nor}"\n  data-hotspot="hX"><span class="num">X</span></button>\n<div class="popup" slot="hotspot-X"\n  data-position="${pos}"\n  data-normal="${nor}"\n  data-popup="hX">Testo descrizione hotspot X</div>`);
       });
     })();
   </script>
