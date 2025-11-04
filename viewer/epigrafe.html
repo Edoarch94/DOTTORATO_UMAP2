@@ -2,21 +2,37 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Epigrafe Via Claudia Nova — Viewer 3D</title>
+  <title>Epigrafe di Peltuinum — Viewer 3D</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
     :root { --bg:#111; --ink:#e9e9e9; --muted:#b6b6b6; --card:#1b1b1b; --accent:#4ade80; }
     html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px}
+    .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:16px;padding:12px}
     model-viewer{
-      width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;
-      background:#111;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);outline:1px solid rgba(255,255,255,.06)
+      display:block;
+      width:min(96vw,1200px);
+      height:min(80vh,760px);
+      margin:0 auto 8px auto;           /* spazio sotto il viewer */
+      background:#111;
+      border-radius:14px;
+      box-shadow:0 8px 28px rgba(0,0,0,.45);
+      outline:1px solid rgba(255,255,255,.06)
     }
+    /* Il pannello è SEMPRE sotto e non si sovrappone */
     .panel{
-      width:min(96vw,1200px);margin:0 auto;background:var(--card);border-radius:12px;
-      box-shadow:0 6px 20px rgba(0,0,0,.35);padding:12px;display:grid;gap:10px;
-      grid-template-columns:repeat(6,1fr);align-items:center
+      position:static !important;
+      z-index:0 !important;
+      width:min(96vw,1200px);
+      margin:0 auto;
+      background:var(--card);
+      border-radius:12px;
+      box-shadow:0 6px 20px rgba(0,0,0,.35);
+      padding:12px;
+      display:grid;
+      gap:10px;
+      grid-template-columns:repeat(6,1fr);
+      align-items:center;
     }
     .group{display:flex;flex-direction:column;gap:6px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:10px}
     .row{display:flex;gap:8px;flex-wrap:wrap}
@@ -25,11 +41,15 @@
     button{appearance:none;border:0;border-radius:10px;padding:10px 12px;cursor:pointer;background:#2a2a2a;color:#fff;font-weight:600}
     .btn-accent{background:var(--accent);color:#0b2514}
     .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.2)}
-    .hotspot-btn{background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.35);padding:4px 6px;border-radius:6px;font-size:12px}
+    .hotspot-btn{
+      background:rgba(0,0,0,.65);
+      border:1px solid rgba(255,255,255,.35);
+      padding:4px 6px;border-radius:6px;font-size:12px;pointer-events:auto
+    }
     .popup{
       position:absolute;transform:translate(-50%,-110%);pointer-events:auto;
       background:rgba(20,20,20,.92);color:#fff;border:1px solid rgba(255,255,255,.25);
-      padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.35;max-width:220px;display:none;
+      padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.35;max-width:260px;display:none;
     }
     .popup.show{display:block}
     @media (max-width:900px){ .panel{grid-template-columns:repeat(3,1fr)} }
@@ -38,85 +58,78 @@
 </head>
 <body>
   <div class="wrap">
-    <!-- MODEL VIEWER -->
+
+    <!-- ====== VIEWER (sopra) ====== -->
     <model-viewer id="mv"
-      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=11"
-      orientation="0deg 90deg 0deg"
+      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=15"
+      orientation="-90deg 0deg 0deg"
       camera-controls
-      touch-action="pan-y"
       interaction-prompt="none"
+      touch-action="pan-y"
       auto-rotate auto-rotate-delay="0" auto-rotate-speed="20deg/s"
       environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
       shadow-intensity="0.9" exposure="1.15"
       bounds="tight" camera-target="auto"
       camera-orbit="0deg 90deg auto"
-      field-of-view="35deg"
-      min-field-of-view="20deg" max-field-of-view="90deg"
+      field-of-view="30deg" min-field-of-view="15deg" max-field-of-view="80deg"
       ar ar-modes="webxr scene-viewer quick-look">
 
-     <!-- HOTSPOT 1 -->
-<button class="hotspot-btn" slot="hotspot-1"
-  data-position="0.329m 0.282m -1.069m"
-  data-normal="0.063m -0.192m 0.979m"
-  data-hotspot="h1">1</button>
-<div class="popup" slot="hotspot-1"
-  data-position="0.329m 0.312m -1.069m"
-  data-normal="0.063m -0.192m 0.979m"
-  data-popup="h1">
-  <strong>Lettera S</strong><br>
-  In questo punto, in fase di stesura dell’epigrafe, l’errato calcolo dello spazio che avrebbe dovuto
-  occupare la riga di testo all’interno dello specchio epigrafico ha portato all’incisione della lettera
-  <em>S</em> al di sopra della cornice.
-</div>
+      <!-- HOTSPOT 1 -->
+      <button class="hotspot-btn" slot="hotspot-1"
+        data-position="0.329m 0.282m -1.069m"
+        data-normal="0.063m -0.192m 0.979m"
+        data-hotspot="h1">1</button>
+      <div class="popup" slot="hotspot-1"
+        data-position="0.329m 0.312m -1.069m"
+        data-normal="0.063m -0.192m 0.979m"
+        data-popup="h1">
+        <strong>Lettera S</strong><br>
+        In questo punto, in fase di stesura dell’epigrafe, l’errato calcolo dello spazio destinato alla riga
+        ha portato all’incisione della lettera <em>S</em> al di sopra della cornice.
+      </div>
 
-<!-- HOTSPOT 2 -->
-<button class="hotspot-btn" slot="hotspot-2"
-  data-position="0.328m -0.002m -1.065m"
-  data-normal="0.167m -0.022m 0.986m"
-  data-hotspot="h2">2</button>
-<div class="popup" slot="hotspot-2"
-  data-position="0.328m 0.028m -1.065m"
-  data-normal="0.167m -0.022m 0.986m"
-  data-popup="h2">
-  <strong>Lettera M</strong><br>
-  L’errato calcolo della dimensione dei caratteri rispetto alla lunghezza della riga ha portato
-  a un ravvicinamento delle lettere verso la fine dello specchio epigrafico e alla
-  <em>sbordatura sulla cornice</em> della lettera <em>M</em>.
-</div>
+      <!-- HOTSPOT 2 -->
+      <button class="hotspot-btn" slot="hotspot-2"
+        data-position="0.328m -0.002m -1.065m"
+        data-normal="0.167m -0.022m 0.986m"
+        data-hotspot="h2">2</button>
+      <div class="popup" slot="hotspot-2"
+        data-position="0.328m 0.028m -1.065m"
+        data-normal="0.167m -0.022m 0.986m"
+        data-popup="h2">
+        <strong>Lettera M</strong><br>
+        Verso la fine della riga le lettere risultano ravvicinate e la <em>M</em> sborda sulla cornice.
+      </div>
 
-<!-- HOTSPOT 3 -->
-<button class="hotspot-btn" slot="hotspot-3"
-  data-position="-0.120m -0.146m -1.014m"
-  data-normal="0.040m 0.075m 0.996m"
-  data-hotspot="h3">3</button>
-<div class="popup" slot="hotspot-3"
-  data-position="-0.120m -0.116m -1.014m"
-  data-normal="0.040m 0.075m 0.996m"
-  data-popup="h3">
-  <strong>ATTERNUM</strong><br>
-  La variante <em>ATTERNUM</em> (fiume Aterno), rispetto alla forma più comune <em>ATERNUM</em>,
-  si riscontra anche in un’altra iscrizione (rif. CIL IX 5979). Il raddoppio della <em>T</em> potrebbe
-  derivare da influsso osco-umbro (rafforzamento consonantico), da grafia ipercorretta o da una
-  tradizione “provinciale”.
-</div>
+      <!-- HOTSPOT 3 -->
+      <button class="hotspot-btn" slot="hotspot-3"
+        data-position="-0.120m -0.146m -1.014m"
+        data-normal="0.040m 0.075m 0.996m"
+        data-hotspot="h3">3</button>
+      <div class="popup" slot="hotspot-3"
+        data-position="-0.120m -0.116m -1.014m"
+        data-normal="0.040m 0.075m 0.996m"
+        data-popup="h3">
+        <strong>ATTERNUM</strong><br>
+        Variante con doppia <em>T</em> (rif. CIL IX 5979), forse per influsso osco-umbro o grafia ipercorretta.
+      </div>
 
-<!-- HOTSPOT 4 -->
-<button class="hotspot-btn" slot="hotspot-4"
-  data-position="0.379m 0.407m -1.076m"
-  data-normal="0.102m 0.021m 0.995m"
-  data-hotspot="h4">4</button>
-<div class="popup" slot="hotspot-4"
-  data-position="0.379m 0.437m -1.076m"
-  data-normal="0.102m 0.021m 0.995m"
-  data-popup="h4">
-  <strong>Materiale: supporto lapideo</strong><br>
-  Il supporto lapideo su cui è incisa l’iscrizione è una pietra calcarea; la colorazione rossastra è
-  particolarmente evidente nello specchio epigrafico e nella doppia cornice.
-</div>
+      <!-- HOTSPOT 4 -->
+      <button class="hotspot-btn" slot="hotspot-4"
+        data-position="0.379m 0.407m -1.076m"
+        data-normal="0.102m 0.021m 0.995m"
+        data-hotspot="h4">4</button>
+      <div class="popup" slot="hotspot-4"
+        data-position="0.379m 0.437m -1.076m"
+        data-normal="0.102m 0.021m 0.995m"
+        data-popup="h4">
+        <strong>Supporto lapideo</strong><br>
+        Pietra calcarea con marcata tonalità rossastra nello specchio epigrafico e nella doppia cornice.
+      </div>
+    </model-viewer>
 
-      
-    <!-- PANNELLO CONTROLLI -->
-    <div class="panel">
+    <!-- ====== PANNELLO (sotto) ====== -->
+    <div class="panel" role="region" aria-label="Controlli viewer">
       <div class="group">
         <label>Auto-rotate</label>
         <div class="row">
@@ -137,7 +150,7 @@
 
       <div class="group">
         <label>FOV (zoom)</label>
-        <input id="fov" type="range" min="20" max="90" step="1" value="35">
+        <input id="fov" type="range" min="15" max="80" step="1" value="30">
       </div>
 
       <div class="group">
@@ -151,6 +164,14 @@
       </div>
 
       <div class="group">
+        <label>Camera</label>
+        <div class="row">
+          <button id="btn-fit" class="btn-accent">Inquadra oggetto</button>
+          <button id="btn-reset" class="btn-ghost">Reset vista</button>
+        </div>
+      </div>
+
+      <div class="group">
         <label>Sfondo</label>
         <div class="row">
           <button class="btn-ghost bg" data-bg="dark">Dark</button>
@@ -159,27 +180,20 @@
           <button class="btn-ghost bg" data-bg="transparent">Transparent</button>
         </div>
       </div>
-
-      <div class="group">
-        <label>Camera</label>
-        <div class="row">
-          <button id="btn-reset" class="btn-ghost">Reset vista</button>
-        </div>
-      </div>
     </div>
   </div>
 
-  <!-- SCRIPT FUNZIONALE -->
   <script>
     const mv = document.getElementById('mv');
-    // Rotazione automatica
+
+    // Autorotate
     document.getElementById('btn-rot-on').addEventListener('click', () => {
       mv.autoRotate = true;
       mv.resetTurntableRotation && mv.resetTurntableRotation();
     });
     document.getElementById('btn-rot-off').addEventListener('click', () => mv.autoRotate = false);
 
-    // Slider
+    // Sliders
     document.getElementById('exp').addEventListener('input', e => mv.exposure = +e.target.value);
     document.getElementById('shadow').addEventListener('input', e => mv.shadowIntensity = +e.target.value);
     document.getElementById('fov').addEventListener('input', e => mv.fieldOfView = `${+e.target.value}deg`);
@@ -189,7 +203,7 @@
       const hdr = b.dataset.hdr; mv.environmentImage = hdr === 'none' ? 'none' : hdr;
     }));
 
-    // Sfondo
+    // Sfondo viewer
     const setBg = m => {
       if (m==='dark'){ mv.style.background='#111'; document.body.style.background='#111'; }
       else if (m==='light'){ mv.style.background='#f5f5f5'; document.body.style.background='#222'; }
@@ -198,11 +212,19 @@
     };
     document.querySelectorAll('.bg').forEach(b => b.addEventListener('click', () => setBg(b.dataset.bg)));
 
-    // Reset vista
+    // Fit & Reset
+    function fitModel() {
+      mv.cameraTarget = 'auto';
+      mv.cameraOrbit  = '0deg 90deg auto';
+      mv.fieldOfView  = '30deg';
+      mv.jumpCameraToGoal && mv.jumpCameraToGoal();
+    }
+    document.getElementById('btn-fit').addEventListener('click', fitModel);
     document.getElementById('btn-reset').addEventListener('click', () => {
-      mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='35deg'; mv.cameraTarget='auto'; mv.autoRotate=true;
-      mv.resetTurntableRotation && mv.resetTurntableRotation();
+      mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='30deg'; mv.cameraTarget='auto';
+      mv.autoRotate=true; mv.resetTurntableRotation && mv.resetTurntableRotation(); mv.jumpCameraToGoal && mv.jumpCameraToGoal();
     });
+    mv.addEventListener('load', fitModel);
 
     // Popup hotspot
     mv.addEventListener('click', (e) => {
@@ -218,45 +240,5 @@
       mv.querySelectorAll('.popup.show').forEach(p => p.classList.remove('show'));
     });
   </script>
-
-  <!-- SCRIPT PER LETTURA COORDINATE -->
-  <script>
-(function () {
-  var mv = document.getElementById('mv');
-  if (!mv) return;
-  var counter = 1;
-
-  mv.addEventListener('click', function (ev) {
-    // ignora click su hotspot/popup già presenti
-    var t = ev.composedPath()[0];
-    if (t && t.dataset && (t.dataset.hotspot || t.dataset.popup)) return;
-
-    var r = mv.getBoundingClientRect();
-    var x = ev.clientX - r.left;
-    var y = ev.clientY - r.top;
-
-    var hit = mv.positionAndNormalFromPoint(x, y);
-    if (!hit) { console.warn('⚠️ Nessun punto rilevato'); return; }
-
-    var p = hit.position, n = hit.normal;
-    var pos = p.x.toFixed(3)+'m '+p.y.toFixed(3)+'m '+p.z.toFixed(3)+'m';
-    var nor = n.x.toFixed(3)+'m '+n.y.toFixed(3)+'m '+n.z.toFixed(3)+'m';
-
-    var id = 'h' + counter;
-    var html = '\n<!-- HOTSPOT ' + counter + ' -->\n' +
-      '<button class="hotspot-btn" slot="hotspot-' + counter + '"\n' +
-      '  data-position="' + pos + '"\n' +
-      '  data-normal="' + nor + '"\n' +
-      '  data-hotspot="' + id + '">' + counter + '</button>\n' +
-      '<div class="popup" slot="hotspot-' + counter + '"\n' +
-      '  data-position="' + pos + '"\n' +
-      '  data-normal="' + nor + '"\n' +
-      '  data-popup="' + id + '">Descrizione hotspot ' + counter + '</div>';
-
-    console.log(html);
-    counter++;
-  });
-})();
-</script>
 </body>
 </html>
