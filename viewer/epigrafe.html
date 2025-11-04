@@ -22,34 +22,35 @@
     }
     .group{display:flex;flex-direction:column;gap:6px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:10px}
     .row{display:flex;gap:8px;flex-wrap:wrap}
-    label{font-size:12px;color:var(--muted)}
+    label{font-size:12px;color:#b9b9b9}
     input[type="range"]{width:100%}
     button{appearance:none;border:0;border-radius:10px;padding:10px 12px;cursor:pointer;background:#2a2a2a;color:#fff;font-weight:600}
     .btn-accent{background:var(--accent);color:#0b2514}
     .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.2)}
 
-    /* Hotspot: pallino blu numerato */
+    /* Hotspot: solo il cerchio è cliccabile */
     .hotspot-btn{
+      background:transparent;border:none;padding:0;margin:0;line-height:1;
       display:inline-flex;align-items:center;justify-content:center;
-      background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.35);
-      padding:4px 6px;border-radius:999px;line-height:1;box-shadow:0 2px 6px rgba(0,0,0,.35)
     }
     .hotspot-btn .num{
-      width:18px;height:18px;border-radius:50%;
+      width:22px;height:22px;border-radius:50%;
       display:inline-flex;align-items:center;justify-content:center;
-      background:#2b74ff;border:1px solid rgba(255,255,255,.65);
-      color:#fff;font-size:12px;font-weight:700
+      background:#2b74ff;border:1px solid rgba(255,255,255,.8);
+      color:#fff;font-size:12px;font-weight:800;
+      box-shadow:0 2px 6px rgba(0,0,0,.45);
+      pointer-events:auto; /* clic solo sul numero */
     }
 
-    /* Pannelli testo ampi */
+    /* Popup molto più ampio e leggibile */
     .popup{
-      position:absolute;transform:translate(-50%,-110%);pointer-events:auto;
-      background:rgba(22,22,22,.95);color:#fff;border:1px solid rgba(255,255,255,.28);
-      padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.45;
-      max-width:420px;display:none;box-shadow:0 10px 26px rgba(0,0,0,.45)
+      position:absolute;transform:translate(-50%,-112%);pointer-events:auto;
+      background:rgba(18,18,18,.97);color:#fff;border:1px solid rgba(255,255,255,.25);
+      padding:14px 16px;border-radius:12px;font-size:14px;line-height:1.6;
+      max-width:560px;display:none;box-shadow:0 18px 34px rgba(0,0,0,.55)
     }
     .popup.show{display:block}
-    .popup strong{font-weight:700}
+    .popup strong{font-weight:800}
     @media (max-width:900px){ .panel{grid-template-columns:repeat(3,1fr)} }
     @media (max-width:520px){ .panel{grid-template-columns:repeat(2,1fr)} }
   </style>
@@ -58,13 +59,10 @@
   <div class="wrap">
     <h1>Epigrafe Claudia Nova</h1>
 
-    <!-- MODEL-VIEWER (nessun commento dentro il tag!) -->
     <model-viewer id="mv"
-      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=1"
+      src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=2"
       orientation="0deg 90deg 0deg"
-      camera-controls
-      interaction-prompt="none"
-      touch-action="pan-y"
+      camera-controls interaction-prompt="none" touch-action="pan-y"
       auto-rotate auto-rotate-delay="0" auto-rotate-speed="20deg/s"
       environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
       shadow-intensity="0.9" exposure="1.15"
@@ -75,12 +73,12 @@
 
       <!-- HOTSPOT 1 -->
       <button class="hotspot-btn" slot="hotspot-1"
-        data-position="0.329m 0.282m -1.069m"
-        data-normal="0.063m -0.192m 0.979m"
+        data-position="0.280m 0.306m -1.067m"
+        data-normal="0.480m 0.379m 0.791m"
         data-hotspot="h1"><span class="num">1</span></button>
       <div class="popup" slot="hotspot-1"
-        data-position="0.329m 0.312m -1.069m"
-        data-normal="0.063m -0.192m 0.979m"
+        data-position="0.280m 0.336m -1.067m"
+        data-normal="0.480m 0.379m 0.791m"
         data-popup="h1">
         <strong>Lettera S</strong><br>
         In questo punto, in fase di stesura dell’epigrafe, l’errato calcolo dello spazio che avrebbe dovuto
@@ -90,12 +88,12 @@
 
       <!-- HOTSPOT 2 -->
       <button class="hotspot-btn" slot="hotspot-2"
-        data-position="0.328m -0.002m -1.065m"
-        data-normal="0.167m -0.022m 0.986m"
+        data-position="0.284m 0.033m -1.061m"
+        data-normal="0.453m 0.323m 0.831m"
         data-hotspot="h2"><span class="num">2</span></button>
       <div class="popup" slot="hotspot-2"
-        data-position="0.328m 0.028m -1.065m"
-        data-normal="0.167m -0.022m 0.986m"
+        data-position="0.284m 0.063m -1.061m"
+        data-normal="0.453m 0.323m 0.831m"
         data-popup="h2">
         <strong>Lettera M</strong><br>
         L’errato calcolo della dimensione dei caratteri rispetto alla lunghezza della riga ha portato
@@ -105,12 +103,12 @@
 
       <!-- HOTSPOT 3 -->
       <button class="hotspot-btn" slot="hotspot-3"
-        data-position="-0.120m -0.146m -1.014m"
-        data-normal="0.040m 0.075m 0.996m"
+        data-position="-0.192m -0.102m -1.009m"
+        data-normal="0.102m 0.135m 0.986m"
         data-hotspot="h3"><span class="num">3</span></button>
       <div class="popup" slot="hotspot-3"
-        data-position="-0.120m -0.116m -1.014m"
-        data-normal="0.040m 0.075m 0.996m"
+        data-position="-0.192m -0.072m -1.009m"
+        data-normal="0.102m 0.135m 0.986m"
         data-popup="h3">
         <strong>ATTERNUM</strong><br>
         La variante <em>ATTERNUM</em> (fiume Aterno), rispetto alla forma più comune <em>ATERNUM</em>,
@@ -120,12 +118,12 @@
 
       <!-- HOTSPOT 4 -->
       <button class="hotspot-btn" slot="hotspot-4"
-        data-position="0.379m 0.407m -1.076m"
-        data-normal="0.102m 0.021m 0.995m"
+        data-position="0.341m 0.449m -1.073m"
+        data-normal="0.081m -0.046m 0.996m"
         data-hotspot="h4"><span class="num">4</span></button>
       <div class="popup" slot="hotspot-4"
-        data-position="0.379m 0.437m -1.076m"
-        data-normal="0.102m 0.021m 0.995m"
+        data-position="0.341m 0.479m -1.073m"
+        data-normal="0.081m -0.046m 0.996m"
         data-popup="h4">
         <strong>Supporto lapideo</strong><br>
         Pietra calcarea con tonalità rossastra evidente nello specchio epigrafico e nella doppia cornice.
@@ -151,18 +149,26 @@
       <div class="group"><label>Camera</label>
         <div class="row"><button id="btn-fit" class="btn-accent">Inquadra oggetto</button><button id="btn-reset" class="btn-ghost">Reset vista</button></div>
       </div>
+      <div class="group"><label>Sfondo</label>
+        <div class="row">
+          <button class="btn-ghost bg" data-bg="dark">Nero</button>
+          <button class="btn-ghost bg" data-bg="light">Bianco</button>
+          <button class="btn-ghost bg" data-bg="transparent">Trasparente</button>
+          <button class="btn-ghost bg" data-bg="gradient">Gradiente</button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- SCRIPT FUNZIONALE -->
+  <!-- SCRIPT -->
   <script>
     const mv = document.getElementById('mv');
 
-    // Navigabilità & autorotate
+    // Autorotate
     document.getElementById('btn-rot-on').addEventListener('click', () => { mv.autoRotate = true; mv.resetTurntableRotation && mv.resetTurntableRotation(); });
     document.getElementById('btn-rot-off').addEventListener('click', () => mv.autoRotate = false);
 
-    // Slider
+    // Sliders
     document.getElementById('exp').addEventListener('input', e => mv.exposure = +e.target.value);
     document.getElementById('shadow').addEventListener('input', e => mv.shadowIntensity = +e.target.value);
     document.getElementById('fov').addEventListener('input', e => mv.fieldOfView = `${+e.target.value}deg`);
@@ -170,42 +176,74 @@
     // HDR
     document.querySelectorAll('.env').forEach(b => b.addEventListener('click', () => { const hdr=b.dataset.hdr; mv.environmentImage = hdr==='none' ? 'none' : hdr; }));
 
+    // Sfondi
+    const setBg = m => {
+      if (m==='dark'){ mv.style.background='#111'; document.body.style.background='#111'; }
+      else if (m==='light'){ mv.style.background='#f5f5f5'; document.body.style.background='#d9d9d9'; }
+      else if (m==='transparent'){ mv.style.background='transparent'; document.body.style.background='#111'; }
+      else if (m==='gradient'){ mv.style.background='radial-gradient(1200px 600px at 50% 10%, #2a2a2a, #0f0f0f)'; document.body.style.background='#111'; }
+    };
+    document.querySelectorAll('.bg').forEach(b => b.addEventListener('click', () => setBg(b.dataset.bg)));
+
     // Fit & Reset
     function fitModel(){ mv.cameraTarget='auto'; mv.cameraOrbit='0deg 90deg auto'; mv.jumpCameraToGoal && mv.jumpCameraToGoal(); }
     document.getElementById('btn-fit').addEventListener('click', fitModel);
     document.getElementById('btn-reset').addEventListener('click', () => { mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='28deg'; mv.cameraTarget='auto'; mv.autoRotate=true; mv.resetTurntableRotation && mv.resetTurntableRotation(); mv.jumpCameraToGoal && mv.jumpCameraToGoal(); });
     mv.addEventListener('load', fitModel);
 
-    // Hotspot: toggle popup
+    // --- Hotspot: apertura popup + zoom sul punto ---
+    const FOCUS_FOV = 22;        // FOV più stretto durante lo zoom
+    const FOCUS_DIST = '0.35m';  // distanza camera dal target durante lo zoom
+
+    function parsePos(str){ // "x m y m z m" -> "xm ym zm" numeri
+      const [x,y,z] = str.split(' ').map(s => parseFloat(s));
+      return {x, y, z};
+    }
+    function toPosStr(obj){ return `${obj.x}m ${obj.y}m ${obj.z}m`; }
+
+    function focusOnHotspot(btn){
+      // prendi la posizione dal bottone (uguale a quella del popup)
+      const posStr = btn.getAttribute('data-position');
+      if(!posStr) return;
+      mv.cameraTarget = posStr;
+      mv.cameraOrbit  = `0deg 90deg ${FOCUS_DIST}`;
+      mv.fieldOfView  = `${FOCUS_FOV}deg`;
+      mv.jumpCameraToGoal && mv.jumpCameraToGoal();
+    }
+
+    // Toggle popup e zoom quando si clicca il NUMERO
     mv.addEventListener('click', (e) => {
-      const t = e.composedPath()[0];
-      const id = t && t.dataset ? t.dataset.hotspot : null;
+      const el = e.composedPath()[0];
+      const id = el && el.dataset ? el.dataset.hotspot : null;
       if (!id) return;
+      focusOnHotspot(el);
       const pop = mv.querySelector(`.popup[data-popup="${id}"]`);
       if (pop) pop.classList.toggle('show');
       e.stopPropagation();
     });
+
+    // chiudi popup cliccando altrove dentro il viewer
     window.addEventListener('click', (e) => {
       if (!mv.contains(e.target)) return;
       mv.querySelectorAll('.popup.show').forEach(p => p.classList.remove('show'));
     });
   </script>
 
-  <!-- SCRIPT: lettura coordinate (clicca la mesh e guarda la Console) -->
+  <!-- (Facoltativo) Lettura coordinate: clicca la mesh e guarda la Console -->
   <script>
-    (function () {
+    (function(){
       var mv = document.getElementById('mv');
-      if (!mv) return;
+      if(!mv) return;
       mv.addEventListener('click', function (ev) {
-        var t = ev.composedPath()[0];
-        if (t && t.dataset && (t.dataset.hotspot || t.dataset.popup)) return; // ignora i bottoni già presenti
-        var r = mv.getBoundingClientRect();
-        var x = ev.clientX - r.left, y = ev.clientY - r.top;
-        var hit = mv.positionAndNormalFromPoint(x, y); // sincrono
-        if (!hit) { console.warn('⚠️ Nessun punto rilevato: clicca sulla mesh'); return; }
-        var p = hit.position, n = hit.normal;
-        var pos = p.x.toFixed(3)+'m '+p.y.toFixed(3)+'m '+p.z.toFixed(3)+'m';
-        var nor = n.x.toFixed(3)+'m '+n.y.toFixed(3)+'m '+n.z.toFixed(3)+'m';
+        const t = ev.composedPath()[0];
+        if (t && t.dataset && (t.dataset.hotspot || t.dataset.popup)) return; // ignora click sui bottoni
+        const r = mv.getBoundingClientRect();
+        const x = ev.clientX - r.left, y = ev.clientY - r.top;
+        const hit = mv.positionAndNormalFromPoint(x, y);
+        if(!hit){ console.warn('⚠️ Nessun punto rilevato: clicca sulla mesh'); return; }
+        const p = hit.position, n = hit.normal;
+        const pos = p.x.toFixed(3)+'m '+p.y.toFixed(3)+'m '+p.z.toFixed(3)+'m';
+        const nor = n.x.toFixed(3)+'m '+n.y.toFixed(3)+'m '+n.z.toFixed(3)+'m';
         console.log('data-position="'+pos+'"');
         console.log('data-normal="'+nor+'"');
       });
