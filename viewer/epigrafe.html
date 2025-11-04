@@ -185,23 +185,42 @@
 
   <!-- SCRIPT PER LETTURA COORDINATE -->
   <script>
-    (function () {
-      var mv = document.getElementById('mv');
-      if (!mv) return;
-      mv.addEventListener('click', function (ev) {
-        var rect = mv.getBoundingClientRect();
-        var x = ev.clientX - rect.left;
-        var y = ev.clientY - rect.top;
-        mv.positionAndNormalFromPoint(x, y).then(function (hit) {
-          if (!hit) return console.warn('Nessun punto rilevato');
-          var p = hit.position, n = hit.normal;
-          var pos = p.x.toFixed(3)+'m '+p.y.toFixed(3)+'m '+p.z.toFixed(3)+'m';
-          var nor = n.x.toFixed(3)+'m '+n.y.toFixed(3)+'m '+n.z.toFixed(3)+'m';
-          console.log('data-position="'+pos+'"');
-          console.log('data-normal="'+nor+'"');
-        }).catch(function (err){ console.error(err); });
-      });
-    })();
-  </script>
+(function () {
+  var mv = document.getElementById('mv');
+  if (!mv) return;
+  var counter = 1;
+
+  mv.addEventListener('click', function (ev) {
+    // ignora click su hotspot/popup già presenti
+    var t = ev.composedPath()[0];
+    if (t && t.dataset && (t.dataset.hotspot || t.dataset.popup)) return;
+
+    var r = mv.getBoundingClientRect();
+    var x = ev.clientX - r.left;
+    var y = ev.clientY - r.top;
+
+    var hit = mv.positionAndNormalFromPoint(x, y);
+    if (!hit) { console.warn('⚠️ Nessun punto rilevato'); return; }
+
+    var p = hit.position, n = hit.normal;
+    var pos = p.x.toFixed(3)+'m '+p.y.toFixed(3)+'m '+p.z.toFixed(3)+'m';
+    var nor = n.x.toFixed(3)+'m '+n.y.toFixed(3)+'m '+n.z.toFixed(3)+'m';
+
+    var id = 'h' + counter;
+    var html = '\n<!-- HOTSPOT ' + counter + ' -->\n' +
+      '<button class="hotspot-btn" slot="hotspot-' + counter + '"\n' +
+      '  data-position="' + pos + '"\n' +
+      '  data-normal="' + nor + '"\n' +
+      '  data-hotspot="' + id + '">' + counter + '</button>\n' +
+      '<div class="popup" slot="hotspot-' + counter + '"\n' +
+      '  data-position="' + pos + '"\n' +
+      '  data-normal="' + nor + '"\n' +
+      '  data-popup="' + id + '">Descrizione hotspot ' + counter + '</div>';
+
+    console.log(html);
+    counter++;
+  });
+})();
+</script>
 </body>
 </html>
