@@ -176,7 +176,7 @@
 
     const pos=btn.getAttribute('data-position'), nor=btn.getAttribute('data-normal');
     // zoom adattivo
-    const R = adaptiveRadius();
+    const R = adaptiveRadius(radius * 0.30 min 0.15, max 0.50);
     if(pos) mv.cameraTarget = pos;
     if(nor) mv.cameraOrbit  = orbitFromNormal(nor, R);
     mv.fieldOfView = `${FOCUS_FOV}deg`;
