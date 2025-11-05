@@ -124,7 +124,7 @@
 (() => {
   const mv = document.getElementById('mv');
 
-  /* ====== RIFERIMENTI UI ====== */
+  // ----- RIFERIMENTI UI
   const rotOn = document.getElementById('rotOn');
   const rotOff = document.getElementById('rotOff');
   const exp = document.getElementById('exp');
@@ -143,24 +143,20 @@
   const dotB = mv.querySelector('[slot="hotspot-meas-b"]');
   const mlab = document.getElementById('mlab');
 
-  /* ====== HELPER ====== */
+  // ----- HELPERS
   const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
-  const rad2deg = r=> r*180/Math.PI;
 
-  // Distanza adattiva per lo zoom close-up
   function adaptiveRadius(){
     const o = mv.getCameraOrbit ? mv.getCameraOrbit() : {radius: 0.6};
     return clamp(o.radius * 0.35, 0.18, 0.60);
   }
 
-  // Setta orbita frontale: stessa θ dell’utente (convertita in gradi), φ=90°, r adattivo
-function frontalOrbit(){
-  const o = mv.getCameraOrbit ? mv.getCameraOrbit() : {theta: 0, radius: 0.6};
-  const thetaDeg = (typeof o.theta === 'string') ? parseFloat(o.theta) : (o.theta * 180/Math.PI);
-  const r = adaptiveRadius();
-  return `${thetaDeg.toFixed(1)}deg 90deg ${r.toFixed(3)}m`;
-}
-
+  // θ corrente (in gradi) + φ=90° (fronte) + r adattivo
+  function frontalOrbit(){
+    const o = mv.getCameraOrbit ? mv.getCameraOrbit() : {theta: 0, radius: 0.6};
+    const thetaDeg = (typeof o.theta === 'string') ? parseFloat(o.theta) : (o.theta * 180/Math.PI);
+    const r = adaptiveRadius();
+    return `${thetaDeg.toFixed(1)}deg 90deg ${r.toFixed(3)}m`;
   }
 
   function sideFor(x){
@@ -179,10 +175,10 @@ function frontalOrbit(){
   function closeOthers(except){ mv.querySelectorAll('.popup.show').forEach(p=>{ if(p!==except) p.classList.remove('show'); }); }
   function hotspotBtnFromPath(path){ for(const el of path){ if(el?.dataset?.hotspot) return el; } return null; }
 
-  /* ====== CONTROLLI BASE ====== */
+  // ----- CONTROLLI BASE
   function refreshRot(){ rotOn.classList.toggle('on', !!mv.autoRotate); rotOff.classList.toggle('on', !mv.autoRotate); }
-  rotOn.onclick=()=>{ mv.autoRotate=true;  mv.resetTurntableRotation?.(); refreshRot(); };
-  rotOff.onclick=()=>{ mv.autoRotate=false;                     refreshRot(); };
+  rotOn.onclick=()=>{ mv.autoRotate=true;  mv.resetTurntableRotation?.(); refreshRot(); console.log('autorotate: ON'); };
+  rotOff.onclick=()=>{ mv.autoRotate=false;                     refreshRot(); console.log('autorotate: OFF'); };
   mv.addEventListener('load', refreshRot);
 
   exp.oninput    = e => mv.exposure        = +e.target.value;
@@ -195,19 +191,18 @@ function frontalOrbit(){
     mv.style.background            = (m==='light')?'#f5f5f5':(m==='transparent')?'transparent':'#111';
   });
 
-  fitBtn.onclick = ()=>{ mv.cameraTarget='auto'; mv.cameraOrbit='0deg 90deg auto'; mv.jumpCameraToGoal?.(); };
+  fitBtn.onclick   = ()=>{ mv.cameraTarget='auto'; mv.cameraOrbit='0deg 90deg auto'; mv.jumpCameraToGoal?.(); };
   resetBtn.onclick = ()=>{ mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='28deg'; mv.cameraTarget='auto'; mv.autoRotate=true; mv.resetTurntableRotation?.(); mv.jumpCameraToGoal?.(); refreshRot(); };
 
-  /* ====== HOTSPOT: ZOOM ADATTIVO & POPUP UNICO ====== */
+  // ----- HOTSPOT: zoom frontale adattivo + popup unico
   const FOCUS_FOV = 22;
   mv.addEventListener('click',(ev)=>{
-    if (measuring.active || hotspotMode.active) return;      // quando misuri o catturi hotspot: niente
     const btn = hotspotBtnFromPath(ev.composedPath());
-    if (!btn) return;
+    if (!btn) return; // non è un hotspot
 
     const pos = btn.getAttribute('data-position');
     if (pos) mv.cameraTarget = pos;
-    mv.cameraOrbit = frontalOrbit();                         // frontale, raggio adattivo
+    mv.cameraOrbit = frontalOrbit();     // vista frontale
     mv.fieldOfView = `${FOCUS_FOV}deg`;
     mv.jumpCameraToGoal?.();
 
@@ -224,7 +219,7 @@ function frontalOrbit(){
   });
   window.addEventListener('click', (e)=>{ if(!mv.contains(e.target)) return; closeOthers(null); });
 
-  /* ====== MISURAZIONE A–B (robusta) ====== */
+  // ----- MISURAZIONE A–B (con fallback devicePixelRatio)
   const measuring = { active:false, step:0, A:null, B:null };
   function setHotspot(el,p){ el.style.display='block'; el.setAttribute('data-position', `${p.x}m ${p.y}m ${p.z}m`); }
   const mid  = (a,b)=>({ x:(a.x+b.x)/2, y:(a.y+b.y)/2, z:(a.z+b.z)/2 });
@@ -246,14 +241,20 @@ function frontalOrbit(){
   mv.addEventListener('click', (ev)=>{
     if (!measuring.active) return;
 
-    // ignora click su hotspot/popup
+    // evita click su hotspot/popup
     const path=ev.composedPath();
     if (path.some(el => el?.dataset?.hotspot || el?.dataset?.popup)) return;
 
     const r=mv.getBoundingClientRect();
-    const x=ev.clientX - r.left, y=ev.clientY - r.top;
+    // CSS pixels
+    let x=ev.clientX - r.left, y=ev.clientY - r.top;
 
-    const hit = mv.positionAndNormalFromPoint(x,y);
+    // Fallback: alcuni setup richiedono device pixels
+    let hit = mv.positionAndNormalFromPoint(x,y);
+    if (!hit && window.devicePixelRatio){
+      hit = mv.positionAndNormalFromPoint(x*window.devicePixelRatio, y*window.devicePixelRatio);
+    }
+
     if (!hit){ console.warn('Nessun punto (clicca sulla pietra)'); return; }
 
     const p={ x:+hit.position.x.toFixed(3), y:+hit.position.y.toFixed(3), z:+hit.position.z.toFixed(3) };
@@ -267,58 +268,6 @@ function frontalOrbit(){
       mlab.textContent = d.toFixed(3)+' m';
       mlab.style.display='block';
     }
-  });
-
-  /* ====== MODALITÀ "CATTURA HOTSPOT" (niente prompt) ======
-     – premi H per ON/OFF; quando è attiva, ogni click (fuori dai numeri)
-       stampa in Console il BLOCCO HTML pronto-copia (button+popup).
-  ========================================================== */
-  const hotspotMode = { active:false };
-  // piccolo badge discreto
-  const badge = document.createElement('div');
-  badge.textContent = 'HOTSPOT MODE';
-  Object.assign(badge.style, {
-    position:'fixed', top:'8px', left:'8px', padding:'6px 8px',
-    background:'rgba(14,165,233,.12)', color:'#93c5fd',
-    border:'1px solid rgba(147,197,253,.35)', font:'600 12px/1.2 system-ui',
-    borderRadius:'8px', display:'none', zIndex:9999, pointerEvents:'none'
-  });
-  document.body.appendChild(badge);
-
-  function toggleHotspotMode(){
-    hotspotMode.active = !hotspotMode.active;
-    badge.style.display = hotspotMode.active ? 'block' : 'none';
-    console.log(hotspotMode.active ? '🟦 Hotspot mode ON — clicca la pietra per ottenere il blocco HTML.' : '⬛ Hotspot mode OFF');
-  }
-  window.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='h') toggleHotspotMode(); });
-
-  mv.addEventListener('click', (ev)=>{
-    if (!hotspotMode.active || measuring.active) return;
-    const path=ev.composedPath();
-    if (path.some(el => el?.dataset?.hotspot || el?.dataset?.popup)) return;
-
-    const r=mv.getBoundingClientRect(), x=ev.clientX - r.left, y=ev.clientY - r.top;
-    const hit = mv.positionAndNormalFromPoint(x,y); if(!hit){ console.warn('Clicca la mesh'); return; }
-    const p=hit.position, n=hit.normal;
-    const pos=`${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m`;
-    const nor=`${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m`;
-    const next = (Array.from(mv.querySelectorAll('.hotspot-btn')).length + 1);
-
-    const block = `<!-- HOTSPOT ${next} -->
-<button class="hotspot-btn" slot="hotspot-${next}"
-  data-position="${pos}"
-  data-normal="${nor}"
-  data-hotspot="h${next}"><span class="num">${next}</span></button>
-<div class="popup right" slot="hotspot-${next}"
-  data-position="${pos}"
-  data-normal="${nor}"
-  data-popup="h${next}">
-  <strong>Titolo</strong><br>
-  Testo descrizione hotspot ${next}.
-</div>`;
-
-    console.clear();
-    console.log('Copia e incolla nel tuo HTML:\n\n'+block);
   });
 
 })();
