@@ -109,10 +109,10 @@
 </div>
 
 <script>
-(function(){
+(() => {
   const mv = document.getElementById('mv');
 
-  /* ======= UI refs ======= */
+  /* ===== RIFERIMENTI UI ===== */
   const rotOn=document.getElementById('rotOn'), rotOff=document.getElementById('rotOff');
   const exp=document.getElementById('exp'), shadow=document.getElementById('shadow'), fov=document.getElementById('fov');
   const envBtns=document.querySelectorAll('.env'), bgBtns=document.querySelectorAll('.bg');
@@ -120,14 +120,39 @@
   const measureBtn=document.getElementById('measure'), measureReset=document.getElementById('measureReset'), mhelp=document.getElementById('mhelp');
   const dotA=mv.querySelector('[slot="hotspot-meas-a"]'), dotB=mv.querySelector('[slot="hotspot-meas-b"]'), mlab=document.getElementById('mlab');
 
-  /* ======= helpers ======= */
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), rad2deg=r=>r*180/Math.PI;
-  function orbitFromNormal(nstr){ const [nx,ny,nz]=nstr.split(' ').map(Number); const L=Math.hypot(nx,ny,nz)||1, ux=nx/L, uy=ny/L, uz=nz/L; const th=rad2deg(Math.atan2(ux,uz)), ph=rad2deg(Math.acos(clamp(uy,-1,1))); return `${th.toFixed(1)}deg ${ph.toFixed(1)}deg 0.35m`; }
-  function sideFor(x){ const c=mv.getBoundingClientRect().left + mv.clientWidth/2; return (x<c)?'right':'left'; }
-  function nudge(pop){ pop.style.setProperty('--dx','0px'); pop.style.setProperty('--dy','0px'); const pad=12, r=pop.getBoundingClientRect(); let dx=0,dy=0; if(r.left<pad)dx=pad-r.left; if(r.right>innerWidth-pad)dx=(innerWidth-pad)-r.right; if(r.top<pad)dy=pad-r.top; if(r.bottom>innerHeight-pad)dy=(innerHeight-pad)-r.bottom; pop.style.setProperty('--dx',dx+'px'); pop.style.setProperty('--dy',dy+'px'); }
-  function closeOthers(except){ mv.querySelectorAll('.popup.show').forEach(p=>{ if(p!==except) p.classList.remove('show'); }); }
+  /* ===== HELPER MATH ===== */
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), rad2deg=r=> r*180/Math.PI;
 
-  /* ======= base controls ======= */
+  // orbit dalla normale (FRONTALE)
+  function orbitFromNormal(nstr, radiusM){
+    const [nx,ny,nz]=nstr.split(' ').map(Number);
+    const L=Math.hypot(nx,ny,nz)||1, ux=nx/L, uy=ny/L, uz=nz/L;
+    const theta = rad2deg(Math.atan2(ux, uz));
+    const phi   = rad2deg(Math.acos(clamp(uy, -1, 1)));
+    return `${theta.toFixed(1)}deg ${phi.toFixed(1)}deg ${radiusM.toFixed(3)}m`;
+  }
+
+  // distanza adattiva: riduci il raggio attuale (0.35×) ma non meno di 0.18m e non più di 0.60m
+  function adaptiveRadius(){
+    const {radius} = mv.getCameraOrbit ? mv.getCameraOrbit() : {radius: 1};
+    return clamp(radius * 0.35, 0.18, 0.60);
+  }
+
+  // lato popup (destra/sinistra) e anti-clipping
+  function sideFor(x){ const c=mv.getBoundingClientRect().left + mv.clientWidth/2; return (x<c)?'right':'left'; }
+  function nudge(pop){
+    pop.style.setProperty('--dx','0px'); pop.style.setProperty('--dy','0px');
+    const pad=12, r=pop.getBoundingClientRect(); let dx=0,dy=0;
+    if(r.left<pad)dx=pad-r.left;
+    if(r.right>innerWidth-pad)dx=(innerWidth-pad)-r.right;
+    if(r.top<pad)dy=pad-r.top;
+    if(r.bottom>innerHeight-pad)dy=(innerHeight-pad)-r.bottom;
+    pop.style.setProperty('--dx',dx+'px'); pop.style.setProperty('--dy',dy+'px');
+  }
+  function closeOthers(except){ mv.querySelectorAll('.popup.show').forEach(p=>{ if(p!==except) p.classList.remove('show'); }); }
+  function hotspotBtnFromPath(path){ for(const el of path){ if(el?.dataset?.hotspot) return el; } return null; }
+
+  /* ===== BASE CONTROLLI ===== */
   function refreshRot(){ rotOn.classList.toggle('on',!!mv.autoRotate); rotOff.classList.toggle('on',!mv.autoRotate); }
   rotOn.onclick=()=>{ mv.autoRotate=true; mv.resetTurntableRotation?.(); refreshRot(); };
   rotOff.onclick=()=>{ mv.autoRotate=false; refreshRot(); };
@@ -142,56 +167,103 @@
   fitBtn.onclick=()=>{ mv.cameraTarget='auto'; mv.cameraOrbit='0deg 90deg auto'; mv.jumpCameraToGoal?.(); };
   resetBtn.onclick=()=>{ mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='28deg'; mv.cameraTarget='auto'; mv.autoRotate=true; mv.resetTurntableRotation?.(); mv.jumpCameraToGoal?.(); refreshRot(); };
 
-  /* ======= hotspot click (zoom + popup laterale, uno per volta) ======= */
-  const FOCUS_FOV=22;
+  /* ===== HOTSPOT: ZOOM ADATTIVO + POPUP UNICO ===== */
+  const FOCUS_FOV=22; // fov stretto per close-up
   mv.addEventListener('click',(ev)=>{
     if(measuring.active) return;
-    const btn = ev.composedPath().find(el=>el?.dataset?.hotspot);
+    const btn = hotspotBtnFromPath(ev.composedPath());
     if(!btn) return;
 
     const pos=btn.getAttribute('data-position'), nor=btn.getAttribute('data-normal');
-    if(pos) mv.cameraTarget=pos; if(nor) mv.cameraOrbit=orbitFromNormal(nor);
-    mv.fieldOfView=`${FOCUS_FOV}deg`; mv.jumpCameraToGoal?.();
+    // zoom adattivo
+    const R = adaptiveRadius();
+    if(pos) mv.cameraTarget = pos;
+    if(nor) mv.cameraOrbit  = orbitFromNormal(nor, R);
+    mv.fieldOfView = `${FOCUS_FOV}deg`;
+    mv.jumpCameraToGoal?.();
 
+    // popup laterale (chiudi gli altri)
     const pop=mv.querySelector(`.popup[data-popup="${btn.dataset.hotspot}"]`);
     if(pop){
-      pop.classList.remove('left','right'); pop.classList.add(sideFor(ev.clientX));
-      const willOpen=!pop.classList.contains('show'); closeOthers(pop);
-      if(willOpen){ pop.classList.add('show'); requestAnimationFrame(()=>nudge(pop)); } else pop.classList.remove('show');
+      pop.classList.remove('left','right');
+      pop.classList.add(sideFor(ev.clientX));
+      const willOpen = !pop.classList.contains('show');
+      closeOthers(pop);
+      if(willOpen){ pop.classList.add('show'); requestAnimationFrame(()=>nudge(pop)); }
+      else pop.classList.remove('show');
     }
     ev.stopPropagation();
   });
-  window.addEventListener('click',e=>{ if(!mv.contains(e.target)) return; closeOthers(null); });
+  window.addEventListener('click', e => { if(!mv.contains(e.target)) return; closeOthers(null); });
 
-  /* ======= misura A–B ======= */
+  /* ===== MISURAZIONE A–B (fix) ===== */
   const measuring={active:false, step:0, A:null, B:null};
   function setHotspot(el,p){ el.style.display='block'; el.setAttribute('data-position',`${p.x}m ${p.y}m ${p.z}m`); }
-  function mid(a,b){ return {x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2} }
-  function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y, a.z-b.z) }
+  const mid=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2});
+  const dist=(a,b)=>Math.hypot(a.x-b.x, a.y-b.y, a.z-b.z);
   function updMeasureUI(){ measureBtn.classList.toggle('on',measuring.active); mhelp.textContent = measuring.active?'Clicca A poi B sulla mesh.':'Clicca due punti sulla mesh (A poi B).'; }
+
   measureBtn.onclick=()=>{ measuring.active=!measuring.active; measuring.step=0; measuring.A=measuring.B=null; dotA.style.display='none'; dotB.style.display='none'; mlab.style.display='none'; updMeasureUI(); };
   measureReset.onclick=()=>{ measuring.active=false; measuring.step=0; measuring.A=measuring.B=null; dotA.style.display='none'; dotB.style.display='none'; mlab.style.display='none'; updMeasureUI(); };
 
-  mv.addEventListener('click',ev=>{
+  mv.addEventListener('click', (ev)=>{
     if(!measuring.active) return;
-    if(ev.composedPath().some(el=>el?.dataset?.hotspot || el?.dataset?.popup)) return;
-    const r=mv.getBoundingClientRect(), x=ev.clientX-r.left, y=ev.clientY-r.top;
-    const hit = mv.positionAndNormalFromPoint(x,y); if(!hit){ console.warn('Clicca sulla mesh'); return; }
-    const p={x:+hit.position.x.toFixed(3), y:+hit.position.y.toFixed(3), z:+hit.position.z.toFixed(3)};
-    if(measuring.step===0){ measuring.A=p; measuring.step=1; setHotspot(dotA,p); }
-    else{ measuring.B=p; measuring.step=0; setHotspot(dotB,p); const d=dist(measuring.A,measuring.B), m=mid(measuring.A,measuring.B); mlab.setAttribute('data-position',`${m.x}m ${m.y}m ${m.z}m`); mlab.textContent=d.toFixed(3)+' m'; mlab.style.display='block'; }
+
+    // ignora click su hotspot/popup/label
+    const path=ev.composedPath();
+    if (path.some(el => el?.dataset?.hotspot || el?.dataset?.popup)) return;
+
+    const r=mv.getBoundingClientRect();
+    const x=ev.clientX - r.left, y=ev.clientY - r.top;
+
+    // prendi punto SOLO se colpisci la mesh
+    const hit = mv.positionAndNormalFromPoint(x,y);
+    if(!hit){ console.warn('Clicca sulla mesh (nessun hit)'); return; }
+
+    const p={ x:+hit.position.x.toFixed(3), y:+hit.position.y.toFixed(3), z:+hit.position.z.toFixed(3) };
+
+    if(measuring.step===0){
+      measuring.A=p; measuring.step=1; setHotspot(dotA,p);
+    } else {
+      measuring.B=p; measuring.step=0; setHotspot(dotB,p);
+      const d=dist(measuring.A,measuring.B), m=mid(measuring.A,measuring.B);
+      mlab.setAttribute('data-position',`${m.x}m ${m.y}m ${m.z}m`);
+      mlab.textContent=d.toFixed(3)+' m';
+      mlab.style.display='block';
+    }
   });
 
-  /* ======= logger coordinate per nuovi hotspot ======= */
-  mv.addEventListener('click',ev=>{
+  /* ===== LOGGER: BLOCCO PRONTO-COPIA PER NUOVI HOTSPOT =====
+     (clicca sulla pietra quando NON stai misurando e NON clicchi un numero)
+  ============================================================ */
+  mv.addEventListener('click', (ev)=>{
     if(measuring.active) return;
-    if(ev.composedPath().some(el=>el?.dataset?.hotspot || el?.dataset?.popup)) return;
+    const path=ev.composedPath();
+    if (path.some(el => el?.dataset?.hotspot || el?.dataset?.popup)) return;
+
     const r=mv.getBoundingClientRect(), x=ev.clientX-r.left, y=ev.clientY-r.top;
     const hit = mv.positionAndNormalFromPoint(x,y); if(!hit) return;
     const p=hit.position, n=hit.normal;
-    console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"`);
-    console.log(`data-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
+    const pos=`${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m`;
+    const nor=`${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m`;
+    const id = prompt('ID numerico per il nuovo hotspot (es. 5)?', 'X') || 'X';
+    const block = `<!-- HOTSPOT ${id} -->
+<button class="hotspot-btn" slot="hotspot-${id}"
+  data-position="${pos}"
+  data-normal="${nor}"
+  data-hotspot="h${id}"><span class="num">${id}</span></button>
+<div class="popup right" slot="hotspot-${id}"
+  data-position="${pos}"
+  data-normal="${nor}"
+  data-popup="h${id}">
+  <strong>Titolo</strong><br>
+  Testo descrizione hotspot ${id}.
+</div>`;
+    console.clear();
+    console.log('Copia e incolla nel tuo HTML:');
+    console.log(block);
   });
+
 })();
 </script>
 </body>
