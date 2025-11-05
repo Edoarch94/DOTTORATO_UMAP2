@@ -153,12 +153,14 @@
     return clamp(o.radius * 0.35, 0.18, 0.60);
   }
 
-  // Setta orbita "frontale": stessa θ dell’utente, φ=90°, r = adattivo
-  function frontalOrbit(){
-    const o = mv.getCameraOrbit ? mv.getCameraOrbit() : {theta: '0deg'};
-    const r = adaptiveRadius();
-    const theta = (typeof o.theta === 'string') ? o.theta : `${o.theta}deg`;
-    return `${theta} 90deg ${r.toFixed(3)}m`;
+  // Setta orbita frontale: stessa θ dell’utente (convertita in gradi), φ=90°, r adattivo
+function frontalOrbit(){
+  const o = mv.getCameraOrbit ? mv.getCameraOrbit() : {theta: 0, radius: 0.6};
+  const thetaDeg = (typeof o.theta === 'string') ? parseFloat(o.theta) : (o.theta * 180/Math.PI);
+  const r = adaptiveRadius();
+  return `${thetaDeg.toFixed(1)}deg 90deg ${r.toFixed(3)}m`;
+}
+
   }
 
   function sideFor(x){
