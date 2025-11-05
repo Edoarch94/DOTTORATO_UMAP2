@@ -229,11 +229,12 @@
     updMeasureUI();
   };
 
-  /* ====== CANVAS E PICKING ====== */
+  /* ====== CANVAS & PICKING ROBUSTI ====== */
   function getCanvas(){ return mv.shadowRoot && mv.shadowRoot.querySelector('canvas'); }
 
   function getHitFromEvent(ev){
     const cvs=getCanvas();
+    // 1) prova sul canvas (se esiste)
     if(cvs){
       const r=cvs.getBoundingClientRect();
       let x=ev.clientX-r.left, y=ev.clientY-r.top;
@@ -241,26 +242,27 @@
       if(!hit && window.devicePixelRatio)
         hit=mv.positionAndNormalFromPoint(x*devicePixelRatio,y*devicePixelRatio);
       return hit;
-    } else {
-      const r=mv.getBoundingClientRect();
-      let x=ev.clientX-r.left, y=ev.clientY-r.top;
-      let hit=mv.positionAndNormalFromPoint(x,y);
-      if(!hit && window.devicePixelRatio)
-        hit=mv.positionAndNormalFromPoint(x*devicePixelRatio,y*devicePixelRatio);
-      return hit;
     }
+    // 2) fallback sul tag <model-viewer>
+    const r=mv.getBoundingClientRect();
+    let x=ev.clientX-r.left, y=ev.clientY-r.top;
+    let hit=mv.positionAndNormalFromPoint(x,y);
+    if(!hit && window.devicePixelRatio)
+      hit=mv.positionAndNormalFromPoint(x*devicePixelRatio,y*devicePixelRatio);
+    return hit;
   }
 
+  // bind dei listener quando il canvas ESISTE (con retry + observer)
   function bindCanvasHandlers(){
     const cvs=getCanvas(); if(!cvs) return false;
-    if(cvs.__bound) return true; cvs.__bound=true;
+    if(cvs.__bound) return true; // già fatto
+    cvs.__bound = true;
 
-    // ---- Misurazione
+    // Misura sul canvas
     cvs.addEventListener('pointerdown',(ev)=>{
       if(!measuring.active) return;
       const hit=getHitFromEvent(ev);
       if(!hit){ console.warn('Nessun punto (clicca sulla pietra)'); return; }
-
       const p={x:+hit.position.x.toFixed(3), y:+hit.position.y.toFixed(3), z:+hit.position.z.toFixed(3)};
       if(measuring.step===0){
         measuring.A=p; measuring.step=1; setHotspot(dotA,p);
@@ -272,9 +274,9 @@
         mlab.setAttribute('data-position',`${m.x}m ${m.y}m ${m.z}m`);
         mlab.textContent=d.toFixed(3)+' m'; mlab.style.display='block';
       }
-    });
+    }, {capture:true});
 
-    // ---- Hotspot mode
+    // Hotspot mode (H) sul canvas
     cvs.addEventListener('pointerdown',(ev)=>{
       if(!hotspotMode.active || measuring.active) return;
       const hit=getHitFromEvent(ev);
@@ -296,11 +298,28 @@
   Testo descrizione hotspot ${next}.
 </div>`;
       console.clear(); console.log('Copia e incolla nel tuo HTML:\n\n'+block);
-    });
+    }, {capture:true});
+
+    console.log('✔ Listener canvas agganciati');
     return true;
   }
 
-  /* ====== HOTSPOT MODE ====== */
+  // tentativi di bind: subito, al load, via observer e con retry loop
+  function ensureBindOnce(){
+    if (bindCanvasHandlers()) clearInterval(bindTimer);
+  }
+  let bindTimer = setInterval(ensureBindOnce, 250);       // retry fino a 10s
+  setTimeout(()=>clearInterval(bindTimer), 10000);
+
+  mv.addEventListener('load', ensureBindOnce);
+
+  const obs = new MutationObserver(()=> bindCanvasHandlers());
+  if (mv.shadowRoot) obs.observe(mv.shadowRoot, {childList:true, subtree:true});
+
+  // una botta se già pronto
+  bindCanvasHandlers();
+
+  /* ====== HOTSPOT MODE (H) ====== */
   const hotspotMode={active:false};
   const badge=document.createElement('div');
   badge.textContent='HOTSPOT MODE';
@@ -317,16 +336,7 @@
     badge.style.display=hotspotMode.active?'block':'none';
     console.log(hotspotMode.active?'🟦 Hotspot mode ON — clicca la pietra per ottenere il blocco HTML.':'⬛ Hotspot mode OFF');
   }
-  window.addEventListener('keydown',(e)=>{if(e.key.toLowerCase()==='h')toggleHotspotMode();});
-
-  /* ====== ASSICURA BIND CANVAS (anche se ricreato) ====== */
-  mv.addEventListener('load',()=>{
-    bindCanvasHandlers();
-    const mo=new MutationObserver(()=>bindCanvasHandlers());
-    if(mv.shadowRoot) mo.observe(mv.shadowRoot,{childList:true,subtree:true});
-    setTimeout(bindCanvasHandlers,100);
-    setTimeout(bindCanvasHandlers,500);
-  });
+  window.addEventListener('keydown',(e)=>{ if(e.key.toLowerCase()==='h') toggleHotspotMode(); });
 
 })();
 </script>
