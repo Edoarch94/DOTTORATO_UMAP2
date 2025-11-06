@@ -5,46 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Epigrafe Claudia Nova</title>
 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
 <style>
-  /* Il contenitore principale fa da reference per l’overlay */
-.wrap { position: relative; }
-
-/* Overlay sopra al viewer: cattura click solo quando serve */
-#pick-layer{
-  position:absolute; inset:0;
-  margin:auto;                 /* coincide con <model-viewer> */
-  width:min(96vw,1200px);
-  height:min(80vh,760px);
-  pointer-events:none;         /* default: non blocca nulla */
-}
-
-/* Quando attivi Misura o Hotspot mode, l’overlay prende i click */
-#pick-layer.active{ pointer-events:auto; }
-
-/* Popup “a quadrotto” e fuori dal modello */
-.popup{
-  position:absolute;
-  background:rgba(18,18,18,.96);
-  color:#fff;
-  border:1px solid rgba(255,255,255,.23);
-  border-radius:12px;
-  width: clamp(260px, 26vw, 360px);
-  aspect-ratio: 1 / 1;         /* quadrato */
-  padding:12px; display:none;
-  overflow:auto;
-  --dx:0px; --dy:0px;
-}
-.popup .content{ font-size:14px; line-height:1.35; }
-
-/* spingi i popup ancora più fuori dal modello */
-.popup.right{ transform: translate(calc(40px + var(--dx)), calc(-50% + var(--dy))); }
-.popup.left { transform: translate(calc(-100% - 40px + var(--dx)), calc(-50% + var(--dy))); }
-.popup.show{ display:block; }
   :root{--bg:#111;--card:#1b1b1b;--accent:#4ade80}
   html,body{height:100%;margin:0;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-  .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px}
+
+  .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px;position:relative}
   h1{margin:0 auto;font:700 20px/1.2 system-ui;width:min(96vw,1200px)}
   model-viewer{display:block;width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;background:#111;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+
+  /* Overlay di picking: fixed e allineato via JS al rettangolo del viewer */
+  #pick-layer{
+    position:fixed; left:0; top:0; width:0; height:0;
+    pointer-events:none; z-index:50;
+  }
+  #pick-layer.active{ pointer-events:auto; }
+
   .panel{width:min(96vw,1200px);margin:0 auto;background:var(--card);border-radius:12px;padding:10px;display:grid;gap:8px;grid-template-columns:repeat(6,1fr)}
   .group{background:rgba(255,255,255,.04);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
   .row{display:flex;gap:8px;flex-wrap:wrap}
@@ -52,26 +28,41 @@
   input[type=range]{width:100%}
   button{border:0;border-radius:10px;padding:9px 12px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
   .btn{background:#2a2a2a}.btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}.on{box-shadow:0 0 0 2px rgba(74,222,128,.55) inset}
+
   /* hotspot */
   .hotspot-btn{background:transparent;border:0;padding:0;display:inline-flex}
   .hotspot-btn .num{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#2b74ff;border:1px solid #fff;color:#fff;font:800 12px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.45)}
-  /* popup laterali (più stretti) */
-  .popup{position:absolute;background:rgba(18,18,18,.96);color:#fff;border:1px solid rgba(255,255,255,.23);border-radius:12px;padding:12px 14px;width:clamp(300px,30vw,480px);max-height:52vh;overflow:auto;display:none;--dx:0px;--dy:0px}
-  .popup.right{transform:translate(calc(14px + var(--dx)),calc(-50% + var(--dy)))} .popup.left{transform:translate(calc(-100% - 14px + var(--dx)),calc(-50% + var(--dy)))} .popup.show{display:block}
-  /* misura */
-  .measure-dot{
-  width:16px; height:16px; border-radius:50%;
-  background:#22c55e; border:2px solid #fff;
-  box-shadow:0 2px 8px rgba(0,0,0,.55);
-  pointer-events: none;           /* ← importante */
-}
 
-.measure-label{
-  position:absolute; transform:translate(-50%,-120%);
-  background:#111; color:#fff; border:1px solid rgba(255,255,255,.25);
-  padding:6px 8px; border-radius:8px; font-size:12px; display:none;
-  pointer-events: none;           /* ← importante */
-}
+  /* Popup quadrati e ben fuori dal modello */
+  .popup{
+    position:absolute;
+    background:rgba(18,18,18,.96);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.23);
+    border-radius:12px;
+    width: clamp(200px, 22vw, 280px);
+    aspect-ratio: 1 / 1;
+    padding:12px; display:none; overflow:auto;
+    --dx:0px; --dy:0px;
+  }
+  .popup .content{ font-size:14px; line-height:1.35; }
+  .popup.right{ transform: translate(calc(80px + var(--dx)), calc(-50% + var(--dy))); }
+  .popup.left { transform: translate(calc(-100% - 80px + var(--dx)), calc(-50% + var(--dy))); }
+  .popup.show{ display:block; }
+
+  /* Misurazione */
+  .measure-dot{
+    width:16px; height:16px; border-radius:50%;
+    background:#22c55e; border:2px solid #fff;
+    box-shadow:0 2px 8px rgba(0,0,0,.55);
+    pointer-events:none;
+  }
+  .measure-label{
+    position:absolute; transform:translate(-50%,-120%);
+    background:#111; color:#fff; border:1px solid rgba(255,255,255,.25);
+    padding:6px 8px; border-radius:8px; font-size:12px; display:none;
+    pointer-events:none;
+  }
 
   @media (max-width:900px){.panel{grid-template-columns:repeat(3,1fr)}}
   @media (max-width:520px){.panel{grid-template-columns:repeat(2,1fr)}}
@@ -90,36 +81,34 @@
     shadow-intensity="0.9" exposure="1.15"
     bounds="tight" camera-target="auto" camera-orbit="0deg 90deg auto"
     field-of-view="28deg" min-field-of-view="15deg" max-field-of-view="80deg">
-    <!-- Overlay di picking (trasparente) -->
-<div id="pick-layer" aria-hidden="true"></div>
 
     <!-- HS 1 -->
     <button class="hotspot-btn" slot="hotspot-1"
       data-position="0.304m 0.179m -1.065m" data-normal="0.006m 0.065m 0.998m"
       data-hotspot="h1"><span class="num">1</span></button>
     <div class="popup right" slot="hotspot-1" data-popup="h1">
-      <strong>Lettera S</strong><br>Errato calcolo dello spazio → lettera S incisa sopra la cornice.
+      <div class="content"><strong>Lettera S</strong><br>Errato calcolo dello spazio → lettera S incisa sopra la cornice.</div>
     </div>
     <!-- HS 2 -->
     <button class="hotspot-btn" slot="hotspot-2"
       data-position="0.297m -0.112m -1.060m" data-normal="0.544m 0.017m 0.839m"
       data-hotspot="h2"><span class="num">2</span></button>
     <div class="popup right" slot="hotspot-2" data-popup="h2">
-      <strong>Lettera M</strong><br>Ravvicinamento delle lettere e sbordatura della M sulla cornice.
+      <div class="content"><strong>Lettera M</strong><br>Ravvicinamento delle lettere e sbordatura della M sulla cornice.</div>
     </div>
     <!-- HS 3 -->
     <button class="hotspot-btn" slot="hotspot-3"
       data-position="-0.144m -0.275m -1.009m" data-normal="0.075m 0.053m 0.996m"
       data-hotspot="h3"><span class="num">3</span></button>
     <div class="popup right" slot="hotspot-3" data-popup="h3">
-      <strong>ATTERNUM</strong><br>Variante locale (rif. CIL IX 5979), possibile influsso osco-umbro.
+      <div class="content"><strong>ATTERNUM</strong><br>Variante locale (rif. CIL IX 5979), possibile influsso osco-umbro.</div>
     </div>
     <!-- HS 4 -->
     <button class="hotspot-btn" slot="hotspot-4"
       data-position="0.347m 0.325m -1.072m" data-normal="0.162m -0.003m 0.987m"
       data-hotspot="h4"><span class="num">4</span></button>
     <div class="popup right" slot="hotspot-4" data-popup="h4">
-      <strong>Supporto lapideo</strong><br>Pietra calcarea con tonalità rossastra nello specchio epigrafico.
+      <div class="content"><strong>Supporto lapideo</strong><br>Pietra calcarea con tonalità rossastra nello specchio epigrafico.</div>
     </div>
 
     <!-- Misura -->
@@ -127,6 +116,9 @@
     <div class="measure-dot" slot="hotspot-meas-b"  style="display:none" data-position="0m 0m 0m"></div>
     <div class="measure-label" id="mlab" slot="hotspot-meas-mid" style="display:none" data-position="0m 0m 0m">0.000 m</div>
   </model-viewer>
+
+  <!-- Overlay di picking (trasparente, fuori dal model-viewer) -->
+  <div id="pick-layer" aria-hidden="true"></div>
 
   <div class="panel">
     <div class="group"><label>Auto-rotate</label>
@@ -227,6 +219,19 @@
   fitBtn.onclick   = ()=>{ mv.cameraTarget='auto'; mv.cameraOrbit='0deg 90deg auto'; mv.jumpCameraToGoal?.(); };
   resetBtn.onclick = ()=>{ mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='28deg'; mv.cameraTarget='auto'; mv.autoRotate=true; mv.resetTurntableRotation?.(); mv.jumpCameraToGoal?.(); refreshRot(); };
 
+  /* ===== Allinea overlay al viewer ===== */
+  function updatePickLayer(){
+    const r = mv.getBoundingClientRect();
+    pick.style.left = r.left + 'px';
+    pick.style.top = r.top + 'px';
+    pick.style.width = r.width + 'px';
+    pick.style.height = r.height + 'px';
+  }
+  ['resize','scroll'].forEach(e => window.addEventListener(e, updatePickLayer, {passive:true}));
+  mv.addEventListener('load', updatePickLayer);
+  setTimeout(updatePickLayer, 0);
+  setTimeout(updatePickLayer, 200);
+
   /* ===== Hotspot: zoom frontale + popup ===== */
   const FOCUS_FOV = 22;
   mv.addEventListener('click',(ev)=>{
@@ -251,18 +256,18 @@
   });
   window.addEventListener('click', (e)=>{ if(!mv.contains(e.target)) return; closeOthers(null); });
 
-  /* ===== Picking via overlay ===== */
+  /* ===== Picking robusto ===== */
   function getHitFromEvent(ev){
-    // coordinate relative al viewer
-    const r = mv.getBoundingClientRect();
-    let x = ev.clientX - r.left;
-    let y = ev.clientY - r.top;
-
-    // 1) CSS px
-    let hit = mv.positionAndNormalFromPoint(x, y);
-    // 2) device px
-    if(!hit && window.devicePixelRatio){
-      hit = mv.positionAndNormalFromPoint(x*devicePixelRatio, y*devicePixelRatio);
+    // 1) coord GLOBALI
+    let hit = mv.positionAndNormalFromPoint(ev.clientX, ev.clientY);
+    if (!hit) {
+      // 2) coord relative
+      const r = mv.getBoundingClientRect();
+      const x = ev.clientX - r.left;
+      const y = ev.clientY - r.top;
+      hit = mv.positionAndNormalFromPoint(x, y)
+         || (window.devicePixelRatio && mv.positionAndNormalFromPoint(x*devicePixelRatio, y*devicePixelRatio))
+         || (window.devicePixelRatio && mv.positionAndNormalFromPoint(ev.clientX*devicePixelRatio, ev.clientY*devicePixelRatio));
     }
     return hit;
   }
@@ -270,10 +275,11 @@
   /* ===== Misurazione ===== */
   const measuring = { active:false, step:0, A:null, B:null };
   function setHotspot(el,p){ el.style.display='block'; el.setAttribute('data-position', `${p.x}m ${p.y}m ${p.z}m`); }
+  function setPickActive(){ pick.classList.toggle('active', measuring.active || hotspotMode.active); }
   function updMeasureUI(){
     measureBtn.classList.toggle('on', measuring.active);
     mhelp.textContent = measuring.active ? 'Clicca A poi B sulla mesh.' : 'Clicca due punti sulla mesh (A poi B).';
-    pick.classList.toggle('active', measuring.active || hotspotMode.active);
+    setPickActive();
   }
 
   measureBtn.onclick = ()=>{
@@ -292,7 +298,6 @@
     if (!measuring.active) return;
     const hit = getHitFromEvent(ev);
     if (!hit){ console.warn('Nessun punto (clicca sulla pietra)'); return; }
-
     const p={ x:+hit.position.x.toFixed(3), y:+hit.position.y.toFixed(3), z:+hit.position.z.toFixed(3) };
     if (measuring.step===0){
       measuring.A=p; measuring.step=1; setHotspot(dotA,p);
@@ -307,7 +312,7 @@
     }
   });
 
-  /* ===== Hotspot mode (H) – cattura blocco HTML ===== */
+  /* ===== Hotspot mode (H) ===== */
   const hotspotMode={active:false};
   const badge=document.createElement('div');
   badge.textContent='HOTSPOT MODE';
@@ -322,7 +327,7 @@
   function toggleHotspotMode(){
     hotspotMode.active=!hotspotMode.active;
     badge.style.display=hotspotMode.active?'block':'none';
-    pick.classList.toggle('active', measuring.active || hotspotMode.active);
+    setPickActive();
     console.log(hotspotMode.active?'🟦 Hotspot mode ON — clicca la pietra per ottenere il blocco HTML.':'⬛ Hotspot mode OFF');
   }
   window.addEventListener('keydown',(e)=>{ if(e.key.toLowerCase()==='h') toggleHotspotMode(); });
