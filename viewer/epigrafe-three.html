@@ -20,7 +20,6 @@
   button{border:0;border-radius:10px;padding:9px 12px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
   .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
 
-  /* hotspot numerati */
   .hotspot{
     position:absolute; width:24px;height:24px;border-radius:50%;
     background:#2b74ff;border:1px solid #fff; color:#fff;
@@ -29,31 +28,17 @@
     transform:translate(-50%,-50%); cursor:pointer;
     z-index:10;
   }
-
-  /* pannelli esterni, responsive + flip */
   .popup{
     position:absolute; width: clamp(220px, 26vw, 320px); max-height: 60vh;
     background:rgba(18,18,18,.96); border:1px solid rgba(255,255,255,.25);
     border-radius:12px; padding:14px; display:none; overflow:auto; z-index:9;
   }
   .popup.show{display:block}
-  .popup.right{transform:translate(80px,-50%)}   /* a destra del punto */
-  .popup.left {transform:translate(-100%,-50%)}  /* a sinistra del punto */
+  .popup.right{transform:translate(80px,-50%)}
+  .popup.left {transform:translate(-100%,-50%)}
 
-  /* etichetta misura (CSS2D) */
-  .label{
-    padding:6px 8px;border-radius:8px;background:#111;color:#fff;
-    border:1px solid rgba(255,255,255,.25); font:600 12px/1.2 system-ui;
-    pointer-events:none;
-  }
-
-  /* badge Hotspot mode */
-  .badge{
-    position:absolute; top:8px; left:8px; z-index:20;
-    padding:6px 8px; border-radius:8px;
-    background:rgba(14,165,233,.12); color:#93c5fd; border:1px solid rgba(147,197,253,.35);
-    font:600 12px/1.2 system-ui; display:none;
-  }
+  .label{padding:6px 8px;border-radius:8px;background:#111;color:#fff;border:1px solid rgba(255,255,255,.25);font:600 12px/1.2 system-ui;pointer-events:none}
+  .badge{position:absolute; top:8px; left:8px; z-index:20; padding:6px 8px; border-radius:8px; background:rgba(14,165,233,.12); color:#93c5fd; border:1px solid rgba(147,197,253,.35); font:600 12px/1.2 system-ui; display:none;}
 </style>
 </head>
 <body>
@@ -120,7 +105,7 @@
   </div>
 </div>
 
-<!-- Three.js + Tween.js -->
+<!-- Three.js + Tween.js dai CDN: NIENTE import “three” nudo -->
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
@@ -132,7 +117,7 @@ import TWEEN from 'https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tw
 const stage = document.getElementById('stage');
 const badge = document.getElementById('badge');
 
-/* ---------- SCENA ---------- */
+/* SCENA */
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0e0e0e);
 
@@ -159,14 +144,14 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0, 0.5, -1.05);
 
-/* Luci */
+/* LUCI */
 const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.9);
 scene.add(hemi);
 const dir = new THREE.DirectionalLight(0xffffff, 1.0);
 dir.position.set(2,2,2);
 scene.add(dir);
 
-/* HDR ambiente opzionale */
+/* HDR ENV opzionale */
 let envTexture = null;
 new RGBELoader()
   .setPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/textures/equirectangular/')
@@ -175,24 +160,18 @@ new RGBELoader()
     envTexture = tex;
   });
 
-/* ---------- MODELLO ---------- */
+/* MODELLO */
 let model = null;
 await new GLTFLoader()
   .loadAsync('https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9')
   .then(g=>{
     model = g.scene;
-    // assicurati che i materiali rispondano bene all’illuminazione
-    model.traverse(o=>{
-      if(o.isMesh){
-        o.castShadow = o.receiveShadow = true;
-        if(o.material) o.material.needsUpdate = true;
-      }
-    });
+    model.traverse(o=>{ if(o.isMesh){ o.castShadow=o.receiveShadow=true; }});
     scene.add(model);
   })
-  .catch(e=>console.error('Errore caricamento GLB', e));
+  .catch(e=>console.error('Errore GLB', e));
 
-/* ---------- RAYCAST ---------- */
+/* RAYCAST */
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 function raycast(e){
@@ -204,24 +183,19 @@ function raycast(e){
   return hits[0] || null;
 }
 
-/* ---------- MISURAZIONE ---------- */
+/* MISURAZIONE */
 const measureBtn = document.getElementById('measure');
 const measureReset = document.getElementById('measureReset');
 const mhelp = document.getElementById('mhelp');
 
 const A = new THREE.Mesh(new THREE.SphereGeometry(0.01,16,16), new THREE.MeshBasicMaterial({color:0x22c55e}));
-const B = A.clone();
-A.visible = B.visible = false;
-scene.add(A,B);
+const B = A.clone(); A.visible=B.visible=false; scene.add(A,B);
 
-const lineMat = new THREE.LineBasicMaterial({color:0x22c55e});
-const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
-const lineAB = new THREE.Line(lineGeo, lineMat); lineAB.visible=false;
-scene.add(lineAB);
+const lineAB = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]), new THREE.LineBasicMaterial({color:0x22c55e}));
+lineAB.visible=false; scene.add(lineAB);
 
 const distLabelEl = document.createElement('div'); distLabelEl.className='label'; distLabelEl.textContent='0.000 m';
-const distLabel = new CSS2DObject(distLabelEl);
-distLabel.visible=false; scene.add(distLabel);
+const distLabel = new CSS2DObject(distLabelEl); distLabel.visible=false; scene.add(distLabel);
 
 const measuring = {active:false, step:0, a:new THREE.Vector3(), b:new THREE.Vector3()};
 function setMeasureActive(on){
@@ -235,66 +209,39 @@ measureReset.onclick = ()=> setMeasureActive(false);
 renderer.domElement.addEventListener('click', (e)=>{
   if(!measuring.active) return;
   const hit = raycast(e); if(!hit) return;
-
   if(measuring.step===0){
-    measuring.a.copy(hit.point);
-    A.position.copy(hit.point); A.visible = true;
-    measuring.step = 1;
+    measuring.a.copy(hit.point); A.position.copy(hit.point); A.visible=true; measuring.step=1;
   } else {
-    measuring.b.copy(hit.point);
-    B.position.copy(hit.point); B.visible = true;
-
+    measuring.b.copy(hit.point); B.position.copy(hit.point); B.visible=true;
     lineAB.geometry.setFromPoints([measuring.a, measuring.b]); lineAB.visible=true;
-
     const mid = measuring.a.clone().add(measuring.b).multiplyScalar(0.5);
     distLabel.position.copy(mid); distLabel.visible=true;
-
-    const d = measuring.a.distanceTo(measuring.b);
-    distLabelEl.textContent = d.toFixed(3)+' m';
-    measuring.step = 0;
+    distLabelEl.textContent = measuring.a.distanceTo(measuring.b).toFixed(3)+' m';
+    measuring.step=0;
   }
 });
 
-/* ---------- HOTSPOT DA JSON (+ fallback) ---------- */
-const FALLBACK_HOTSPOTS = [
+/* HOTSPOT (fallback interno, puoi passare a JSON dopo) */
+const HOTSPOTS = [
   { id:1, pos:[ 0.304,  0.179, -1.065], nor:[0.006, 0.065, 0.998], title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
   { id:2, pos:[ 0.297, -0.112, -1.060], nor:[0.544, 0.017, 0.839], title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
   { id:3, pos:[-0.144, -0.275, -1.009], nor:[0.075, 0.053, 0.996], title:'ATTERNUM', text:'Variante locale (rif. CIL IX 5979), possibile influsso osco-umbro.' },
   { id:4, pos:[ 0.347,  0.325, -1.072], nor:[0.162,-0.003, 0.987], title:'Supporto lapideo', text:'Pietra calcarea con tonalità rossastra nello specchio epigrafico.' }
 ];
 
-async function loadHotspots(){
-  try{
-    const res = await fetch('https://edoarch94.github.io/DOTTORATO_UMAP2/hotspots/epigrafe.json', {cache:'no-store'});
-    if(!res.ok) throw new Error(res.status);
-    return await res.json();
-  }catch(e){
-    console.warn('Hotspots JSON non trovato, uso fallback');
-    return FALLBACK_HOTSPOTS;
-  }
-}
-
 const stageRect = ()=> renderer.domElement.getBoundingClientRect();
-function screenPosFromWorld(v){ // world vec3 -> pixel
-  const s = v.clone().project(camera);
-  const r = stageRect();
+function screenXY(v){
+  const s = v.clone().project(camera), r = stageRect();
   return { x:(s.x*0.5+0.5)*r.width, y:(-s.y*0.5+0.5)*r.height };
 }
-
 const hUI = [];
-function buildHotspotUI(list){
-  list.forEach(h=>{
+function buildHotspots(){
+  HOTSPOTS.forEach(h=>{
     const pos = new THREE.Vector3(...h.pos);
     const nor = new THREE.Vector3(...h.nor).normalize();
 
-    const btn = document.createElement('div');
-    btn.className = 'hotspot'; btn.textContent = h.id;
-    stage.appendChild(btn);
-
-    const pop = document.createElement('div');
-    pop.className = 'popup';
-    pop.innerHTML = `<strong>${h.title}</strong><br>${h.text}`;
-    stage.appendChild(pop);
+    const btn = document.createElement('div'); btn.className='hotspot'; btn.textContent=h.id; stage.appendChild(btn);
+    const pop = document.createElement('div'); pop.className='popup'; pop.innerHTML = `<strong>${h.title}</strong><br>${h.text}`; stage.appendChild(pop);
 
     btn.addEventListener('click',(e)=>{
       e.stopPropagation();
@@ -303,140 +250,106 @@ function buildHotspotUI(list){
       togglePopup(pop);
     });
 
-    hUI.push({pos, nor, btn, pop});
+    hUI.push({pos,nor,btn,pop});
   });
 }
-
 function placePopup(pop, worldPos){
   const r = stageRect();
-  const s = screenPosFromWorld(worldPos);
-  pop.style.top = `${s.y}px`;
-  pop.style.left = `${s.x}px`;
-  // flip automatico se non c’è spazio
-  const openRight = s.x < r.width/2;
+  const s = screenXY(worldPos);
+  pop.style.top = `${s.y}px`; pop.style.left = `${s.x}px`;
   pop.classList.remove('left','right');
-  pop.classList.add(openRight ? 'right' : 'left');
-
-  // dopo il flip, se sborda verticalmente, recentra
+  pop.classList.add( s.x < r.width/2 ? 'right' : 'left' );
   requestAnimationFrame(()=>{
     const pr = pop.getBoundingClientRect();
-    let top = s.y - pr.height/2;
-    const pad = 8;
-    top = Math.max(pad, Math.min(window.innerHeight - pr.height - pad, top));
+    let top = s.y - pr.height/2, pad = 8;
+    top = Math.max(pad, Math.min(innerHeight - pr.height - pad, top));
     pop.style.top = `${top}px`;
   });
 }
-
 function togglePopup(pop){
   document.querySelectorAll('.popup.show').forEach(p=>{ if(p!==pop) p.classList.remove('show'); });
   pop.classList.toggle('show');
 }
-
 function updateHotspotButtons(){
-  const r = stageRect();
   hUI.forEach(({pos,btn,pop})=>{
-    const s = screenPosFromWorld(pos);
-    btn.style.left = `${s.x}px`;
-    btn.style.top  = `${s.y}px`;
+    const s = screenXY(pos);
+    btn.style.left = `${s.x}px`; btn.style.top = `${s.y}px`;
     if(pop.classList.contains('show')) placePopup(pop, pos);
   });
 }
 
-/* ---------- ZOOM DOLCE (tween) ---------- */
+/* ZOOM DOLCE */
 function focusOn(point, normal){
   const targetFrom = controls.target.clone();
   const camFrom = camera.position.clone();
-
-  // distanza adattiva
   const currentDist = camera.position.distanceTo(controls.target);
   const dist = THREE.MathUtils.clamp(currentDist*0.4, 0.22, 0.7);
+  const camTo = point.clone().add(normal.clone().normalize().multiplyScalar(dist));
 
-  const dir = normal.clone().normalize();
-  const camTo = point.clone().add(dir.multiplyScalar(dist));
-
-  const t = {alpha:0};
-  new TWEEN.Tween(t).to({alpha:1}, 650).easing(TWEEN.Easing.Cubic.Out)
+  const t = {a:0};
+  new TWEEN.Tween(t).to({a:1},650).easing(TWEEN.Easing.Cubic.Out)
     .onUpdate(()=>{
-      controls.target.lerpVectors(targetFrom, point, t.alpha);
-      camera.position.lerpVectors(camFrom, camTo, t.alpha);
+      controls.target.lerpVectors(targetFrom, point, t.a);
+      camera.position.lerpVectors(camFrom, camTo, t.a);
       camera.lookAt(controls.target);
     }).start();
 }
 
-/* ---------- UI Controlli ---------- */
+/* UI */
 document.getElementById('fov').oninput = e => { camera.fov = +e.target.value; camera.updateProjectionMatrix(); };
 document.getElementById('exposure').oninput = e => { renderer.toneMappingExposure = +e.target.value; };
 document.getElementById('fit').onclick = ()=>{
-  const t = {a:0}; const from = camera.position.clone(), to = new THREE.Vector3(0.9,0.9,1.8);
-  new TWEEN.Tween(t).to({a:1},500).easing(TWEEN.Easing.Cubic.Out)
-    .onUpdate(()=> camera.position.lerpVectors(from,to,t.a)).start();
+  const t = {a:0}, from = camera.position.clone(), to = new THREE.Vector3(0.9,0.9,1.8);
+  new TWEEN.Tween(t).to({a:1},500).easing(TWEEN.Easing.Cubic.Out).onUpdate(()=> camera.position.lerpVectors(from,to,t.a)).start();
   new TWEEN.Tween(controls.target).to({x:0,y:0.5,z:-1.05},500).easing(TWEEN.Easing.Cubic.Out).start();
 };
 document.getElementById('reset').onclick = ()=>{
-  controls.reset();
-  controls.target.set(0,0.5,-1.05);
-  new TWEEN.Tween(camera).to({fov:45},300).easing(TWEEN.Easing.Quadratic.Out)
-    .onUpdate(()=> camera.updateProjectionMatrix()).start();
+  controls.reset(); controls.target.set(0,0.5,-1.05);
+  new TWEEN.Tween(camera).to({fov:45},300).easing(TWEEN.Easing.Quadratic.Out).onUpdate(()=> camera.updateProjectionMatrix()).start();
 };
-
-document.querySelectorAll('.env').forEach(b=>{
-  b.onclick = ()=>{
-    scene.environment = (b.dataset.hdr==='on' && envTexture) ? envTexture : null;
-  };
-});
+document.querySelectorAll('.env').forEach(b=> b.onclick = ()=> scene.environment = (b.dataset.hdr==='on' && envTexture) ? envTexture : null );
 document.querySelectorAll('.bg').forEach(b=>{
   b.onclick = ()=>{
-    const mode = b.dataset.bg;
-    if(mode==='dark'){ scene.background = new THREE.Color(0x0e0e0e); stage.style.background='#0e0e0e'; }
-    if(mode==='light'){ scene.background = new THREE.Color(0xf5f5f5); stage.style.background='#f5f5f5'; }
-    if(mode==='transparent'){ scene.background = null; stage.style.background='transparent'; }
-    if(mode==='gradient'){ scene.background = null; stage.style.background='linear-gradient(180deg,#0e0e0e,#1a1a1a)'; }
+    const m=b.dataset.bg;
+    if(m==='dark'){ scene.background=new THREE.Color(0x0e0e0e); stage.style.background='#0e0e0e'; }
+    if(m==='light'){ scene.background=new THREE.Color(0xf5f5f5); stage.style.background='#f5f5f5'; }
+    if(m==='transparent'){ scene.background=null; stage.style.background='transparent'; }
+    if(m==='gradient'){ scene.background=null; stage.style.background='linear-gradient(180deg,#0e0e0e,#1a1a1a)'; }
   };
 });
 
-/* ---------- Hotspot Mode (H) ---------- */
-let hotspotMode = false;
-function toggleH(){
-  hotspotMode = !hotspotMode;
-  badge.style.display = hotspotMode ? 'block' : 'none';
-  console.log(hotspotMode ? '🟦 Hotspot mode ON — clicca la pietra per ottenere il blocco HTML.' : '⬛ Hotspot mode OFF');
-}
-document.getElementById('toggleH').onclick = toggleH;
-window.addEventListener('keydown', e=>{ if(e.key.toLowerCase()==='h') toggleH(); });
+/* Hotspot mode (H) */
+let hotspotMode=false;
+function toggleH(){ hotspotMode=!hotspotMode; badge.style.display=hotspotMode?'block':'none'; console.log(hotspotMode?'🟦 Hotspot mode ON — clicca la pietra.':'⬛ Hotspot mode OFF'); }
+document.getElementById('toggleH').onclick=toggleH;
+addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='h') toggleH(); });
 renderer.domElement.addEventListener('click', (e)=>{
   if(!hotspotMode) return;
   const hit = raycast(e); if(!hit) return;
-  const p = hit.point;
-  const n = hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0,0,1);
-  const pos = `${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m`;
-  const nor = `${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m`;
+  const p = hit.point; const n = hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0,0,1);
   console.clear();
-  console.log(`data-position="${pos}"\ndata-normal="${nor}"`);
+  console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"\ndata-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
 });
 
-/* ---------- Hotspots build ---------- */
-const data = await loadHotspots();
-buildHotspotUI(data);
+/* Build + loop */
+buildHotspots();
 
-/* ---------- RESIZE + LOOP ---------- */
 function onResize(){
   const w = stage.clientWidth, h = stage.clientHeight;
   camera.aspect = w/h; camera.updateProjectionMatrix();
   renderer.setSize(w,h); labelRenderer.setSize(w,h);
   updateHotspotButtons();
 }
-window.addEventListener('resize', onResize);
+addEventListener('resize', onResize);
 
-function animate(){
+(function animate(){
   requestAnimationFrame(animate);
   controls.update();
   TWEEN.update();
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
   updateHotspotButtons();
-}
-onResize();
-animate();
+})();
 </script>
 </body>
 </html>
