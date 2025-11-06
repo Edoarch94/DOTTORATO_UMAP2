@@ -6,6 +6,40 @@
 <title>Epigrafe Claudia Nova</title>
 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 <style>
+  /* Il contenitore principale fa da reference per l’overlay */
+.wrap { position: relative; }
+
+/* Overlay sopra al viewer: cattura click solo quando serve */
+#pick-layer{
+  position:absolute; inset:0;
+  margin:auto;                 /* coincide con <model-viewer> */
+  width:min(96vw,1200px);
+  height:min(80vh,760px);
+  pointer-events:none;         /* default: non blocca nulla */
+}
+
+/* Quando attivi Misura o Hotspot mode, l’overlay prende i click */
+#pick-layer.active{ pointer-events:auto; }
+
+/* Popup “a quadrotto” e fuori dal modello */
+.popup{
+  position:absolute;
+  background:rgba(18,18,18,.96);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.23);
+  border-radius:12px;
+  width: clamp(260px, 26vw, 360px);
+  aspect-ratio: 1 / 1;         /* quadrato */
+  padding:12px; display:none;
+  overflow:auto;
+  --dx:0px; --dy:0px;
+}
+.popup .content{ font-size:14px; line-height:1.35; }
+
+/* spingi i popup ancora più fuori dal modello */
+.popup.right{ transform: translate(calc(40px + var(--dx)), calc(-50% + var(--dy))); }
+.popup.left { transform: translate(calc(-100% - 40px + var(--dx)), calc(-50% + var(--dy))); }
+.popup.show{ display:block; }
   :root{--bg:#111;--card:#1b1b1b;--accent:#4ade80}
   html,body{height:100%;margin:0;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
   .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px}
@@ -56,6 +90,8 @@
     shadow-intensity="0.9" exposure="1.15"
     bounds="tight" camera-target="auto" camera-orbit="0deg 90deg auto"
     field-of-view="28deg" min-field-of-view="15deg" max-field-of-view="80deg">
+    <!-- Overlay di picking (trasparente) -->
+<div id="pick-layer" aria-hidden="true"></div>
 
     <!-- HS 1 -->
     <button class="hotspot-btn" slot="hotspot-1"
@@ -123,8 +159,9 @@
 <script>
 (() => {
   const mv = document.getElementById('mv');
+  const pick = document.getElementById('pick-layer');
 
-  /* ====== RIFERIMENTI UI ====== */
+  /* ===== UI refs ===== */
   const rotOn = document.getElementById('rotOn');
   const rotOff = document.getElementById('rotOff');
   const exp = document.getElementById('exp');
@@ -134,14 +171,16 @@
   const bgBtns  = document.querySelectorAll('.bg');
   const fitBtn  = document.getElementById('fit');
   const resetBtn= document.getElementById('reset');
+
   const measureBtn   = document.getElementById('measure');
   const measureReset = document.getElementById('measureReset');
   const mhelp        = document.getElementById('mhelp');
+
   const dotA = mv.querySelector('[slot="hotspot-meas-a"]');
   const dotB = mv.querySelector('[slot="hotspot-meas-b"]');
   const mlab = document.getElementById('mlab');
 
-  /* ====== HELPER ====== */
+  /* ===== Helpers ===== */
   const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
   function adaptiveRadius(){
     const o = mv.getCameraOrbit ? mv.getCameraOrbit() : {radius:0.6};
@@ -169,7 +208,7 @@
   function closeOthers(except){ mv.querySelectorAll('.popup.show').forEach(p=>{ if(p!==except) p.classList.remove('show'); }); }
   function hotspotBtnFromPath(path){ for(const el of path){ if(el?.dataset?.hotspot) return el; } return null; }
 
-  /* ====== CONTROLLI BASE ====== */
+  /* ===== Controlli base ===== */
   function refreshRot(){ rotOn.classList.toggle('on', !!mv.autoRotate); rotOff.classList.toggle('on', !mv.autoRotate); }
   rotOn.onclick=()=>{ mv.autoRotate=true;  mv.resetTurntableRotation?.(); refreshRot(); };
   rotOff.onclick=()=>{ mv.autoRotate=false;                     refreshRot(); };
@@ -188,7 +227,7 @@
   fitBtn.onclick   = ()=>{ mv.cameraTarget='auto'; mv.cameraOrbit='0deg 90deg auto'; mv.jumpCameraToGoal?.(); };
   resetBtn.onclick = ()=>{ mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='28deg'; mv.cameraTarget='auto'; mv.autoRotate=true; mv.resetTurntableRotation?.(); mv.jumpCameraToGoal?.(); refreshRot(); };
 
-  /* ====== HOTSPOT: ZOOM FRONT. ADATTIVO ====== */
+  /* ===== Hotspot: zoom frontale + popup ===== */
   const FOCUS_FOV = 22;
   mv.addEventListener('click',(ev)=>{
     const btn = hotspotBtnFromPath(ev.composedPath());
@@ -212,10 +251,30 @@
   });
   window.addEventListener('click', (e)=>{ if(!mv.contains(e.target)) return; closeOthers(null); });
 
-  /* ====== MISURAZIONE A–B ====== */
+  /* ===== Picking via overlay ===== */
+  function getHitFromEvent(ev){
+    // coordinate relative al viewer
+    const r = mv.getBoundingClientRect();
+    let x = ev.clientX - r.left;
+    let y = ev.clientY - r.top;
+
+    // 1) CSS px
+    let hit = mv.positionAndNormalFromPoint(x, y);
+    // 2) device px
+    if(!hit && window.devicePixelRatio){
+      hit = mv.positionAndNormalFromPoint(x*devicePixelRatio, y*devicePixelRatio);
+    }
+    return hit;
+  }
+
+  /* ===== Misurazione ===== */
   const measuring = { active:false, step:0, A:null, B:null };
   function setHotspot(el,p){ el.style.display='block'; el.setAttribute('data-position', `${p.x}m ${p.y}m ${p.z}m`); }
-  function updMeasureUI(){ measureBtn.classList.toggle('on', measuring.active); mhelp.textContent = measuring.active ? 'Clicca A poi B sulla mesh.' : 'Clicca due punti sulla mesh (A poi B).'; }
+  function updMeasureUI(){
+    measureBtn.classList.toggle('on', measuring.active);
+    mhelp.textContent = measuring.active ? 'Clicca A poi B sulla mesh.' : 'Clicca due punti sulla mesh (A poi B).';
+    pick.classList.toggle('active', measuring.active || hotspotMode.active);
+  }
 
   measureBtn.onclick = ()=>{
     measuring.active = !measuring.active;
@@ -229,97 +288,26 @@
     updMeasureUI();
   };
 
-  /* ====== CANVAS & PICKING ROBUSTI ====== */
-  function getCanvas(){ return mv.shadowRoot && mv.shadowRoot.querySelector('canvas'); }
+  pick.addEventListener('click', (ev)=>{
+    if (!measuring.active) return;
+    const hit = getHitFromEvent(ev);
+    if (!hit){ console.warn('Nessun punto (clicca sulla pietra)'); return; }
 
-  function getHitFromEvent(ev){
-    const cvs=getCanvas();
-    // 1) prova sul canvas (se esiste)
-    if(cvs){
-      const r=cvs.getBoundingClientRect();
-      let x=ev.clientX-r.left, y=ev.clientY-r.top;
-      let hit=mv.positionAndNormalFromPoint(x,y);
-      if(!hit && window.devicePixelRatio)
-        hit=mv.positionAndNormalFromPoint(x*devicePixelRatio,y*devicePixelRatio);
-      return hit;
+    const p={ x:+hit.position.x.toFixed(3), y:+hit.position.y.toFixed(3), z:+hit.position.z.toFixed(3) };
+    if (measuring.step===0){
+      measuring.A=p; measuring.step=1; setHotspot(dotA,p);
+    } else {
+      measuring.B=p; measuring.step=0; setHotspot(dotB,p);
+      const dx=measuring.A.x-measuring.B.x, dy=measuring.A.y-measuring.B.y, dz=measuring.A.z-measuring.B.z;
+      const d=Math.hypot(dx,dy,dz);
+      const m={x:(measuring.A.x+measuring.B.x)/2, y:(measuring.A.y+measuring.B.y)/2, z:(measuring.A.z+measuring.B.z)/2};
+      mlab.setAttribute('data-position', `${m.x}m ${m.y}m ${m.z}m`);
+      mlab.textContent = d.toFixed(3)+' m';
+      mlab.style.display='block';
     }
-    // 2) fallback sul tag <model-viewer>
-    const r=mv.getBoundingClientRect();
-    let x=ev.clientX-r.left, y=ev.clientY-r.top;
-    let hit=mv.positionAndNormalFromPoint(x,y);
-    if(!hit && window.devicePixelRatio)
-      hit=mv.positionAndNormalFromPoint(x*devicePixelRatio,y*devicePixelRatio);
-    return hit;
-  }
+  });
 
-  // bind dei listener quando il canvas ESISTE (con retry + observer)
-  function bindCanvasHandlers(){
-    const cvs=getCanvas(); if(!cvs) return false;
-    if(cvs.__bound) return true; // già fatto
-    cvs.__bound = true;
-
-    // Misura sul canvas
-    cvs.addEventListener('pointerdown',(ev)=>{
-      if(!measuring.active) return;
-      const hit=getHitFromEvent(ev);
-      if(!hit){ console.warn('Nessun punto (clicca sulla pietra)'); return; }
-      const p={x:+hit.position.x.toFixed(3), y:+hit.position.y.toFixed(3), z:+hit.position.z.toFixed(3)};
-      if(measuring.step===0){
-        measuring.A=p; measuring.step=1; setHotspot(dotA,p);
-      }else{
-        measuring.B=p; measuring.step=0; setHotspot(dotB,p);
-        const dx=measuring.A.x-measuring.B.x, dy=measuring.A.y-measuring.B.y, dz=measuring.A.z-measuring.B.z;
-        const d=Math.hypot(dx,dy,dz);
-        const m={x:(measuring.A.x+measuring.B.x)/2, y:(measuring.A.y+measuring.B.y)/2, z:(measuring.A.z+measuring.B.z)/2};
-        mlab.setAttribute('data-position',`${m.x}m ${m.y}m ${m.z}m`);
-        mlab.textContent=d.toFixed(3)+' m'; mlab.style.display='block';
-      }
-    }, {capture:true});
-
-    // Hotspot mode (H) sul canvas
-    cvs.addEventListener('pointerdown',(ev)=>{
-      if(!hotspotMode.active || measuring.active) return;
-      const hit=getHitFromEvent(ev);
-      if(!hit){ console.warn('Clicca la mesh'); return; }
-      const p=hit.position, n=hit.normal;
-      const pos=`${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m`;
-      const nor=`${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m`;
-      const next=(Array.from(mv.querySelectorAll('.hotspot-btn')).length+1);
-      const block=`<!-- HOTSPOT ${next} -->
-<button class="hotspot-btn" slot="hotspot-${next}"
-  data-position="${pos}"
-  data-normal="${nor}"
-  data-hotspot="h${next}"><span class="num">${next}</span></button>
-<div class="popup right" slot="hotspot-${next}"
-  data-position="${pos}"
-  data-normal="${nor}"
-  data-popup="h${next}">
-  <strong>Titolo</strong><br>
-  Testo descrizione hotspot ${next}.
-</div>`;
-      console.clear(); console.log('Copia e incolla nel tuo HTML:\n\n'+block);
-    }, {capture:true});
-
-    console.log('✔ Listener canvas agganciati');
-    return true;
-  }
-
-  // tentativi di bind: subito, al load, via observer e con retry loop
-  function ensureBindOnce(){
-    if (bindCanvasHandlers()) clearInterval(bindTimer);
-  }
-  let bindTimer = setInterval(ensureBindOnce, 250);       // retry fino a 10s
-  setTimeout(()=>clearInterval(bindTimer), 10000);
-
-  mv.addEventListener('load', ensureBindOnce);
-
-  const obs = new MutationObserver(()=> bindCanvasHandlers());
-  if (mv.shadowRoot) obs.observe(mv.shadowRoot, {childList:true, subtree:true});
-
-  // una botta se già pronto
-  bindCanvasHandlers();
-
-  /* ====== HOTSPOT MODE (H) ====== */
+  /* ===== Hotspot mode (H) – cattura blocco HTML ===== */
   const hotspotMode={active:false};
   const badge=document.createElement('div');
   badge.textContent='HOTSPOT MODE';
@@ -334,9 +322,32 @@
   function toggleHotspotMode(){
     hotspotMode.active=!hotspotMode.active;
     badge.style.display=hotspotMode.active?'block':'none';
+    pick.classList.toggle('active', measuring.active || hotspotMode.active);
     console.log(hotspotMode.active?'🟦 Hotspot mode ON — clicca la pietra per ottenere il blocco HTML.':'⬛ Hotspot mode OFF');
   }
   window.addEventListener('keydown',(e)=>{ if(e.key.toLowerCase()==='h') toggleHotspotMode(); });
+
+  pick.addEventListener('click', (ev)=>{
+    if (!hotspotMode.active || measuring.active) return;
+    const hit = getHitFromEvent(ev);
+    if(!hit){ console.warn('Clicca la mesh'); return; }
+    const p=hit.position, n=hit.normal;
+    const pos=`${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m`;
+    const nor=`${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m`;
+    const next=(Array.from(mv.querySelectorAll('.hotspot-btn')).length+1);
+    const block=`<!-- HOTSPOT ${next} -->
+<button class="hotspot-btn" slot="hotspot-${next}"
+  data-position="${pos}"
+  data-normal="${nor}"
+  data-hotspot="h${next}"><span class="num">${next}</span></button>
+<div class="popup right" slot="hotspot-${next}"
+  data-position="${pos}"
+  data-normal="${nor}"
+  data-popup="h${next}">
+  <div class="content"><strong>Titolo</strong><br>Testo descrizione hotspot ${next}.</div>
+</div>`;
+    console.clear(); console.log('Copia e incolla nel tuo HTML:\n\n'+block);
+  });
 
 })();
 </script>
