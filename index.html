@@ -1,4 +1,84 @@
-<!doctype html><meta charset="utf-8">
-<title>DOTTORATO_UMAP2</title>
-<h1>OK: sito pubblicato</h1>
-<p><a href="./viewer/epigrafe-three.html">Apri viewer Epigrafe</a></p>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dottorato UMAP 2 — Visualizzatori 3D</title>
+<style>
+  :root{--bg:#111;--card:#1c1c1c;--accent:#4ade80}
+  html,body{margin:0;height:100%;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  header{padding:24px 16px;text-align:center}
+  header h1{margin:0;font-size:1.6rem;font-weight:700}
+  main{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;padding:20px;width:min(96vw,1200px);margin:0 auto}
+  .card{background:var(--card);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column}
+  .thumb{position:relative;aspect-ratio:4/3;background:#222;display:flex;align-items:center;justify-content:center}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb span{position:absolute;bottom:6px;right:10px;font-size:11px;opacity:.7}
+  .content{padding:14px;flex:1;display:flex;flex-direction:column;justify-content:space-between}
+  .content h2{font-size:1rem;margin:0 0 6px;font-weight:600}
+  .content p{font-size:.9rem;opacity:.8;flex:1}
+  .btn{display:inline-block;margin-top:10px;padding:8px 12px;border-radius:8px;background:#2a2a2a;color:#fff;font-weight:600;text-align:center;text-decoration:none}
+  .btn:hover{background:var(--accent);color:#111}
+  footer{text-align:center;padding:12px;font-size:.8rem;opacity:.6}
+</style>
+</head>
+<body>
+<header>
+  <h1>Visualizzatori 3D — Progetto Dottorato UMAP 2</h1>
+</header>
+
+<main id="grid"></main>
+
+<footer>
+  © 2025 Edoardo Arch. | <a href="https://github.com/edoarch94/DOTTORATO_UMAP2" style="color:#4ade80;text-decoration:none">Repository GitHub</a>
+</footer>
+
+<script>
+// ===== CONFIGURA QUI I TUOI MODELLI =====
+// Ogni oggetto rappresenta un viewer 3D
+const models = [
+  {
+    id: "epigrafe",
+    title: "Epigrafe Claudia Nova",
+    desc: "Modello 3D della lastra epigrafica con iscrizione CLAUDIA NOVA.",
+    img: "https://edoarch94.github.io/DOTTORATO_UMAP2/thumbs/epigrafe.jpg", // crea cartella thumbs/
+    url: "viewer/epigrafe-three.html"
+  },
+  {
+    id: "arco",
+    title: "Arco monumentale",
+    desc: "Ricostruzione 3D dell’arco romano con decorazioni lapidee.",
+    img: "https://edoarch94.github.io/DOTTORATO_UMAP2/thumbs/arco.jpg",
+    url: "viewer/arco-three.html"
+  },
+  {
+    id: "busto",
+    title: "Busto marmoreo",
+    desc: "Scansione del busto in marmo, alta risoluzione fotogrammetrica.",
+    img: "https://edoarch94.github.io/DOTTORATO_UMAP2/thumbs/busto.jpg",
+    url: "viewer/busto-three.html"
+  }
+];
+
+// ===== COSTRUZIONE DINAMICA DELLA GRIGLIA =====
+const grid = document.getElementById("grid");
+models.forEach(m=>{
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="thumb">
+      <img src="${m.img}" alt="${m.title}" onerror="this.src='https://dummyimage.com/600x400/2b2b2b/ffffff&text=No+Preview';">
+      <span>${m.id}</span>
+    </div>
+    <div class="content">
+      <div>
+        <h2>${m.title}</h2>
+        <p>${m.desc}</p>
+      </div>
+      <a class="btn" href="${m.url}">Apri viewer</a>
+    </div>`;
+  grid.appendChild(card);
+});
+</script>
+</body>
+</html>
