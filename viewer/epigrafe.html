@@ -1,360 +1,364 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Epigrafe Claudia Nova</title>
-<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Epigrafe Claudia Nova — Three.js</title>
 
 <style>
-  :root{--bg:#111;--card:#1b1b1b;--accent:#4ade80}
+  :root{--bg:#111;--card:#1b1b1b}
   html,body{height:100%;margin:0;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-
-  .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px;position:relative}
+  .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px}
   h1{margin:0 auto;font:700 20px/1.2 system-ui;width:min(96vw,1200px)}
-  model-viewer{display:block;width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;background:#111;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+  #stage{position:relative;width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;border-radius:14px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.45);background:#0e0e0e}
+  canvas{display:block;width:100%;height:100%}
 
-  /* Overlay di picking: fixed e allineato via JS al rettangolo del viewer */
-  #pick-layer{
-    position:fixed; left:0; top:0; width:0; height:0;
-    pointer-events:none; z-index:50;
-  }
-  #pick-layer.active{ pointer-events:auto; }
-
+  /* pannello controlli */
   .panel{width:min(96vw,1200px);margin:0 auto;background:var(--card);border-radius:12px;padding:10px;display:grid;gap:8px;grid-template-columns:repeat(6,1fr)}
-  .group{background:rgba(255,255,255,.04);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
+  .group{background:rgba(255,255,255,.05);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
   .row{display:flex;gap:8px;flex-wrap:wrap}
-  label{font-size:12px;opacity:.75}
-  input[type=range]{width:100%}
   button{border:0;border-radius:10px;padding:9px 12px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
-  .btn{background:#2a2a2a}.btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}.on{box-shadow:0 0 0 2px rgba(74,222,128,.55) inset}
+  .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
+  input[type=range]{width:100%}
 
-  /* hotspot */
-  .hotspot-btn{background:transparent;border:0;padding:0;display:inline-flex}
-  .hotspot-btn .num{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#2b74ff;border:1px solid #fff;color:#fff;font:800 12px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+  /* hotspot numerati */
+  .hotspot{
+    position:absolute; width:24px;height:24px;border-radius:50%;
+    background:#2b74ff;border:1px solid #fff; color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font:800 12px/1 system-ui; box-shadow:0 2px 6px rgba(0,0,0,.45);
+    transform:translate(-50%,-50%); cursor:pointer;
+    z-index:10;
+  }
 
-  /* Popup quadrati e ben fuori dal modello */
+  /* pannelli esterni */
   .popup{
-    position:absolute;
-    background:rgba(18,18,18,.96);
-    color:#fff;
-    border:1px solid rgba(255,255,255,.23);
-    border-radius:12px;
-    width: clamp(200px, 22vw, 280px);
-    aspect-ratio: 1 / 1;
-    padding:12px; display:none; overflow:auto;
-    --dx:0px; --dy:0px;
+    position:absolute; width: clamp(200px, 22vw, 280px); aspect-ratio: 1/1;
+    background:rgba(18,18,18,.96); border:1px solid rgba(255,255,255,.25);
+    border-radius:12px; padding:12px; display:none; overflow:auto; z-index:9;
   }
-  .popup .content{ font-size:14px; line-height:1.35; }
-  .popup.right{ transform: translate(calc(80px + var(--dx)), calc(-50% + var(--dy))); }
-  .popup.left { transform: translate(calc(-100% - 80px + var(--dx)), calc(-50% + var(--dy))); }
-  .popup.show{ display:block; }
+  .popup.show{display:block}
+  .popup.right{transform:translate(80px,-50%)}
+  .popup.left {transform:translate(-100%,-50%)}
 
-  /* Misurazione */
-  .measure-dot{
-    width:16px; height:16px; border-radius:50%;
-    background:#22c55e; border:2px solid #fff;
-    box-shadow:0 2px 8px rgba(0,0,0,.55);
+  /* etichetta misura (CSS2D) */
+  .label{
+    padding:6px 8px;border-radius:8px;background:#111;color:#fff;
+    border:1px solid rgba(255,255,255,.25); font:600 12px/1.2 system-ui;
     pointer-events:none;
   }
-  .measure-label{
-    position:absolute; transform:translate(-50%,-120%);
-    background:#111; color:#fff; border:1px solid rgba(255,255,255,.25);
-    padding:6px 8px; border-radius:8px; font-size:12px; display:none;
-    pointer-events:none;
+  /* badge modalità hotspot */
+  .badge{
+    position:absolute; top:8px; left:8px; z-index:20;
+    padding:6px 8px; border-radius:8px;
+    background:rgba(14,165,233,.12); color:#93c5fd; border:1px solid rgba(147,197,253,.35);
+    font:600 12px/1.2 system-ui; display:none;
   }
-
-  @media (max-width:900px){.panel{grid-template-columns:repeat(3,1fr)}}
-  @media (max-width:520px){.panel{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Epigrafe Claudia Nova</h1>
 
-  <model-viewer id="mv"
-    src="https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9"
-    orientation="0deg 90deg 0deg"
-    camera-controls interaction-prompt="none" touch-action="pan-y"
-    auto-rotate auto-rotate-delay="0" auto-rotate-speed="20deg/s"
-    environment-image="https://modelviewer.dev/shared-assets/environments/neutral.hdr"
-    shadow-intensity="0.9" exposure="1.15"
-    bounds="tight" camera-target="auto" camera-orbit="0deg 90deg auto"
-    field-of-view="28deg" min-field-of-view="15deg" max-field-of-view="80deg">
-
-    <!-- HS 1 -->
-    <button class="hotspot-btn" slot="hotspot-1"
-      data-position="0.304m 0.179m -1.065m" data-normal="0.006m 0.065m 0.998m"
-      data-hotspot="h1"><span class="num">1</span></button>
-    <div class="popup right" slot="hotspot-1" data-popup="h1">
-      <div class="content"><strong>Lettera S</strong><br>Errato calcolo dello spazio → lettera S incisa sopra la cornice.</div>
-    </div>
-    <!-- HS 2 -->
-    <button class="hotspot-btn" slot="hotspot-2"
-      data-position="0.297m -0.112m -1.060m" data-normal="0.544m 0.017m 0.839m"
-      data-hotspot="h2"><span class="num">2</span></button>
-    <div class="popup right" slot="hotspot-2" data-popup="h2">
-      <div class="content"><strong>Lettera M</strong><br>Ravvicinamento delle lettere e sbordatura della M sulla cornice.</div>
-    </div>
-    <!-- HS 3 -->
-    <button class="hotspot-btn" slot="hotspot-3"
-      data-position="-0.144m -0.275m -1.009m" data-normal="0.075m 0.053m 0.996m"
-      data-hotspot="h3"><span class="num">3</span></button>
-    <div class="popup right" slot="hotspot-3" data-popup="h3">
-      <div class="content"><strong>ATTERNUM</strong><br>Variante locale (rif. CIL IX 5979), possibile influsso osco-umbro.</div>
-    </div>
-    <!-- HS 4 -->
-    <button class="hotspot-btn" slot="hotspot-4"
-      data-position="0.347m 0.325m -1.072m" data-normal="0.162m -0.003m 0.987m"
-      data-hotspot="h4"><span class="num">4</span></button>
-    <div class="popup right" slot="hotspot-4" data-popup="h4">
-      <div class="content"><strong>Supporto lapideo</strong><br>Pietra calcarea con tonalità rossastra nello specchio epigrafico.</div>
-    </div>
-
-    <!-- Misura -->
-    <div class="measure-dot" slot="hotspot-meas-a"  style="display:none" data-position="0m 0m 0m"></div>
-    <div class="measure-dot" slot="hotspot-meas-b"  style="display:none" data-position="0m 0m 0m"></div>
-    <div class="measure-label" id="mlab" slot="hotspot-meas-mid" style="display:none" data-position="0m 0m 0m">0.000 m</div>
-  </model-viewer>
-
-  <!-- Overlay di picking (trasparente, fuori dal model-viewer) -->
-  <div id="pick-layer" aria-hidden="true"></div>
+  <div id="stage">
+    <div id="badge" class="badge">HOTSPOT MODE</div>
+    <!-- hotspot DIV e popup vengono creati da JS -->
+  </div>
 
   <div class="panel">
-    <div class="group"><label>Auto-rotate</label>
-      <div class="row"><button id="rotOn"  class="btn-ghost">ON</button><button id="rotOff" class="btn-ghost">OFF</button></div>
-    </div>
-    <div class="group"><label>Esposizione</label><input id="exp" type="range" min="0.2" max="2.0" step="0.05" value="1.15"></div>
-    <div class="group"><label>Ombre</label><input id="shadow" type="range" min="0" max="1" step="0.05" value="0.9"></div>
-    <div class="group"><label>FOV (zoom)</label><input id="fov" type="range" min="15" max="80" step="1" value="28"></div>
-    <div class="group"><label>Ambiente (HDR)</label>
+    <div class="group">
+      <label>Misurazione</label>
       <div class="row">
-        <button class="btn-ghost env" data-hdr="https://modelviewer.dev/shared-assets/environments/neutral.hdr">Neutral</button>
-        <button class="btn-ghost env" data-hdr="https://modelviewer.dev/shared-assets/environments/moon_1k.hdr">Moon</button>
-        <button class="btn-ghost env" data-hdr="https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr">Sunrise</button>
-        <button class="btn-ghost env" data-hdr="none">None</button>
+        <button id="measure" class="btn-ghost">Misura A–B</button>
+        <button id="measureReset" class="btn-ghost">Reset</button>
+      </div>
+      <small id="mhelp" style="opacity:.75">Clicca A poi B sulla mesh.</small>
+    </div>
+    <div class="group">
+      <label>Zoom (FOV)</label>
+      <input id="fov" type="range" min="25" max="75" step="1" value="45">
+    </div>
+    <div class="group">
+      <label>Luminosità</label>
+      <input id="exposure" type="range" min="0.2" max="2.0" step="0.05" value="1.0">
+    </div>
+    <div class="group">
+      <label>Camera</label>
+      <div class="row">
+        <button id="fit" class="btn-ghost">Inquadra</button>
+        <button id="reset" class="btn-ghost">Reset</button>
       </div>
     </div>
-    <div class="group"><label>Camera</label>
-      <div class="row"><button id="fit" class="btn">Inquadra</button><button id="reset" class="btn-ghost">Reset</button></div>
+    <div class="group">
+      <label>Ambiente</label>
+      <div class="row">
+        <button class="btn-ghost env" data-hdr="on">HDR</button>
+        <button class="btn-ghost env" data-hdr="off">None</button>
+      </div>
     </div>
-    <div class="group"><label>Sfondo</label>
-      <div class="row"><button class="btn-ghost bg" data-bg="dark">Nero</button><button class="btn-ghost bg" data-bg="light">Bianco</button><button class="btn-ghost bg" data-bg="transparent">Trasparente</button></div>
-    </div>
-    <div class="group"><label>Misurazione</label>
-      <div class="row"><button id="measure" class="btn-ghost">Misura A–B</button><button id="measureReset" class="btn-ghost">Reset</button></div>
-      <small id="mhelp" style="opacity:.75">Clicca due punti sulla mesh (A poi B).</small>
+    <div class="group">
+      <label>Hotspot</label>
+      <div class="row">
+        <button id="toggleH" class="btn-ghost">Modalità H</button>
+      </div>
+      <small>Premi anche la <b>H</b> da tastiera</small>
     </div>
   </div>
 </div>
 
-<script>
-(() => {
-  const mv = document.getElementById('mv');
-  const pick = document.getElementById('pick-layer');
+<!-- Three.js (moduli) -->
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/RGBELoader.js';
+import { CSS2DRenderer, CSS2DObject } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js';
 
-  /* ===== UI refs ===== */
-  const rotOn = document.getElementById('rotOn');
-  const rotOff = document.getElementById('rotOff');
-  const exp = document.getElementById('exp');
-  const shadow = document.getElementById('shadow');
-  const fov = document.getElementById('fov');
-  const envBtns = document.querySelectorAll('.env');
-  const bgBtns  = document.querySelectorAll('.bg');
-  const fitBtn  = document.getElementById('fit');
-  const resetBtn= document.getElementById('reset');
+const stage = document.getElementById('stage');
+const badge = document.getElementById('badge');
 
-  const measureBtn   = document.getElementById('measure');
-  const measureReset = document.getElementById('measureReset');
-  const mhelp        = document.getElementById('mhelp');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e0e0e);
 
-  const dotA = mv.querySelector('[slot="hotspot-meas-a"]');
-  const dotB = mv.querySelector('[slot="hotspot-meas-b"]');
-  const mlab = document.getElementById('mlab');
+const camera = new THREE.PerspectiveCamera(45, stage.clientWidth/stage.clientHeight, 0.01, 100);
+camera.position.set(0.7, 0.8, 1.6);
 
-  /* ===== Helpers ===== */
-  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
-  function adaptiveRadius(){
-    const o = mv.getCameraOrbit ? mv.getCameraOrbit() : {radius:0.6};
-    return clamp(o.radius * 0.35, 0.18, 0.60);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(stage.clientWidth, stage.clientHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+stage.appendChild(renderer.domElement);
+
+// label renderer per etichette distanza
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(stage.clientWidth, stage.clientHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+stage.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.target.set(0, 0.5, -1.05);
+
+// luce morbida
+const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.8);
+scene.add(hemi);
+const dir = new THREE.DirectionalLight(0xffffff, 0.7);
+dir.position.set(2,2,2);
+scene.add(dir);
+
+// HDR env (facoltativo)
+let envTexture = null;
+const rgbe = new RGBELoader();
+rgbe.load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/textures/equirectangular/venice_sunset_1k.hdr', (tex)=>{
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  envTexture = tex;
+});
+
+// GLB
+let model = null;
+const loader = new GLTFLoader();
+await loader.loadAsync('https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9').then(g=>{
+  model = g.scene;
+  scene.add(model);
+});
+
+// --------- RAYCAST helper ----------
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+function setNDCFromEvent(e){
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+}
+function raycast(e){
+  setNDCFromEvent(e);
+  raycaster.setFromCamera(mouse, camera);
+  // interseca tutti i figli del modello
+  const hits = raycaster.intersectObject(model, true);
+  return hits[0] || null;
+}
+
+// --------- MISURAZIONE ----------
+const measureBtn = document.getElementById('measure');
+const measureReset = document.getElementById('measureReset');
+const mhelp = document.getElementById('mhelp');
+
+const A = new THREE.Mesh(new THREE.SphereGeometry(0.01,16,16), new THREE.MeshBasicMaterial({color:0x22c55e}));
+const B = A.clone();
+A.visible = B.visible = false;
+scene.add(A,B);
+
+const lineMat = new THREE.LineBasicMaterial({color:0x22c55e});
+const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+const lineAB = new THREE.Line(lineGeo, lineMat); lineAB.visible=false;
+scene.add(lineAB);
+
+const distLabelEl = document.createElement('div'); distLabelEl.className='label'; distLabelEl.textContent='0.000 m';
+const distLabel = new CSS2DObject(distLabelEl);
+distLabel.visible=false; scene.add(distLabel);
+
+const measuring = {active:false, step:0, a:new THREE.Vector3(), b:new THREE.Vector3()};
+
+function setMeasureActive(on){
+  measuring.active = on; measuring.step = 0;
+  A.visible = B.visible = lineAB.visible = distLabel.visible = false;
+  mhelp.textContent = on ? 'Clicca A poi B sulla mesh.' : 'Clicca A–B per misurare.';
+}
+
+measureBtn.onclick = ()=> setMeasureActive(!measuring.active);
+measureReset.onclick = ()=> setMeasureActive(false);
+
+renderer.domElement.addEventListener('click', (e)=>{
+  if(!measuring.active) return;
+  const hit = raycast(e); if(!hit) return;
+
+  if(measuring.step===0){
+    measuring.a.copy(hit.point);
+    A.position.copy(hit.point); A.visible = true;
+    measuring.step = 1;
+  } else {
+    measuring.b.copy(hit.point);
+    B.position.copy(hit.point); B.visible = true;
+
+    lineAB.geometry.setFromPoints([measuring.a, measuring.b]); lineAB.visible=true;
+
+    const mid = measuring.a.clone().add(measuring.b).multiplyScalar(0.5);
+    distLabel.position.copy(mid); distLabel.visible=true;
+
+    const d = measuring.a.distanceTo(measuring.b);
+    distLabelEl.textContent = d.toFixed(3)+' m';
+    measuring.step = 0; // pronto per nuova misura
   }
-  function frontalOrbit(){
-    const o = mv.getCameraOrbit ? mv.getCameraOrbit() : {theta:0, radius:0.6};
-    const thetaDeg = (typeof o.theta === 'string') ? parseFloat(o.theta) : (o.theta * 180/Math.PI);
-    const r = adaptiveRadius();
-    return `${thetaDeg.toFixed(1)}deg 90deg ${r.toFixed(3)}m`;
-  }
-  function sideFor(x){
-    const c = mv.getBoundingClientRect().left + mv.clientWidth/2;
-    return (x<c)?'right':'left';
-  }
-  function nudge(pop){
-    pop.style.setProperty('--dx','0px'); pop.style.setProperty('--dy','0px');
-    const pad=12, r=pop.getBoundingClientRect(); let dx=0,dy=0;
-    if(r.left<pad)dx=pad-r.left;
-    if(r.right>innerWidth-pad)dx=(innerWidth-pad)-r.right;
-    if(r.top<pad)dy=pad-r.top;
-    if(r.bottom>innerHeight-pad)dy=(innerHeight-pad)-r.bottom;
-    pop.style.setProperty('--dx',dx+'px'); pop.style.setProperty('--dy',dy+'px');
-  }
-  function closeOthers(except){ mv.querySelectorAll('.popup.show').forEach(p=>{ if(p!==except) p.classList.remove('show'); }); }
-  function hotspotBtnFromPath(path){ for(const el of path){ if(el?.dataset?.hotspot) return el; } return null; }
+});
 
-  /* ===== Controlli base ===== */
-  function refreshRot(){ rotOn.classList.toggle('on', !!mv.autoRotate); rotOff.classList.toggle('on', !mv.autoRotate); }
-  rotOn.onclick=()=>{ mv.autoRotate=true;  mv.resetTurntableRotation?.(); refreshRot(); };
-  rotOff.onclick=()=>{ mv.autoRotate=false;                     refreshRot(); };
-  mv.addEventListener('load', refreshRot);
+// --------- HOTSPOT & POPUP ----------
+const stageRect = ()=> renderer.domElement.getBoundingClientRect();
 
-  exp.oninput    = e => mv.exposure        = +e.target.value;
-  shadow.oninput = e => mv.shadowIntensity = +e.target.value;
-  fov.oninput    = e => mv.fieldOfView     = `${+e.target.value}deg`;
-  envBtns.forEach(b => b.onclick = ()=> mv.environmentImage = (b.dataset.hdr==='none' ? 'none' : b.dataset.hdr));
-  bgBtns.forEach(b => b.onclick = ()=>{
-    const m=b.dataset.bg;
-    document.body.style.background = (m==='light')?'#d9d9d9':'#111';
-    mv.style.background            = (m==='light')?'#f5f5f5':(m==='transparent')?'transparent':'#111';
+// tuoi punti (in metri) + normali opzionali per zoom frontale
+const HOTSPOTS = [
+  { id:1, pos:new THREE.Vector3( 0.304,  0.179, -1.065), nor:new THREE.Vector3(0.006, 0.065, 0.998), title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
+  { id:2, pos:new THREE.Vector3( 0.297, -0.112, -1.060), nor:new THREE.Vector3(0.544, 0.017, 0.839), title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
+  { id:3, pos:new THREE.Vector3(-0.144, -0.275, -1.009), nor:new THREE.Vector3(0.075, 0.053, 0.996), title:'ATTERNUM', text:'Variante locale (rif. CIL IX 5979), possibile influsso osco-umbro.' },
+  { id:4, pos:new THREE.Vector3( 0.347,  0.325, -1.072), nor:new THREE.Vector3(0.162,-0.003, 0.987), title:'Supporto lapideo', text:'Pietra calcarea con tonalità rossastra nello specchio epigrafico.' }
+];
+
+// crea hotspot DIV + popup
+const hUI = HOTSPOTS.map(h=>{
+  const btn = document.createElement('div');
+  btn.className = 'hotspot'; btn.textContent = h.id;
+  stage.appendChild(btn);
+
+  const pop = document.createElement('div');
+  pop.className = 'popup';
+  pop.innerHTML = `<strong>${h.title}</strong><br>${h.text}`;
+  stage.appendChild(pop);
+
+  btn.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    // zoom frontale adattivo
+    focusOn(h.pos, h.nor);
+    // pannello: lato in base alla x proiettata
+    const r = stageRect();
+    const s = h.pos.clone().project(camera);
+    const px = (s.x*0.5+0.5)*r.width;
+    pop.style.top = ((-s.y*0.5+0.5)*r.height) + 'px';
+    pop.style.left = px + 'px';
+    pop.classList.remove('left','right');
+    pop.classList.add( px < r.width/2 ? 'right' : 'left' );
+
+    document.querySelectorAll('.popup.show').forEach(p=>{ if(p!==pop) p.classList.remove('show'); });
+    pop.classList.toggle('show');
   });
 
-  fitBtn.onclick   = ()=>{ mv.cameraTarget='auto'; mv.cameraOrbit='0deg 90deg auto'; mv.jumpCameraToGoal?.(); };
-  resetBtn.onclick = ()=>{ mv.cameraOrbit='0deg 90deg auto'; mv.fieldOfView='28deg'; mv.cameraTarget='auto'; mv.autoRotate=true; mv.resetTurntableRotation?.(); mv.jumpCameraToGoal?.(); refreshRot(); };
+  return {h, btn, pop};
+});
 
-  /* ===== Allinea overlay al viewer ===== */
-  function updatePickLayer(){
-    const r = mv.getBoundingClientRect();
-    pick.style.left = r.left + 'px';
-    pick.style.top = r.top + 'px';
-    pick.style.width = r.width + 'px';
-    pick.style.height = r.height + 'px';
-  }
-  ['resize','scroll'].forEach(e => window.addEventListener(e, updatePickLayer, {passive:true}));
-  mv.addEventListener('load', updatePickLayer);
-  setTimeout(updatePickLayer, 0);
-  setTimeout(updatePickLayer, 200);
-
-  /* ===== Hotspot: zoom frontale + popup ===== */
-  const FOCUS_FOV = 22;
-  mv.addEventListener('click',(ev)=>{
-    const btn = hotspotBtnFromPath(ev.composedPath());
-    if (!btn) return;
-    const pos = btn.getAttribute('data-position');
-    if (pos) mv.cameraTarget = pos;
-    mv.cameraOrbit = frontalOrbit();
-    mv.fieldOfView = `${FOCUS_FOV}deg`;
-    mv.jumpCameraToGoal?.();
-
-    const pop = mv.querySelector(`.popup[data-popup="${btn.dataset.hotspot}"]`);
-    if (pop){
-      pop.classList.remove('left','right');
-      pop.classList.add(sideFor(ev.clientX));
-      const willOpen = !pop.classList.contains('show');
-      closeOthers(pop);
-      if (willOpen){ pop.classList.add('show'); requestAnimationFrame(()=>nudge(pop)); }
-      else pop.classList.remove('show');
+// aggiorna posizione schermo degli hotspot
+function updateHotspotScreenPositions(){
+  const r = stageRect();
+  hUI.forEach(({h,btn,pop})=>{
+    const s = h.pos.clone().project(camera);
+    btn.style.left = ((s.x*0.5+0.5)*r.width) + 'px';
+    btn.style.top  = ((-s.y*0.5+0.5)*r.height) + 'px';
+    // se il popup è aperto, riallinea la y
+    if(pop.classList.contains('show')){
+      pop.style.top = btn.style.top;
     }
-    ev.stopPropagation();
   });
-  window.addEventListener('click', (e)=>{ if(!mv.contains(e.target)) return; closeOthers(null); });
+}
 
-  /* ===== Picking robusto ===== */
-  function getHitFromEvent(ev){
-    // 1) coord GLOBALI
-    let hit = mv.positionAndNormalFromPoint(ev.clientX, ev.clientY);
-    if (!hit) {
-      // 2) coord relative
-      const r = mv.getBoundingClientRect();
-      const x = ev.clientX - r.left;
-      const y = ev.clientY - r.top;
-      hit = mv.positionAndNormalFromPoint(x, y)
-         || (window.devicePixelRatio && mv.positionAndNormalFromPoint(x*devicePixelRatio, y*devicePixelRatio))
-         || (window.devicePixelRatio && mv.positionAndNormalFromPoint(ev.clientX*devicePixelRatio, ev.clientY*devicePixelRatio));
-    }
-    return hit;
-  }
+// zoom frontale: porta target al punto e sposta camera di una distanza in direzione della normale o della direzione camera->punto
+function focusOn(point, normal){
+  controls.target.copy(point);
+  const r = camera.position.distanceTo(controls.target);
+  const dist = THREE.MathUtils.clamp(r*0.4, 0.2, 0.7);
 
-  /* ===== Misurazione ===== */
-  const measuring = { active:false, step:0, A:null, B:null };
-  function setHotspot(el,p){ el.style.display='block'; el.setAttribute('data-position', `${p.x}m ${p.y}m ${p.z}m`); }
-  function setPickActive(){ pick.classList.toggle('active', measuring.active || hotspotMode.active); }
-  function updMeasureUI(){
-    measureBtn.classList.toggle('on', measuring.active);
-    mhelp.textContent = measuring.active ? 'Clicca A poi B sulla mesh.' : 'Clicca due punti sulla mesh (A poi B).';
-    setPickActive();
-  }
+  let dir = normal ? normal.clone().normalize() : camera.position.clone().sub(point).normalize();
+  const newPos = point.clone().add(dir.multiplyScalar(dist));
+  camera.position.lerp(newPos, 1.0);
+  camera.lookAt(point);
+}
 
-  measureBtn.onclick = ()=>{
-    measuring.active = !measuring.active;
-    measuring.step=0; measuring.A=measuring.B=null;
-    dotA.style.display='none'; dotB.style.display='none'; mlab.style.display='none';
-    updMeasureUI();
+// --------- AMBIENTE / UI ---------
+document.getElementById('fov').oninput = e => { camera.fov = +e.target.value; camera.updateProjectionMatrix(); };
+document.getElementById('exposure').oninput = e => { renderer.toneMappingExposure = +e.target.value; };
+document.getElementById('fit').onclick = ()=>{
+  controls.target.set(0,0.5,-1.05); camera.position.set(0.7,0.8,1.6);
+};
+document.getElementById('reset').onclick = ()=>{
+  controls.reset(); controls.target.set(0,0.5,-1.05);
+  camera.fov = 45; camera.updateProjectionMatrix();
+};
+document.querySelectorAll('.env').forEach(b=>{
+  b.onclick = ()=>{
+    if(b.dataset.hdr==='on' && envTexture){ scene.environment = envTexture; }
+    else { scene.environment = null; }
   };
-  measureReset.onclick = ()=>{
-    measuring.active=false; measuring.step=0; measuring.A=measuring.B=null;
-    dotA.style.display='none'; dotB.style.display='none'; mlab.style.display='none';
-    updMeasureUI();
-  };
+});
 
-  pick.addEventListener('click', (ev)=>{
-    if (!measuring.active) return;
-    const hit = getHitFromEvent(ev);
-    if (!hit){ console.warn('Nessun punto (clicca sulla pietra)'); return; }
-    const p={ x:+hit.position.x.toFixed(3), y:+hit.position.y.toFixed(3), z:+hit.position.z.toFixed(3) };
-    if (measuring.step===0){
-      measuring.A=p; measuring.step=1; setHotspot(dotA,p);
-    } else {
-      measuring.B=p; measuring.step=0; setHotspot(dotB,p);
-      const dx=measuring.A.x-measuring.B.x, dy=measuring.A.y-measuring.B.y, dz=measuring.A.z-measuring.B.z;
-      const d=Math.hypot(dx,dy,dz);
-      const m={x:(measuring.A.x+measuring.B.x)/2, y:(measuring.A.y+measuring.B.y)/2, z:(measuring.A.z+measuring.B.z)/2};
-      mlab.setAttribute('data-position', `${m.x}m ${m.y}m ${m.z}m`);
-      mlab.textContent = d.toFixed(3)+' m';
-      mlab.style.display='block';
-    }
-  });
+// --------- MODALITÀ HOTSPOT (H) per leggere coordinate ----------
+let hotspotMode = false;
+function toggleH(){
+  hotspotMode = !hotspotMode;
+  badge.style.display = hotspotMode ? 'block' : 'none';
+  console.log(hotspotMode ? '🟦 Hotspot mode ON — clicca la pietra per ottenere il blocco HTML.' : '⬛ Hotspot mode OFF');
+}
+document.getElementById('toggleH').onclick = toggleH;
+window.addEventListener('keydown', e=>{ if(e.key.toLowerCase()==='h') toggleH(); });
 
-  /* ===== Hotspot mode (H) ===== */
-  const hotspotMode={active:false};
-  const badge=document.createElement('div');
-  badge.textContent='HOTSPOT MODE';
-  Object.assign(badge.style,{
-    position:'fixed',top:'8px',left:'8px',padding:'6px 8px',
-    background:'rgba(14,165,233,.12)',color:'#93c5fd',
-    border:'1px solid rgba(147,197,253,.35)',
-    font:'600 12px/1.2 system-ui',borderRadius:'8px',
-    display:'none',zIndex:9999,pointerEvents:'none'
-  });
-  document.body.appendChild(badge);
-  function toggleHotspotMode(){
-    hotspotMode.active=!hotspotMode.active;
-    badge.style.display=hotspotMode.active?'block':'none';
-    setPickActive();
-    console.log(hotspotMode.active?'🟦 Hotspot mode ON — clicca la pietra per ottenere il blocco HTML.':'⬛ Hotspot mode OFF');
-  }
-  window.addEventListener('keydown',(e)=>{ if(e.key.toLowerCase()==='h') toggleHotspotMode(); });
+renderer.domElement.addEventListener('click', (e)=>{
+  if(!hotspotMode) return;
+  const hit = raycast(e); if(!hit) return;
+  const p = hit.point, n = hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0,0,1);
+  const pos = `${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m`;
+  const nor = `${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m`;
+  console.clear();
+  console.log(`data-position="${pos}"\ndata-normal="${nor}"`);
+});
 
-  pick.addEventListener('click', (ev)=>{
-    if (!hotspotMode.active || measuring.active) return;
-    const hit = getHitFromEvent(ev);
-    if(!hit){ console.warn('Clicca la mesh'); return; }
-    const p=hit.position, n=hit.normal;
-    const pos=`${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m`;
-    const nor=`${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m`;
-    const next=(Array.from(mv.querySelectorAll('.hotspot-btn')).length+1);
-    const block=`<!-- HOTSPOT ${next} -->
-<button class="hotspot-btn" slot="hotspot-${next}"
-  data-position="${pos}"
-  data-normal="${nor}"
-  data-hotspot="h${next}"><span class="num">${next}</span></button>
-<div class="popup right" slot="hotspot-${next}"
-  data-position="${pos}"
-  data-normal="${nor}"
-  data-popup="h${next}">
-  <div class="content"><strong>Titolo</strong><br>Testo descrizione hotspot ${next}.</div>
-</div>`;
-    console.clear(); console.log('Copia e incolla nel tuo HTML:\n\n'+block);
-  });
+// --------- RENDER LOOP ----------
+function onResize(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+  labelRenderer.setSize(w,h);
+  updateHotspotScreenPositions();
+}
+window.addEventListener('resize', onResize);
 
-})();
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+  updateHotspotScreenPositions();
+}
+onResize();
+animate();
+
 </script>
 </body>
 </html>
