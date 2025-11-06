@@ -4,7 +4,6 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Epigrafe Claudia Nova — Three.js</title>
-
 <style>
   :root{--bg:#111;--card:#1b1b1b}
   html,body{height:100%;margin:0;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -13,13 +12,13 @@
   #stage{position:relative;width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;border-radius:14px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.45);background:#0e0e0e}
   canvas{display:block;width:100%;height:100%}
 
-  /* pannello controlli */
   .panel{width:min(96vw,1200px);margin:0 auto;background:var(--card);border-radius:12px;padding:10px;display:grid;gap:8px;grid-template-columns:repeat(6,1fr)}
   .group{background:rgba(255,255,255,.05);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
   .row{display:flex;gap:8px;flex-wrap:wrap}
+  label{font-size:12px;opacity:.8}
+  input[type=range]{width:100%}
   button{border:0;border-radius:10px;padding:9px 12px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
   .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
-  input[type=range]{width:100%}
 
   /* hotspot numerati */
   .hotspot{
@@ -31,15 +30,15 @@
     z-index:10;
   }
 
-  /* pannelli esterni */
+  /* pannelli esterni, responsive + flip */
   .popup{
-    position:absolute; width: clamp(200px, 22vw, 280px); aspect-ratio: 1/1;
+    position:absolute; width: clamp(220px, 26vw, 320px); max-height: 60vh;
     background:rgba(18,18,18,.96); border:1px solid rgba(255,255,255,.25);
-    border-radius:12px; padding:12px; display:none; overflow:auto; z-index:9;
+    border-radius:12px; padding:14px; display:none; overflow:auto; z-index:9;
   }
   .popup.show{display:block}
-  .popup.right{transform:translate(80px,-50%)}
-  .popup.left {transform:translate(-100%,-50%)}
+  .popup.right{transform:translate(80px,-50%)}   /* a destra del punto */
+  .popup.left {transform:translate(-100%,-50%)}  /* a sinistra del punto */
 
   /* etichetta misura (CSS2D) */
   .label{
@@ -47,7 +46,8 @@
     border:1px solid rgba(255,255,255,.25); font:600 12px/1.2 system-ui;
     pointer-events:none;
   }
-  /* badge modalità hotspot */
+
+  /* badge Hotspot mode */
   .badge{
     position:absolute; top:8px; left:8px; z-index:20;
     padding:6px 8px; border-radius:8px;
@@ -62,7 +62,6 @@
 
   <div id="stage">
     <div id="badge" class="badge">HOTSPOT MODE</div>
-    <!-- hotspot DIV e popup vengono creati da JS -->
   </div>
 
   <div class="panel">
@@ -74,14 +73,17 @@
       </div>
       <small id="mhelp" style="opacity:.75">Clicca A poi B sulla mesh.</small>
     </div>
+
     <div class="group">
       <label>Zoom (FOV)</label>
       <input id="fov" type="range" min="25" max="75" step="1" value="45">
     </div>
+
     <div class="group">
       <label>Luminosità</label>
       <input id="exposure" type="range" min="0.2" max="2.0" step="0.05" value="1.0">
     </div>
+
     <div class="group">
       <label>Camera</label>
       <div class="row">
@@ -89,6 +91,7 @@
         <button id="reset" class="btn-ghost">Reset</button>
       </div>
     </div>
+
     <div class="group">
       <label>Ambiente</label>
       <div class="row">
@@ -96,6 +99,17 @@
         <button class="btn-ghost env" data-hdr="off">None</button>
       </div>
     </div>
+
+    <div class="group">
+      <label>Sfondo</label>
+      <div class="row">
+        <button class="btn-ghost bg" data-bg="dark">Nero</button>
+        <button class="btn-ghost bg" data-bg="light">Bianco</button>
+        <button class="btn-ghost bg" data-bg="transparent">Trasparente</button>
+        <button class="btn-ghost bg" data-bg="gradient">Gradiente</button>
+      </div>
+    </div>
+
     <div class="group">
       <label>Hotspot</label>
       <div class="row">
@@ -106,30 +120,33 @@
   </div>
 </div>
 
-<!-- Three.js (moduli) -->
+<!-- Three.js + Tween.js -->
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/RGBELoader.js';
 import { CSS2DRenderer, CSS2DObject } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js';
+import TWEEN from 'https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.esm.js';
 
 const stage = document.getElementById('stage');
 const badge = document.getElementById('badge');
 
+/* ---------- SCENA ---------- */
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0e0e0e);
 
 const camera = new THREE.PerspectiveCamera(45, stage.clientWidth/stage.clientHeight, 0.01, 100);
-camera.position.set(0.7, 0.8, 1.6);
+camera.position.set(0.9, 0.9, 1.8);
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(stage.clientWidth, stage.clientHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
 stage.appendChild(renderer.domElement);
 
-// label renderer per etichette distanza
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(stage.clientWidth, stage.clientHeight);
 labelRenderer.domElement.style.position = 'absolute';
@@ -142,46 +159,52 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0, 0.5, -1.05);
 
-// luce morbida
-const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.8);
+/* Luci */
+const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.9);
 scene.add(hemi);
-const dir = new THREE.DirectionalLight(0xffffff, 0.7);
+const dir = new THREE.DirectionalLight(0xffffff, 1.0);
 dir.position.set(2,2,2);
 scene.add(dir);
 
-// HDR env (facoltativo)
+/* HDR ambiente opzionale */
 let envTexture = null;
-const rgbe = new RGBELoader();
-rgbe.load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/textures/equirectangular/venice_sunset_1k.hdr', (tex)=>{
-  tex.mapping = THREE.EquirectangularReflectionMapping;
-  envTexture = tex;
-});
+new RGBELoader()
+  .setPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/textures/equirectangular/')
+  .load('venice_sunset_1k.hdr', (tex)=>{
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    envTexture = tex;
+  });
 
-// GLB
+/* ---------- MODELLO ---------- */
 let model = null;
-const loader = new GLTFLoader();
-await loader.loadAsync('https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9').then(g=>{
-  model = g.scene;
-  scene.add(model);
-});
+await new GLTFLoader()
+  .loadAsync('https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9')
+  .then(g=>{
+    model = g.scene;
+    // assicurati che i materiali rispondano bene all’illuminazione
+    model.traverse(o=>{
+      if(o.isMesh){
+        o.castShadow = o.receiveShadow = true;
+        if(o.material) o.material.needsUpdate = true;
+      }
+    });
+    scene.add(model);
+  })
+  .catch(e=>console.error('Errore caricamento GLB', e));
 
-// --------- RAYCAST helper ----------
+/* ---------- RAYCAST ---------- */
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-function setNDCFromEvent(e){
+function raycast(e){
   const rect = renderer.domElement.getBoundingClientRect();
   mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-}
-function raycast(e){
-  setNDCFromEvent(e);
   raycaster.setFromCamera(mouse, camera);
-  // interseca tutti i figli del modello
-  const hits = raycaster.intersectObject(model, true);
+  const hits = model ? raycaster.intersectObject(model, true) : [];
   return hits[0] || null;
 }
 
-// --------- MISURAZIONE ----------
+/* ---------- MISURAZIONE ---------- */
 const measureBtn = document.getElementById('measure');
 const measureReset = document.getElementById('measureReset');
 const mhelp = document.getElementById('mhelp');
@@ -201,13 +224,11 @@ const distLabel = new CSS2DObject(distLabelEl);
 distLabel.visible=false; scene.add(distLabel);
 
 const measuring = {active:false, step:0, a:new THREE.Vector3(), b:new THREE.Vector3()};
-
 function setMeasureActive(on){
   measuring.active = on; measuring.step = 0;
   A.visible = B.visible = lineAB.visible = distLabel.visible = false;
   mhelp.textContent = on ? 'Clicca A poi B sulla mesh.' : 'Clicca A–B per misurare.';
 }
-
 measureBtn.onclick = ()=> setMeasureActive(!measuring.active);
 measureReset.onclick = ()=> setMeasureActive(false);
 
@@ -230,96 +251,150 @@ renderer.domElement.addEventListener('click', (e)=>{
 
     const d = measuring.a.distanceTo(measuring.b);
     distLabelEl.textContent = d.toFixed(3)+' m';
-    measuring.step = 0; // pronto per nuova misura
+    measuring.step = 0;
   }
 });
 
-// --------- HOTSPOT & POPUP ----------
-const stageRect = ()=> renderer.domElement.getBoundingClientRect();
-
-// tuoi punti (in metri) + normali opzionali per zoom frontale
-const HOTSPOTS = [
-  { id:1, pos:new THREE.Vector3( 0.304,  0.179, -1.065), nor:new THREE.Vector3(0.006, 0.065, 0.998), title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
-  { id:2, pos:new THREE.Vector3( 0.297, -0.112, -1.060), nor:new THREE.Vector3(0.544, 0.017, 0.839), title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
-  { id:3, pos:new THREE.Vector3(-0.144, -0.275, -1.009), nor:new THREE.Vector3(0.075, 0.053, 0.996), title:'ATTERNUM', text:'Variante locale (rif. CIL IX 5979), possibile influsso osco-umbro.' },
-  { id:4, pos:new THREE.Vector3( 0.347,  0.325, -1.072), nor:new THREE.Vector3(0.162,-0.003, 0.987), title:'Supporto lapideo', text:'Pietra calcarea con tonalità rossastra nello specchio epigrafico.' }
+/* ---------- HOTSPOT DA JSON (+ fallback) ---------- */
+const FALLBACK_HOTSPOTS = [
+  { id:1, pos:[ 0.304,  0.179, -1.065], nor:[0.006, 0.065, 0.998], title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
+  { id:2, pos:[ 0.297, -0.112, -1.060], nor:[0.544, 0.017, 0.839], title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
+  { id:3, pos:[-0.144, -0.275, -1.009], nor:[0.075, 0.053, 0.996], title:'ATTERNUM', text:'Variante locale (rif. CIL IX 5979), possibile influsso osco-umbro.' },
+  { id:4, pos:[ 0.347,  0.325, -1.072], nor:[0.162,-0.003, 0.987], title:'Supporto lapideo', text:'Pietra calcarea con tonalità rossastra nello specchio epigrafico.' }
 ];
 
-// crea hotspot DIV + popup
-const hUI = HOTSPOTS.map(h=>{
-  const btn = document.createElement('div');
-  btn.className = 'hotspot'; btn.textContent = h.id;
-  stage.appendChild(btn);
+async function loadHotspots(){
+  try{
+    const res = await fetch('https://edoarch94.github.io/DOTTORATO_UMAP2/hotspots/epigrafe.json', {cache:'no-store'});
+    if(!res.ok) throw new Error(res.status);
+    return await res.json();
+  }catch(e){
+    console.warn('Hotspots JSON non trovato, uso fallback');
+    return FALLBACK_HOTSPOTS;
+  }
+}
 
-  const pop = document.createElement('div');
-  pop.className = 'popup';
-  pop.innerHTML = `<strong>${h.title}</strong><br>${h.text}`;
-  stage.appendChild(pop);
-
-  btn.addEventListener('click',(e)=>{
-    e.stopPropagation();
-    // zoom frontale adattivo
-    focusOn(h.pos, h.nor);
-    // pannello: lato in base alla x proiettata
-    const r = stageRect();
-    const s = h.pos.clone().project(camera);
-    const px = (s.x*0.5+0.5)*r.width;
-    pop.style.top = ((-s.y*0.5+0.5)*r.height) + 'px';
-    pop.style.left = px + 'px';
-    pop.classList.remove('left','right');
-    pop.classList.add( px < r.width/2 ? 'right' : 'left' );
-
-    document.querySelectorAll('.popup.show').forEach(p=>{ if(p!==pop) p.classList.remove('show'); });
-    pop.classList.toggle('show');
-  });
-
-  return {h, btn, pop};
-});
-
-// aggiorna posizione schermo degli hotspot
-function updateHotspotScreenPositions(){
+const stageRect = ()=> renderer.domElement.getBoundingClientRect();
+function screenPosFromWorld(v){ // world vec3 -> pixel
+  const s = v.clone().project(camera);
   const r = stageRect();
-  hUI.forEach(({h,btn,pop})=>{
-    const s = h.pos.clone().project(camera);
-    btn.style.left = ((s.x*0.5+0.5)*r.width) + 'px';
-    btn.style.top  = ((-s.y*0.5+0.5)*r.height) + 'px';
-    // se il popup è aperto, riallinea la y
-    if(pop.classList.contains('show')){
-      pop.style.top = btn.style.top;
-    }
+  return { x:(s.x*0.5+0.5)*r.width, y:(-s.y*0.5+0.5)*r.height };
+}
+
+const hUI = [];
+function buildHotspotUI(list){
+  list.forEach(h=>{
+    const pos = new THREE.Vector3(...h.pos);
+    const nor = new THREE.Vector3(...h.nor).normalize();
+
+    const btn = document.createElement('div');
+    btn.className = 'hotspot'; btn.textContent = h.id;
+    stage.appendChild(btn);
+
+    const pop = document.createElement('div');
+    pop.className = 'popup';
+    pop.innerHTML = `<strong>${h.title}</strong><br>${h.text}`;
+    stage.appendChild(pop);
+
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      focusOn(pos, nor);
+      placePopup(pop, pos);
+      togglePopup(pop);
+    });
+
+    hUI.push({pos, nor, btn, pop});
   });
 }
 
-// zoom frontale: porta target al punto e sposta camera di una distanza in direzione della normale o della direzione camera->punto
-function focusOn(point, normal){
-  controls.target.copy(point);
-  const r = camera.position.distanceTo(controls.target);
-  const dist = THREE.MathUtils.clamp(r*0.4, 0.2, 0.7);
+function placePopup(pop, worldPos){
+  const r = stageRect();
+  const s = screenPosFromWorld(worldPos);
+  pop.style.top = `${s.y}px`;
+  pop.style.left = `${s.x}px`;
+  // flip automatico se non c’è spazio
+  const openRight = s.x < r.width/2;
+  pop.classList.remove('left','right');
+  pop.classList.add(openRight ? 'right' : 'left');
 
-  let dir = normal ? normal.clone().normalize() : camera.position.clone().sub(point).normalize();
-  const newPos = point.clone().add(dir.multiplyScalar(dist));
-  camera.position.lerp(newPos, 1.0);
-  camera.lookAt(point);
+  // dopo il flip, se sborda verticalmente, recentra
+  requestAnimationFrame(()=>{
+    const pr = pop.getBoundingClientRect();
+    let top = s.y - pr.height/2;
+    const pad = 8;
+    top = Math.max(pad, Math.min(window.innerHeight - pr.height - pad, top));
+    pop.style.top = `${top}px`;
+  });
 }
 
-// --------- AMBIENTE / UI ---------
+function togglePopup(pop){
+  document.querySelectorAll('.popup.show').forEach(p=>{ if(p!==pop) p.classList.remove('show'); });
+  pop.classList.toggle('show');
+}
+
+function updateHotspotButtons(){
+  const r = stageRect();
+  hUI.forEach(({pos,btn,pop})=>{
+    const s = screenPosFromWorld(pos);
+    btn.style.left = `${s.x}px`;
+    btn.style.top  = `${s.y}px`;
+    if(pop.classList.contains('show')) placePopup(pop, pos);
+  });
+}
+
+/* ---------- ZOOM DOLCE (tween) ---------- */
+function focusOn(point, normal){
+  const targetFrom = controls.target.clone();
+  const camFrom = camera.position.clone();
+
+  // distanza adattiva
+  const currentDist = camera.position.distanceTo(controls.target);
+  const dist = THREE.MathUtils.clamp(currentDist*0.4, 0.22, 0.7);
+
+  const dir = normal.clone().normalize();
+  const camTo = point.clone().add(dir.multiplyScalar(dist));
+
+  const t = {alpha:0};
+  new TWEEN.Tween(t).to({alpha:1}, 650).easing(TWEEN.Easing.Cubic.Out)
+    .onUpdate(()=>{
+      controls.target.lerpVectors(targetFrom, point, t.alpha);
+      camera.position.lerpVectors(camFrom, camTo, t.alpha);
+      camera.lookAt(controls.target);
+    }).start();
+}
+
+/* ---------- UI Controlli ---------- */
 document.getElementById('fov').oninput = e => { camera.fov = +e.target.value; camera.updateProjectionMatrix(); };
 document.getElementById('exposure').oninput = e => { renderer.toneMappingExposure = +e.target.value; };
 document.getElementById('fit').onclick = ()=>{
-  controls.target.set(0,0.5,-1.05); camera.position.set(0.7,0.8,1.6);
+  const t = {a:0}; const from = camera.position.clone(), to = new THREE.Vector3(0.9,0.9,1.8);
+  new TWEEN.Tween(t).to({a:1},500).easing(TWEEN.Easing.Cubic.Out)
+    .onUpdate(()=> camera.position.lerpVectors(from,to,t.a)).start();
+  new TWEEN.Tween(controls.target).to({x:0,y:0.5,z:-1.05},500).easing(TWEEN.Easing.Cubic.Out).start();
 };
 document.getElementById('reset').onclick = ()=>{
-  controls.reset(); controls.target.set(0,0.5,-1.05);
-  camera.fov = 45; camera.updateProjectionMatrix();
+  controls.reset();
+  controls.target.set(0,0.5,-1.05);
+  new TWEEN.Tween(camera).to({fov:45},300).easing(TWEEN.Easing.Quadratic.Out)
+    .onUpdate(()=> camera.updateProjectionMatrix()).start();
 };
+
 document.querySelectorAll('.env').forEach(b=>{
   b.onclick = ()=>{
-    if(b.dataset.hdr==='on' && envTexture){ scene.environment = envTexture; }
-    else { scene.environment = null; }
+    scene.environment = (b.dataset.hdr==='on' && envTexture) ? envTexture : null;
+  };
+});
+document.querySelectorAll('.bg').forEach(b=>{
+  b.onclick = ()=>{
+    const mode = b.dataset.bg;
+    if(mode==='dark'){ scene.background = new THREE.Color(0x0e0e0e); stage.style.background='#0e0e0e'; }
+    if(mode==='light'){ scene.background = new THREE.Color(0xf5f5f5); stage.style.background='#f5f5f5'; }
+    if(mode==='transparent'){ scene.background = null; stage.style.background='transparent'; }
+    if(mode==='gradient'){ scene.background = null; stage.style.background='linear-gradient(180deg,#0e0e0e,#1a1a1a)'; }
   };
 });
 
-// --------- MODALITÀ HOTSPOT (H) per leggere coordinate ----------
+/* ---------- Hotspot Mode (H) ---------- */
 let hotspotMode = false;
 function toggleH(){
   hotspotMode = !hotspotMode;
@@ -328,37 +403,40 @@ function toggleH(){
 }
 document.getElementById('toggleH').onclick = toggleH;
 window.addEventListener('keydown', e=>{ if(e.key.toLowerCase()==='h') toggleH(); });
-
 renderer.domElement.addEventListener('click', (e)=>{
   if(!hotspotMode) return;
   const hit = raycast(e); if(!hit) return;
-  const p = hit.point, n = hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0,0,1);
+  const p = hit.point;
+  const n = hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0,0,1);
   const pos = `${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m`;
   const nor = `${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m`;
   console.clear();
   console.log(`data-position="${pos}"\ndata-normal="${nor}"`);
 });
 
-// --------- RENDER LOOP ----------
+/* ---------- Hotspots build ---------- */
+const data = await loadHotspots();
+buildHotspotUI(data);
+
+/* ---------- RESIZE + LOOP ---------- */
 function onResize(){
   const w = stage.clientWidth, h = stage.clientHeight;
   camera.aspect = w/h; camera.updateProjectionMatrix();
-  renderer.setSize(w,h);
-  labelRenderer.setSize(w,h);
-  updateHotspotScreenPositions();
+  renderer.setSize(w,h); labelRenderer.setSize(w,h);
+  updateHotspotButtons();
 }
 window.addEventListener('resize', onResize);
 
 function animate(){
   requestAnimationFrame(animate);
   controls.update();
+  TWEEN.update();
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
-  updateHotspotScreenPositions();
+  updateHotspotButtons();
 }
 onResize();
 animate();
-
 </script>
 </body>
 </html>
