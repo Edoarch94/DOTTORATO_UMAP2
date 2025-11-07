@@ -66,7 +66,7 @@
 
     <div class="group">
       <label>Luminosità</label>
-      <input id="exposure" type="range" min="0.2" max="2.0" step="0.05" value="1.3">
+      <input id="exposure" type="range" min="0.2" max="2.2" step="0.05" value="1.6">
     </div>
 
     <div class="group">
@@ -80,7 +80,7 @@
     <div class="group">
       <label>Ambiente</label>
       <div class="row">
-        <button class="btn-ghost env" data-hdr="on">HDR</button>
+        <button class="btn-ghost env on" data-hdr="on">HDR</button>
         <button class="btn-ghost env" data-hdr="off">None</button>
       </div>
     </div>
@@ -88,7 +88,7 @@
     <div class="group">
       <label>Sfondo</label>
       <div class="row">
-        <button class="btn-ghost bg" data-bg="dark">Nero</button>
+        <button class="btn-ghost bg on" data-bg="dark">Nero</button>
         <button class="btn-ghost bg" data-bg="light">Bianco</button>
         <button class="btn-ghost bg" data-bg="transparent">Trasparente</button>
         <button class="btn-ghost bg" data-bg="gradient">Gradiente</button>
@@ -133,7 +133,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(stage.clientWidth, stage.clientHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.3;       // più luminoso di default
+renderer.toneMappingExposure = 1.6;       // più luminoso di default
 stage.appendChild(renderer.domElement);
 
 const labelRenderer = new THREE.CSS2DRenderer();
@@ -146,11 +146,10 @@ stage.appendChild(labelRenderer.domElement);
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.target.set(0, 0.5, -1.05);
 
-/* LUCI */
-scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 1.0));
-const dir = new THREE.DirectionalLight(0xffffff, 1.4);
+/* LUCI (più luminose) */
+scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 1.2));
+const dir = new THREE.DirectionalLight(0xffffff, 1.8);
 dir.position.set(2,2,2);
 scene.add(dir);
 
@@ -161,23 +160,34 @@ new THREE.RGBELoader()
   .load('venice_sunset_1k.hdr', (tex)=>{
     tex.mapping = THREE.EquirectangularReflectionMapping;
     envTexture = tex;
+    // attivo di default (bottone HDR è "on")
+    scene.environment = envTexture;
   });
 
 /* MODELLO */
+// ORIENTAMENTO: se lo vedi capovolto, regola questi tre valori.
+// Spesso per epigrafi fotogrammetriche funziona: X = +PI/2, Y = +PI/2, Z = +PI (flip).
+const ORIENT = { x: +Math.PI/2, y: +Math.PI/2, z: +Math.PI }; // se non serve il capovolgimento, metti z:0
+
 let model = null;
 new THREE.GLTFLoader().load(
   'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9',
   (g)=>{
     model = g.scene;
 
-    // ORIENTA in verticale (X) e allinea come in model-viewer (Y = 90°)
-    model.rotateX(-Math.PI/2);   // se serve inverti il segno
-    model.rotateY(Math.PI/2);
+    // reset e applica gli angoli
+    model.rotation.set(0,0,0);
+    model.rotateX(ORIENT.x);
+    model.rotateY(ORIENT.y);
+    model.rotateZ(ORIENT.z);
 
     model.traverse(o=>{
       if(o.isMesh){
         o.castShadow = o.receiveShadow = true;
-        if (o.material && 'envMapIntensity' in o.material) o.material.envMapIntensity = 1.1;
+        if (o.material){
+          if ('envMapIntensity' in o.material) o.material.envMapIntensity = 1.6; // più brillante con HDR
+          o.material.needsUpdate = true;
+        }
       }
     });
 
@@ -187,7 +197,7 @@ new THREE.GLTFLoader().load(
     model.position.sub(ctr);
     scene.add(model);
 
-    // FIT camera
+    // FIT camera e target sul centro
     fitToObject(model, 1.25);
   },
   undefined,
@@ -263,7 +273,7 @@ renderer.domElement.addEventListener('click', (e)=>{
   }
 });
 
-/* HOTSPOT di default (li riposizioneremo dopo il fit) */
+/* HOTSPOT di esempio (li aggiorneremo dopo) */
 const HOTSPOTS = [
   { id:1, pos:[ 0.304,  0.179, -1.065], nor:[0.006, 0.065, 0.998], title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
   { id:2, pos:[ 0.297, -0.112, -1.060], nor:[0.544, 0.017, 0.839], title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
@@ -341,12 +351,7 @@ function focusOn(point, normal){
 document.getElementById('fov').oninput      = e => { camera.fov = +e.target.value; camera.updateProjectionMatrix(); };
 document.getElementById('exposure').oninput = e => { renderer.toneMappingExposure = +e.target.value; };
 
-document.getElementById('fit').onclick = ()=>{
-  const t = {a:0}, from = camera.position.clone(), to = new THREE.Vector3(0.9,0.9,1.8);
-  new TWEEN.Tween(t).to({a:1},500).easing(TWEEN.Easing.Cubic.Out)
-    .onUpdate(()=> camera.position.lerpVectors(from,to,t.a)).start();
-  new TWEEN.Tween(controls.target).to({x:0,y:0,z:0},500).easing(TWEEN.Easing.Cubic.Out).start();
-};
+document.getElementById('fit').onclick = ()=>{ fitToObject(model ?? scene, 1.25); };
 document.getElementById('reset').onclick = ()=>{
   controls.reset(); controls.target.set(0,0,0);
   new TWEEN.Tween(camera).to({fov:45},300).easing(TWEEN.Easing.Quadratic.Out).onUpdate(()=> camera.updateProjectionMatrix()).start();
@@ -360,8 +365,8 @@ envBtns.forEach(btn=>{
       if(model){
         model.traverse(o=>{
           if(o.isMesh && o.material){
+            if('envMapIntensity' in o.material) o.material.envMapIntensity = 1.6;
             o.material.needsUpdate = true;
-            if('envMapIntensity' in o.material) o.material.envMapIntensity = 1.1;
           }
         });
       }
