@@ -20,73 +20,38 @@
   button{border:0;border-radius:10px;padding:9px 12px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
   .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
   .btn-ghost.on{box-shadow:0 0 0 2px rgba(74,222,128,.55) inset; background:#233a2d}
-
-  .hotspot{
-    position:absolute; width:24px;height:24px;border-radius:50%;
-    background:#2b74ff;border:1px solid #fff; color:#fff;
-    display:flex;align-items:center;justify-content:center;
-    font:800 12px/1 system-ui; box-shadow:0 2px 6px rgba(0,0,0,.45);
-    transform:translate(-50%,-50%); cursor:pointer; z-index:10;
-  }
-  .popup{
-    position:absolute; width: clamp(220px, 26vw, 320px); max-height: 60vh;
-    background:rgba(18,18,18,.96); border:1px solid rgba(255,255,255,.25);
-    border-radius:12px; padding:14px; display:none; overflow:auto; z-index:9;
-  }
+  .hotspot{position:absolute;width:24px;height:24px;border-radius:50%;background:#2b74ff;border:1px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;font:800 12px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.45);transform:translate(-50%,-50%);cursor:pointer;z-index:10}
+  .popup{position:absolute;width: clamp(220px, 26vw, 320px);max-height:60vh;background:rgba(18,18,18,.96);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:14px;display:none;overflow:auto;z-index:9}
   .popup.show{display:block}
-  .popup.right{transform:translate(80px,-50%)}
-  .popup.left {transform:translate(-100%,-50%)}
-
+  .popup.right{transform:translate(80px,-50%)} .popup.left{transform:translate(-100%,-50%)}
   .label{padding:6px 8px;border-radius:8px;background:#111;color:#fff;border:1px solid rgba(255,255,255,.25);font:600 12px/1.2 system-ui;pointer-events:none}
-  .badge{position:absolute; top:8px; left:8px; z-index:20; padding:6px 8px; border-radius:8px; background:rgba(14,165,233,.12); color:#93c5fd; border:1px solid rgba(147,197,253,.35); font:600 12px/1.2 system-ui; display:none;}
+  .badge{position:absolute;top:8px;left:8px;z-index:20;padding:6px 8px;border-radius:8px;background:rgba(14,165,233,.12);color:#93c5fd;border:1px solid rgba(147,197,253,.35);font:600 12px/1.2 system-ui;display:none}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Epigrafe Claudia Nova</h1>
-
-  <div id="stage">
-    <div id="badge" class="badge">HOTSPOT MODE</div>
-  </div>
+  <div id="stage"><div id="badge" class="badge">HOTSPOT MODE</div></div>
 
   <div class="panel">
-    <div class="group">
-      <label>Misurazione</label>
-      <div class="row">
-        <button id="measure" class="btn-ghost">Misura A–B</button>
-        <button id="measureReset" class="btn-ghost">Reset</button>
-      </div>
+    <div class="group"><label>Misurazione</label>
+      <div class="row"><button id="measure" class="btn-ghost">Misura A–B</button><button id="measureReset" class="btn-ghost">Reset</button></div>
       <small id="mhelp" style="opacity:.75">Clicca A poi B sulla mesh.</small>
     </div>
 
-    <div class="group">
-      <label>Zoom (FOV)</label>
-      <input id="fov" type="range" min="25" max="75" step="1" value="45">
+    <div class="group"><label>Zoom (FOV)</label><input id="fov" type="range" min="25" max="75" step="1" value="45"></div>
+
+    <div class="group"><label>Luminosità</label><input id="exposure" type="range" min="1.0" max="3.0" step="0.05" value="2.2"></div>
+
+    <div class="group"><label>Camera</label>
+      <div class="row"><button id="fit" class="btn-ghost">Inquadra</button><button id="reset" class="btn-ghost">Reset</button></div>
     </div>
 
-    <div class="group">
-      <label>Luminosità</label>
-      <input id="exposure" type="range" min="0.2" max="2.5" step="0.05" value="1.9">
+    <div class="group"><label>Ambiente</label>
+      <div class="row"><button class="btn-ghost env on" data-hdr="on">HDR</button><button class="btn-ghost env" data-hdr="off">None</button></div>
     </div>
 
-    <div class="group">
-      <label>Camera</label>
-      <div class="row">
-        <button id="fit" class="btn-ghost">Inquadra</button>
-        <button id="reset" class="btn-ghost">Reset</button>
-      </div>
-    </div>
-
-    <div class="group">
-      <label>Ambiente</label>
-      <div class="row">
-        <button class="btn-ghost env on" data-hdr="on">HDR</button>
-        <button class="btn-ghost env" data-hdr="off">None</button>
-      </div>
-    </div>
-
-    <div class="group">
-      <label>Sfondo</label>
+    <div class="group"><label>Sfondo</label>
       <div class="row">
         <button class="btn-ghost bg on" data-bg="dark">Nero</button>
         <button class="btn-ghost bg" data-bg="light">Bianco</button>
@@ -95,22 +60,17 @@
       </div>
     </div>
 
-    <div class="group">
-      <label>Orientamento (debug)</label>
+    <div class="group"><label>Orientamento</label>
       <div class="row">
         <button id="rzp" class="btn-ghost">Z +90°</button>
         <button id="ryp" class="btn-ghost">Y +180°</button>
         <button id="rotReset" class="btn-ghost">Reset rot.</button>
         <button id="rotDump" class="btn-ghost">Salva rot.</button>
       </div>
-      <small style="opacity:.75">Usali se vedi il modello “sdraiato” o al contrario.</small>
     </div>
 
-    <div class="group">
-      <label>Hotspot</label>
-      <div class="row">
-        <button id="toggleH" class="btn-ghost">Modalità H</button>
-      </div>
+    <div class="group"><label>Hotspot</label>
+      <div class="row"><button id="toggleH" class="btn-ghost">Modalità H</button></div>
       <small>Premi anche la <b>H</b> da tastiera</small>
     </div>
   </div>
@@ -125,11 +85,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
 
 <script>
-/* Helpers UI */
 function setActive(btn,on){ btn.classList.toggle('on', !!on); }
 function setExclusiveActive(list,activeBtn){ list.forEach(b=>b.classList.toggle('on', b===activeBtn)); }
 
-/* SCENA */
 const stage = document.getElementById('stage');
 const badge = document.getElementById('badge');
 
@@ -144,7 +102,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(stage.clientWidth, stage.clientHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.9;  // >>> più luminoso di default
+renderer.toneMappingExposure = 2.2;  // più luminoso
 renderer.physicallyCorrectLights = true;
 stage.appendChild(renderer.domElement);
 
@@ -159,15 +117,11 @@ stage.appendChild(labelRenderer.domElement);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-/* LUCI (più luminose + fill) */
-scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 1.4));
-const dir = new THREE.DirectionalLight(0xffffff, 2.4);
-dir.position.set(2,2,2);
-scene.add(dir);
-const fill = new THREE.DirectionalLight(0xffffff, 1.2);
-fill.position.set(-2,1.2,-1.5);
-scene.add(fill);
-scene.add(new THREE.AmbientLight(0xffffff, 0.15));
+/* Luci più forti */
+scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 1.6));
+const dir = new THREE.DirectionalLight(0xffffff, 3.0); dir.position.set(2,2,2); scene.add(dir);
+const fill = new THREE.DirectionalLight(0xffffff, 1.8); fill.position.set(-2,1.2,-1.5); scene.add(fill);
+scene.add(new THREE.AmbientLight(0xffffff, 0.20));
 
 /* HDR */
 let envTexture = null;
@@ -176,16 +130,11 @@ new THREE.RGBELoader()
   .load('venice_sunset_1k.hdr', (tex)=>{
     tex.mapping = THREE.EquirectangularReflectionMapping;
     envTexture = tex;
-    scene.environment = envTexture;   // HDR ON di default
+    scene.environment = envTexture;   // ON di default
   });
 
-/* MODELLO
-   Prova questi angoli già pronti:
-   - X = +90° (verticalizza)
-   - Z = +90° (se “sdraiato su un lato”)
-   - Y = +180° (se vedi il retro)
-*/
-const ORIENT = { x: +Math.PI/2, y: +Math.PI, z: +Math.PI/2 };
+/* Orientamento corretto (y normalizzato ≈ 0) */
+const ORIENT = { x: 1.57080, y: 0.0, z: 4.71239 };
 
 let model = null;
 const defaultRotation = new THREE.Euler(ORIENT.x, ORIENT.y, ORIENT.z, 'XYZ');
@@ -194,20 +143,21 @@ new THREE.GLTFLoader().load(
   'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9',
   (g)=>{
     model = g.scene;
-
     model.rotation.copy(defaultRotation);
 
     model.traverse(o=>{
       if(o.isMesh){
         o.castShadow = o.receiveShadow = true;
-        if (o.material){
-          if ('envMapIntensity' in o.material) o.material.envMapIntensity = 2.0; // >>> più brillante con HDR
-          o.material.needsUpdate = true;
+        const m = o.material;
+        if (m) {
+          if ('envMapIntensity' in m) m.envMapIntensity = 2.6; // boost riflessi
+          if ('roughness' in m) m.roughness = Math.min(0.85, m.roughness ?? 0.85);
+          if ('metalness' in m) m.metalness = Math.min(0.1, m.metalness ?? 0.0);
+          m.needsUpdate = true;
         }
       }
     });
 
-    // CENTRA all'origine
     const box  = new THREE.Box3().setFromObject(model);
     const ctr  = box.getCenter(new THREE.Vector3());
     model.position.sub(ctr);
@@ -219,25 +169,21 @@ new THREE.GLTFLoader().load(
   (e)=>console.error('Errore GLB', e)
 );
 
-// Fit camera/target all'oggetto
-function fitToObject(object, margin = 1.2){
+function fitToObject(object, margin = 1.25){
   const box = new THREE.Box3().setFromObject(object);
   const size = box.getSize(new THREE.Vector3());
   const radius = size.length() * 0.5;
-
   const fov = camera.fov * (Math.PI/180);
   const dist = (radius / Math.sin(fov/2)) * margin;
-
-  const dir = new THREE.Vector3(0, 0.4, 1).normalize();
+  const dir = new THREE.Vector3(0, 0.35, 1).normalize();
   const newPos = dir.multiplyScalar(dist);
-
-  controls.target.set(0, 0, 0);
+  controls.target.set(0,0,0);
   camera.position.copy(newPos);
   camera.lookAt(controls.target);
   camera.updateProjectionMatrix();
 }
 
-/* RAYCAST */
+/* Raycast */
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 function raycast(e){
@@ -249,18 +195,15 @@ function raycast(e){
   return hits[0] || null;
 }
 
-/* MISURAZIONE */
+/* Misurazione */
 const measureBtn   = document.getElementById('measure');
 const measureReset = document.getElementById('measureReset');
 const mhelp        = document.getElementById('mhelp');
 
 const A = new THREE.Mesh(new THREE.SphereGeometry(0.01,16,16), new THREE.MeshBasicMaterial({color:0x22c55e}));
 const B = A.clone(); A.visible=B.visible=false; scene.add(A,B);
-
-const lineAB = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),
-                              new THREE.LineBasicMaterial({color:0x22c55e}));
+const lineAB = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]), new THREE.LineBasicMaterial({color:0x22c55e}));
 lineAB.visible=false; scene.add(lineAB);
-
 const distLabelEl = document.createElement('div'); distLabelEl.className='label'; distLabelEl.textContent='0.000 m';
 const distLabel = new THREE.CSS2DObject(distLabelEl); distLabel.visible=false; scene.add(distLabel);
 
@@ -288,7 +231,7 @@ renderer.domElement.addEventListener('click', (e)=>{
   }
 });
 
-/* HOTSPOT (esempio) */
+/* Hotspot dati */
 const HOTSPOTS = [
   { id:1, pos:[ 0.304,  0.179, -1.065], nor:[0.006, 0.065, 0.998], title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
   { id:2, pos:[ 0.297, -0.112, -1.060], nor:[0.544, 0.017, 0.839], title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
@@ -306,17 +249,9 @@ function buildHotspots(){
   HOTSPOTS.forEach(h=>{
     const pos = new THREE.Vector3(...h.pos);
     const nor = new THREE.Vector3(...h.nor).normalize();
-
     const btn = document.createElement('div'); btn.className='hotspot'; btn.textContent=h.id; stage.appendChild(btn);
     const pop = document.createElement('div'); pop.className='popup'; pop.innerHTML = `<strong>${h.title}</strong><br>${h.text}`; stage.appendChild(pop);
-
-    btn.addEventListener('click',(e)=>{
-      e.stopPropagation();
-      focusOn(pos, nor);
-      placePopup(pop, pos);
-      togglePopup(pop);
-    });
-
+    btn.addEventListener('click',(e)=>{ e.stopPropagation(); focusOn(pos, nor); placePopup(pop, pos); togglePopup(pop); });
     hUI.push({pos,nor,btn,pop});
   });
 }
@@ -345,14 +280,13 @@ function updateHotspotButtons(){
   });
 }
 
-/* ZOOM DOLCE */
+/* Zoom dolce */
 function focusOn(point, normal){
   const targetFrom = controls.target.clone();
   const camFrom = camera.position.clone();
   const currentDist = camera.position.distanceTo(controls.target);
   const dist = THREE.MathUtils.clamp(currentDist*0.4, 0.22, 0.7);
   const camTo = point.clone().add(normal.clone().normalize().multiplyScalar(dist));
-
   const t = {a:0};
   new TWEEN.Tween(t).to({a:1},650).easing(TWEEN.Easing.Cubic.Out)
     .onUpdate(()=>{
@@ -362,10 +296,9 @@ function focusOn(point, normal){
     }).start();
 }
 
-/* UI sliders/bottoni */
+/* UI base */
 document.getElementById('fov').oninput      = e => { camera.fov = +e.target.value; camera.updateProjectionMatrix(); };
 document.getElementById('exposure').oninput = e => { renderer.toneMappingExposure = +e.target.value; };
-
 document.getElementById('fit').onclick = ()=>{ fitToObject(model ?? scene, 1.25); };
 document.getElementById('reset').onclick = ()=>{
   controls.reset(); controls.target.set(0,0,0);
@@ -379,10 +312,7 @@ envBtns.forEach(btn=>{
       scene.environment = envTexture;
       if(model){
         model.traverse(o=>{
-          if(o.isMesh && o.material){
-            if('envMapIntensity' in o.material) o.material.envMapIntensity = 2.0;
-            o.material.needsUpdate = true;
-          }
+          if(o.isMesh && o.material && 'envMapIntensity' in o.material){ o.material.envMapIntensity = 2.6; o.material.needsUpdate = true; }
         });
       }
     } else {
@@ -404,28 +334,15 @@ bgBtns.forEach(btn=>{
   };
 });
 
-/* ROTAZIONE RAPIDA (debug) */
-const rzp = document.getElementById('rzp');
-const ryp = document.getElementById('ryp');
-const rotReset = document.getElementById('rotReset');
-const rotDump  = document.getElementById('rotDump');
-
-rzp.onclick = ()=>{ if(!model) return; model.rotation.z += Math.PI/2; };
-ryp.onclick = ()=>{ if(!model) return; model.rotation.y += Math.PI;   };
-rotReset.onclick = ()=>{ if(!model) return; model.rotation.copy(defaultRotation); };
-rotDump.onclick  = ()=>{ if(!model) return;
-  const r = model.rotation;
-  console.log(`ORIENT: { x:${r.x.toFixed(5)}, y:${r.y.toFixed(5)}, z:${r.z.toFixed(5)} }  // in radianti`);
-};
+/* Rotazione debug */
+document.getElementById('rzp').onclick = ()=>{ if(!model) return; model.rotation.z += Math.PI/2; };
+document.getElementById('ryp').onclick = ()=>{ if(!model) return; model.rotation.y += Math.PI;   };
+document.getElementById('rotReset').onclick = ()=>{ if(!model) return; model.rotation.copy(defaultRotation); };
+document.getElementById('rotDump').onclick  = ()=>{ if(!model) return; const r = model.rotation; console.log(`ORIENT: { x:${r.x.toFixed(5)}, y:${r.y.toFixed(5)}, z:${r.z.toFixed(5)} }`); };
 
 /* Hotspot mode (H) */
 let hotspotMode=false;
-function toggleH(){
-  hotspotMode=!hotspotMode;
-  badge.style.display=hotspotMode?'block':'none';
-  setActive(document.getElementById('toggleH'), hotspotMode);
-  console.log(hotspotMode?'🟦 Hotspot mode ON — clicca la pietra.':'⬛ Hotspot mode OFF');
-}
+function toggleH(){ hotspotMode=!hotspotMode; badge.style.display=hotspotMode?'block':'none'; setActive(document.getElementById('toggleH'), hotspotMode); console.log(hotspotMode?'🟦 Hotspot mode ON — clicca la pietra.':'⬛ Hotspot mode OFF'); }
 document.getElementById('toggleH').onclick=toggleH;
 addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='h') toggleH(); });
 renderer.domElement.addEventListener('click', (e)=>{
@@ -436,7 +353,6 @@ renderer.domElement.addEventListener('click', (e)=>{
   console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"\ndata-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
 });
 
-/* Hotspots UI */
 buildHotspots();
 
 /* Resize & loop */
