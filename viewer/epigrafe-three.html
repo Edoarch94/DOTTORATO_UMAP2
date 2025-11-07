@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Epigrafe Claudia Nova — Three.js</title>
+<title>Epigrafe Claudia Nova — Three.js (UMD)</title>
 <style>
   :root{--bg:#111;--card:#1b1b1b}
   html,body{height:100%;margin:0;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -25,8 +25,7 @@
     background:#2b74ff;border:1px solid #fff; color:#fff;
     display:flex;align-items:center;justify-content:center;
     font:800 12px/1 system-ui; box-shadow:0 2px 6px rgba(0,0,0,.45);
-    transform:translate(-50%,-50%); cursor:pointer;
-    z-index:10;
+    transform:translate(-50%,-50%); cursor:pointer; z-index:10;
   }
   .popup{
     position:absolute; width: clamp(220px, 26vw, 320px); max-height: 60vh;
@@ -105,15 +104,15 @@
   </div>
 </div>
 
-<!-- Three.js + Tween.js dai CDN: NIENTE import “three” nudo -->
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { RGBELoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/RGBELoader.js';
-import { CSS2DRenderer, CSS2DObject } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js';
-import TWEEN from 'https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.esm.js';
+<!-- UMD tutti r146 -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/renderers/CSS2DRenderer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
 
+<script>
 const stage = document.getElementById('stage');
 const badge = document.getElementById('badge');
 
@@ -132,7 +131,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 stage.appendChild(renderer.domElement);
 
-const labelRenderer = new CSS2DRenderer();
+const labelRenderer = new THREE.CSS2DRenderer();
 labelRenderer.setSize(stage.clientWidth, stage.clientHeight);
 labelRenderer.domElement.style.position = 'absolute';
 labelRenderer.domElement.style.left = '0';
@@ -140,20 +139,17 @@ labelRenderer.domElement.style.top = '0';
 labelRenderer.domElement.style.pointerEvents = 'none';
 stage.appendChild(labelRenderer.domElement);
 
-const controls = new OrbitControls(camera, renderer.domElement);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.target.set(0, 0.5, -1.05);
 
 /* LUCI */
-const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.9);
-scene.add(hemi);
-const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-dir.position.set(2,2,2);
-scene.add(dir);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 0.9));
+const dir = new THREE.DirectionalLight(0xffffff, 1.0); dir.position.set(2,2,2); scene.add(dir);
 
 /* HDR ENV opzionale */
 let envTexture = null;
-new RGBELoader()
+new THREE.RGBELoader()
   .setPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/textures/equirectangular/')
   .load('venice_sunset_1k.hdr', (tex)=>{
     tex.mapping = THREE.EquirectangularReflectionMapping;
@@ -162,14 +158,12 @@ new RGBELoader()
 
 /* MODELLO */
 let model = null;
-await new GLTFLoader()
-  .loadAsync('https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9')
-  .then(g=>{
+new THREE.GLTFLoader()
+  .load('https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9', (g)=>{
     model = g.scene;
     model.traverse(o=>{ if(o.isMesh){ o.castShadow=o.receiveShadow=true; }});
     scene.add(model);
-  })
-  .catch(e=>console.error('Errore GLB', e));
+  }, undefined, (e)=>console.error('Errore GLB', e));
 
 /* RAYCAST */
 const raycaster = new THREE.Raycaster();
@@ -195,7 +189,7 @@ const lineAB = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THRE
 lineAB.visible=false; scene.add(lineAB);
 
 const distLabelEl = document.createElement('div'); distLabelEl.className='label'; distLabelEl.textContent='0.000 m';
-const distLabel = new CSS2DObject(distLabelEl); distLabel.visible=false; scene.add(distLabel);
+const distLabel = new THREE.CSS2DObject(distLabelEl); distLabel.visible=false; scene.add(distLabel);
 
 const measuring = {active:false, step:0, a:new THREE.Vector3(), b:new THREE.Vector3()};
 function setMeasureActive(on){
@@ -221,7 +215,7 @@ renderer.domElement.addEventListener('click', (e)=>{
   }
 });
 
-/* HOTSPOT (fallback interno, puoi passare a JSON dopo) */
+/* HOTSPOT (fallback interno) */
 const HOTSPOTS = [
   { id:1, pos:[ 0.304,  0.179, -1.065], nor:[0.006, 0.065, 0.998], title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
   { id:2, pos:[ 0.297, -0.112, -1.060], nor:[0.544, 0.017, 0.839], title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
@@ -229,12 +223,12 @@ const HOTSPOTS = [
   { id:4, pos:[ 0.347,  0.325, -1.072], nor:[0.162,-0.003, 0.987], title:'Supporto lapideo', text:'Pietra calcarea con tonalità rossastra nello specchio epigrafico.' }
 ];
 
-const stageRect = ()=> renderer.domElement.getBoundingClientRect();
+const hUI = [];
+function stageRect(){ return renderer.domElement.getBoundingClientRect(); }
 function screenXY(v){
   const s = v.clone().project(camera), r = stageRect();
   return { x:(s.x*0.5+0.5)*r.width, y:(-s.y*0.5+0.5)*r.height };
 }
-const hUI = [];
 function buildHotspots(){
   HOTSPOTS.forEach(h=>{
     const pos = new THREE.Vector3(...h.pos);
@@ -331,7 +325,7 @@ renderer.domElement.addEventListener('click', (e)=>{
   console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"\ndata-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
 });
 
-/* Build + loop */
+/* Build + loop + resize */
 buildHotspots();
 
 function onResize(){
