@@ -20,12 +20,15 @@
   button{border:0;border-radius:10px;padding:9px 12px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
   .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
   .btn-ghost.on{box-shadow:0 0 0 2px rgba(74,222,128,.55) inset; background:#233a2d}
+
   .hotspot{position:absolute;width:24px;height:24px;border-radius:50%;background:#2b74ff;border:1px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;font:800 12px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.45);transform:translate(-50%,-50%);cursor:pointer;z-index:10}
   .popup{position:absolute;width: clamp(220px, 26vw, 320px);max-height:60vh;background:rgba(18,18,18,.96);border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:14px;display:none;overflow:auto;z-index:9}
   .popup.show{display:block}
   .popup.right{transform:translate(80px,-50%)} .popup.left{transform:translate(-100%,-50%)}
   .label{padding:6px 8px;border-radius:8px;background:#111;color:#fff;border:1px solid rgba(255,255,255,.25);font:600 12px/1.2 system-ui;pointer-events:none}
   .badge{position:absolute;top:8px;left:8px;z-index:20;padding:6px 8px;border-radius:8px;background:rgba(14,165,233,.12);color:#93c5fd;border:1px solid rgba(147,197,253,.35);font:600 12px/1.2 system-ui;display:none}
+  @media (max-width:900px){.panel{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:560px){.panel{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -41,7 +44,7 @@
 
     <div class="group"><label>Zoom (FOV)</label><input id="fov" type="range" min="25" max="75" step="1" value="45"></div>
 
-    <div class="group"><label>Luminosità</label><input id="exposure" type="range" min="1.0" max="3.0" step="0.05" value="2.2"></div>
+    <div class="group"><label>Luminosità</label><input id="exposure" type="range" min="1.0" max="3.0" step="0.05" value="2.6"></div>
 
     <div class="group"><label>Camera</label>
       <div class="row"><button id="fit" class="btn-ghost">Inquadra</button><button id="reset" class="btn-ghost">Reset</button></div>
@@ -73,6 +76,37 @@
       <div class="row"><button id="toggleH" class="btn-ghost">Modalità H</button></div>
       <small>Premi anche la <b>H</b> da tastiera</small>
     </div>
+
+    <!-- PANNELLO LUCI -->
+    <div class="group" style="grid-column:1/-1">
+      <label>💡 Luci</label>
+      <div class="row" style="gap:18px;flex-wrap:wrap">
+        <div style="min-width:180px;flex:1">
+          <div style="display:flex;justify-content:space-between"><span>Key (destra)</span><span id="valKey">2.2</span></div>
+          <input id="keyIntensity" type="range" min="0" max="4" step="0.05" value="2.2">
+        </div>
+        <div style="min-width:180px;flex:1">
+          <div style="display:flex;justify-content:space-between"><span>Direzionale</span><span id="valDir">3.0</span></div>
+          <input id="dirIntensity" type="range" min="0" max="4" step="0.05" value="3.0">
+        </div>
+        <div style="min-width:180px;flex:1">
+          <div style="display:flex;justify-content:space-between"><span>Fill</span><span id="valFill">1.8</span></div>
+          <input id="fillIntensity" type="range" min="0" max="3" step="0.05" value="1.8">
+        </div>
+        <div style="min-width:180px;flex:1">
+          <div style="display:flex;justify-content:space-between"><span>Hemi</span><span id="valHemi">1.6</span></div>
+          <input id="hemiIntensity" type="range" min="0" max="3" step="0.05" value="1.6">
+        </div>
+        <div style="min-width:180px;flex:1">
+          <div style="display:flex;justify-content:space-between"><span>Ambiente</span><span id="valAmb">0.25</span></div>
+          <input id="ambIntensity" type="range" min="0" max="1" step="0.01" value="0.25">
+        </div>
+        <div style="min-width:180px;flex:1">
+          <div style="display:flex;justify-content:space-between"><span>Riflessi (envMap)</span><span id="valEnvI">2.6</span></div>
+          <input id="envIntensity" type="range" min="0" max="5" step="0.1" value="2.6">
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -102,7 +136,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(stage.clientWidth, stage.clientHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 2.2;  // più luminoso
+renderer.toneMappingExposure = 2.6;  // luminosità di base
 renderer.physicallyCorrectLights = true;
 stage.appendChild(renderer.domElement);
 
@@ -117,11 +151,18 @@ stage.appendChild(labelRenderer.domElement);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-/* Luci più forti */
-scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 1.6));
-const dir = new THREE.DirectionalLight(0xffffff, 3.0); dir.position.set(2,2,2); scene.add(dir);
-const fill = new THREE.DirectionalLight(0xffffff, 1.8); fill.position.set(-2,1.2,-1.5); scene.add(fill);
-scene.add(new THREE.AmbientLight(0xffffff, 0.20));
+/* Luci */
+const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.6);
+const dir  = new THREE.DirectionalLight(0xffffff, 3.0); dir.position.set(2,2,2);
+const fill = new THREE.DirectionalLight(0xffffff, 1.8); fill.position.set(-2,1.2,-1.5);
+const amb  = new THREE.AmbientLight(0xffffff, 0.25);
+
+// key-light destra mirata alla faccia destra
+const rightKey = new THREE.SpotLight(0xffffff, 2.2, 5, Math.PI/8, 0.2, 1.0);
+rightKey.position.set(1.2, 0.6, 0.6);
+rightKey.target.position.set(0.0, 0.3, -0.1);
+
+scene.add(hemi, dir, fill, amb, rightKey, rightKey.target);
 
 /* HDR */
 let envTexture = null;
@@ -133,9 +174,8 @@ new THREE.RGBELoader()
     scene.environment = envTexture;   // ON di default
   });
 
-/* Orientamento corretto (y normalizzato ≈ 0) */
+/* Orientamento corretto (y ≈ 0) */
 const ORIENT = { x: 1.57080, y: 0.0, z: 4.71239 };
-
 let model = null;
 const defaultRotation = new THREE.Euler(ORIENT.x, ORIENT.y, ORIENT.z, 'XYZ');
 
@@ -145,19 +185,21 @@ new THREE.GLTFLoader().load(
     model = g.scene;
     model.rotation.copy(defaultRotation);
 
+    // set envMapIntensity e un minimo tuning
     model.traverse(o=>{
       if(o.isMesh){
         o.castShadow = o.receiveShadow = true;
         const m = o.material;
-        if (m) {
-          if ('envMapIntensity' in m) m.envMapIntensity = 2.6; // boost riflessi
-          if ('roughness' in m) m.roughness = Math.min(0.85, m.roughness ?? 0.85);
-          if ('metalness' in m) m.metalness = Math.min(0.1, m.metalness ?? 0.0);
+        if(m){
+          if('envMapIntensity' in m) m.envMapIntensity = 2.6;
+          if('roughness' in m) m.roughness = Math.min(0.85, m.roughness ?? 0.85);
+          if('metalness' in m) m.metalness = Math.min(0.1, m.metalness ?? 0.0);
           m.needsUpdate = true;
         }
       }
     });
 
+    // centra
     const box  = new THREE.Box3().setFromObject(model);
     const ctr  = box.getCenter(new THREE.Vector3());
     model.position.sub(ctr);
@@ -175,8 +217,8 @@ function fitToObject(object, margin = 1.25){
   const radius = size.length() * 0.5;
   const fov = camera.fov * (Math.PI/180);
   const dist = (radius / Math.sin(fov/2)) * margin;
-  const dir = new THREE.Vector3(0, 0.35, 1).normalize();
-  const newPos = dir.multiplyScalar(dist);
+  const dirv = new THREE.Vector3(0, 0.35, 1).normalize();
+  const newPos = dirv.multiplyScalar(dist);
   controls.target.set(0,0,0);
   camera.position.copy(newPos);
   camera.lookAt(controls.target);
@@ -231,12 +273,12 @@ renderer.domElement.addEventListener('click', (e)=>{
   }
 });
 
-/* Hotspot dati */
+/* Hotspot dati (aggiornati) */
 const HOTSPOTS = [
-  { id:1, pos:[ 0.304,  0.179, -1.065], nor:[0.006, 0.065, 0.998], title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
-  { id:2, pos:[ 0.297, -0.112, -1.060], nor:[0.544, 0.017, 0.839], title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
-  { id:3, pos:[-0.144, -0.275, -1.009], nor:[0.075, 0.053, 0.996], title:'ATTERNUM', text:'Variante locale (rif. CIL IX 5979), possibile influsso osco-umbro.' },
-  { id:4, pos:[ 0.347,  0.325, -1.072], nor:[0.162,-0.003, 0.987], title:'Supporto lapideo', text:'Pietra calcarea con tonalità rossastra nello specchio epigrafico.' }
+  { id:1, pos:[ 0.020, 0.627, -0.192], nor:[0.959, 0.117, 0.257], title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
+  { id:2, pos:[ 0.023, 0.331, -0.194], nor:[0.555,-0.060, 0.829], title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
+  { id:3, pos:[ 0.069, 0.186,  0.249], nor:[0.978, 0.177,-0.114], title:'ATTERNUM', text:'Variante locale (rif. CIL IX 5979), possibile influsso osco-umbro.' },
+  { id:4, pos:[ 0.010, 0.742, -0.247], nor:[0.811,-0.025,-0.584], title:'Supporto lapideo', text:'Pietra calcarea con tonalità rossastra nello specchio epigrafico.' }
 ];
 
 const hUI = [];
@@ -275,7 +317,7 @@ function togglePopup(pop){
 function updateHotspotButtons(){
   hUI.forEach(({pos,btn,pop})=>{
     const s = screenXY(pos);
-    btn.style.left = `${s.x}px`; btn.style.top = `${s.y}px`;
+    btn.style.left = `${s.x}px`; btn.style.top  = `${s.y}px`;
     if(pop.classList.contains('show')) placePopup(pop, pos);
   });
 }
@@ -298,7 +340,7 @@ function focusOn(point, normal){
 
 /* UI base */
 document.getElementById('fov').oninput      = e => { camera.fov = +e.target.value; camera.updateProjectionMatrix(); };
-document.getElementById('exposure').oninput = e => { renderer.toneMappingExposure = +e.target.value; };
+document.getElementById('exposure').oninput = e => { renderer.rayTone ?? 0; renderer.toneMappingExposure = +e.target.value; };
 document.getElementById('fit').onclick = ()=>{ fitToObject(model ?? scene, 1.25); };
 document.getElementById('reset').onclick = ()=>{
   controls.reset(); controls.target.set(0,0,0);
@@ -310,11 +352,7 @@ envBtns.forEach(btn=>{
   btn.onclick = ()=>{
     if(btn.dataset.hdr === 'on' && envTexture){
       scene.environment = envTexture;
-      if(model){
-        model.traverse(o=>{
-          if(o.isMesh && o.material && 'envMapIntensity' in o.material){ o.material.envMapIntensity = 2.6; o.material.needsUpdate = true; }
-        });
-      }
+      if(model){ model.traverse(o=>{ if(o.isMesh && o.material && 'envMapIntensity' in o.material){ o.material.envMapIntensity = +document.getElementById('envIntensity').value; o.material.needsUpdate = true; } }); }
     } else {
       scene.environment = null;
     }
@@ -354,6 +392,52 @@ renderer.domElement.addEventListener('click', (e)=>{
 });
 
 buildHotspots();
+
+/* Slider luci */
+const keyS = document.getElementById('keyIntensity');
+const dirS = document.getElementById('dirIntensity');
+const fillS= document.getElementById('fillIntensity');
+const hemiS= document.getElementById('hemiIntensity');
+const ambS = document.getElementById('ambIntensity');
+const envS = document.getElementById('envIntensity');
+
+function updLbl(el, v){ el.textContent = (+v).toFixed(2).replace(/\.00$/,''); }
+keyS.oninput = e=>{ rightKey.intensity = +e.target.value; updLbl(document.getElementById('valKey'), e.target.value); };
+dirS.oninput = e=>{ dir.intensity      = +e.target.value; updLbl(document.getElementById('valDir'), e.target.value); };
+fillS.oninput= e=>{ fill.intensity     = +e.target.value; updLbl(document.getElementById('valFill'), e.target.value); };
+hemiS.oninput= e=>{ hemi.intensity     = +e.target.value; updLbl(document.getElementById('valHemi'), e.target.value); };
+ambS.oninput = e=>{ amb.intensity      = +e.target.value; updLbl(document.getElementById('valAmb'), e.target.value); };
+envS.oninput = e=>{
+  updLbl(document.getElementById('valEnvI'), e.target.value);
+  if(model){
+    model.traverse(o=>{ if(o.isMesh && o.material && 'envMapIntensity' in o.material){ o.material.envMapIntensity = +e.target.value; o.material.needsUpdate = true; } });
+  }
+};
+
+/* Comandi console per orbita */
+function orbitTo(thetaDeg, phiDeg, distance){
+  const t = THREE.MathUtils.degToRad(thetaDeg);
+  const p = THREE.MathUtils.degToRad(phiDeg);
+  const x = distance * Math.sin(p) * Math.sin(t);
+  const y = distance * Math.cos(p);
+  const z = distance * Math.sin(p) * Math.cos(t);
+  const fromPos = camera.position.clone();
+  const toPos   = new THREE.Vector3(x,y,z).add(controls.target);
+  const tween = {a:0};
+  new TWEEN.Tween(tween).to({a:1},700).easing(TWEEN.Easing.Cubic.Out)
+    .onUpdate(()=>{
+      camera.position.lerpVectors(fromPos, toPos, tween.a);
+      camera.lookAt(controls.target);
+    }).start();
+}
+window.orbitTo = orbitTo;
+window.dumpOrbit = () => {
+  const v = camera.position.clone().sub(controls.target);
+  const r = v.length();
+  const phi   = Math.acos(v.y / r);
+  const theta = Math.atan2(v.x, v.z);
+  console.log(`theta=${THREE.MathUtils.radToDeg(theta).toFixed(1)}°, phi=${THREE.MathUtils.radToDeg(phi).toFixed(1)}°, dist=${r.toFixed(3)}m`);
+};
 
 /* Resize & loop */
 function onResize(){
