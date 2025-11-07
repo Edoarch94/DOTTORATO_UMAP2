@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Epigrafe Claudia Nova — Three.js (UMD r146)</title>
+<title>Epigrafe Claudia Nova — Three.js</title>
 <style>
   :root{--bg:#111;--card:#1b1b1b}
   html,body{height:100%;margin:0;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -66,7 +66,7 @@
 
     <div class="group">
       <label>Luminosità</label>
-      <input id="exposure" type="range" min="0.2" max="2.2" step="0.05" value="1.6">
+      <input id="exposure" type="range" min="0.2" max="2.5" step="0.05" value="1.9">
     </div>
 
     <div class="group">
@@ -96,6 +96,17 @@
     </div>
 
     <div class="group">
+      <label>Orientamento (debug)</label>
+      <div class="row">
+        <button id="rzp" class="btn-ghost">Z +90°</button>
+        <button id="ryp" class="btn-ghost">Y +180°</button>
+        <button id="rotReset" class="btn-ghost">Reset rot.</button>
+        <button id="rotDump" class="btn-ghost">Salva rot.</button>
+      </div>
+      <small style="opacity:.75">Usali se vedi il modello “sdraiato” o al contrario.</small>
+    </div>
+
+    <div class="group">
       <label>Hotspot</label>
       <div class="row">
         <button id="toggleH" class="btn-ghost">Modalità H</button>
@@ -105,7 +116,7 @@
   </div>
 </div>
 
-<!-- UMD r146 -->
+<!-- Three UMD r146 + tween + helpers -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -133,7 +144,8 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(stage.clientWidth, stage.clientHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.6;       // più luminoso di default
+renderer.toneMappingExposure = 1.9;  // >>> più luminoso di default
+renderer.physicallyCorrectLights = true;
 stage.appendChild(renderer.domElement);
 
 const labelRenderer = new THREE.CSS2DRenderer();
@@ -147,11 +159,15 @@ stage.appendChild(labelRenderer.domElement);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-/* LUCI (più luminose) */
-scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 1.2));
-const dir = new THREE.DirectionalLight(0xffffff, 1.8);
+/* LUCI (più luminose + fill) */
+scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 1.4));
+const dir = new THREE.DirectionalLight(0xffffff, 2.4);
 dir.position.set(2,2,2);
 scene.add(dir);
+const fill = new THREE.DirectionalLight(0xffffff, 1.2);
+fill.position.set(-2,1.2,-1.5);
+scene.add(fill);
+scene.add(new THREE.AmbientLight(0xffffff, 0.15));
 
 /* HDR */
 let envTexture = null;
@@ -160,32 +176,32 @@ new THREE.RGBELoader()
   .load('venice_sunset_1k.hdr', (tex)=>{
     tex.mapping = THREE.EquirectangularReflectionMapping;
     envTexture = tex;
-    // attivo di default (bottone HDR è "on")
-    scene.environment = envTexture;
+    scene.environment = envTexture;   // HDR ON di default
   });
 
-/* MODELLO */
-// ORIENTAMENTO: se lo vedi capovolto, regola questi tre valori.
-// Spesso per epigrafi fotogrammetriche funziona: X = +PI/2, Y = +PI/2, Z = +PI (flip).
-const ORIENT = { x: +Math.PI/2, y: +Math.PI/2, z: +Math.PI }; // se non serve il capovolgimento, metti z:0
+/* MODELLO
+   Prova questi angoli già pronti:
+   - X = +90° (verticalizza)
+   - Z = +90° (se “sdraiato su un lato”)
+   - Y = +180° (se vedi il retro)
+*/
+const ORIENT = { x: +Math.PI/2, y: +Math.PI, z: +Math.PI/2 };
 
 let model = null;
+const defaultRotation = new THREE.Euler(ORIENT.x, ORIENT.y, ORIENT.z, 'XYZ');
+
 new THREE.GLTFLoader().load(
   'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9',
   (g)=>{
     model = g.scene;
 
-    // reset e applica gli angoli
-    model.rotation.set(0,0,0);
-    model.rotateX(ORIENT.x);
-    model.rotateY(ORIENT.y);
-    model.rotateZ(ORIENT.z);
+    model.rotation.copy(defaultRotation);
 
     model.traverse(o=>{
       if(o.isMesh){
         o.castShadow = o.receiveShadow = true;
         if (o.material){
-          if ('envMapIntensity' in o.material) o.material.envMapIntensity = 1.6; // più brillante con HDR
+          if ('envMapIntensity' in o.material) o.material.envMapIntensity = 2.0; // >>> più brillante con HDR
           o.material.needsUpdate = true;
         }
       }
@@ -197,7 +213,6 @@ new THREE.GLTFLoader().load(
     model.position.sub(ctr);
     scene.add(model);
 
-    // FIT camera e target sul centro
     fitToObject(model, 1.25);
   },
   undefined,
@@ -273,7 +288,7 @@ renderer.domElement.addEventListener('click', (e)=>{
   }
 });
 
-/* HOTSPOT di esempio (li aggiorneremo dopo) */
+/* HOTSPOT (esempio) */
 const HOTSPOTS = [
   { id:1, pos:[ 0.304,  0.179, -1.065], nor:[0.006, 0.065, 0.998], title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
   { id:2, pos:[ 0.297, -0.112, -1.060], nor:[0.544, 0.017, 0.839], title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
@@ -365,7 +380,7 @@ envBtns.forEach(btn=>{
       if(model){
         model.traverse(o=>{
           if(o.isMesh && o.material){
-            if('envMapIntensity' in o.material) o.material.envMapIntensity = 1.6;
+            if('envMapIntensity' in o.material) o.material.envMapIntensity = 2.0;
             o.material.needsUpdate = true;
           }
         });
@@ -382,12 +397,26 @@ bgBtns.forEach(btn=>{
   btn.onclick = ()=>{
     const m=btn.dataset.bg;
     if(m==='dark'){ scene.background=new THREE.Color(0x0e0e0e); stage.style.background='#0e0e0e'; }
-    if(m==='light'){ scene.background=new THREE.Color(0xf5f5f5); stage.style.background='#f5f5f5'; }
+    if(m==='light'){ scene.background=new THREE.Color(0xf7f7f7); stage.style.background='#f7f7f7'; }
     if(m==='transparent'){ scene.background=null; stage.style.background='transparent'; }
     if(m==='gradient'){ scene.background=null; stage.style.background='linear-gradient(180deg,#0e0e0e,#1a1a1a)'; }
     setExclusiveActive(bgBtns, btn);
   };
 });
+
+/* ROTAZIONE RAPIDA (debug) */
+const rzp = document.getElementById('rzp');
+const ryp = document.getElementById('ryp');
+const rotReset = document.getElementById('rotReset');
+const rotDump  = document.getElementById('rotDump');
+
+rzp.onclick = ()=>{ if(!model) return; model.rotation.z += Math.PI/2; };
+ryp.onclick = ()=>{ if(!model) return; model.rotation.y += Math.PI;   };
+rotReset.onclick = ()=>{ if(!model) return; model.rotation.copy(defaultRotation); };
+rotDump.onclick  = ()=>{ if(!model) return;
+  const r = model.rotation;
+  console.log(`ORIENT: { x:${r.x.toFixed(5)}, y:${r.y.toFixed(5)}, z:${r.z.toFixed(5)} }  // in radianti`);
+};
 
 /* Hotspot mode (H) */
 let hotspotMode=false;
