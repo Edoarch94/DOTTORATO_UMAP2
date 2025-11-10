@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="it">
+<meta charset="utf-8" />
+<title>Test Three Import</title>
+<style>html,body{height:100%;margin:0;background:#101013}</style>
+<canvas id="c"></canvas>
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three@0.152.2/examples/jsm/controls/OrbitControls.js';
+
+console.log('Three OK?', THREE.REVISION);
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x101013);
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .01, 100);
+camera.position.set(2,1.2,2.5);
+const controls = new OrbitControls(camera, renderer.domElement);
+
+const geo = new THREE.BoxGeometry(1,1,1);
+const mat = new THREE.MeshStandardMaterial({color:0x4ade80, roughness:.35, metalness:.2});
+const mesh = new THREE.Mesh(geo, mat); scene.add(mesh);
+
+const light = new THREE.DirectionalLight(0xffffff, 1.2); light.position.set(2,2,2); scene.add(light);
+addEventListener('resize', ()=>{ renderer.setSize(innerWidth, innerHeight); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+
+(function anim(){ requestAnimationFrame(anim); mesh.rotation.y += 0.01; controls.update(); renderer.render(scene, camera); })();
+</script>
+</html>
