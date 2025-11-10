@@ -1,132 +1,99 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Viewer 3D</title>
-
+<title id="title">Viewer 3D</title>
 <style>
-  :root{--bg:#0f0f10;--panel:#161618;--accent:#4ade80}
+  :root{--bg:#101013;--card:#1b1b1b;--accent:#4ade80}
   html,body{height:100%;margin:0;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-  .wrap{display:grid;grid-template-rows:auto 1fr;min-height:100%}
-  header{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
-  header h1{margin:0;font:700 16px/1.2 system-ui}
-
-  .stage{position:relative}
-  canvas{display:block;width:100%;height:100vh}
-
-  /* pannello */
-  .panel{position:fixed;left:12px;bottom:12px;right:12px;display:grid;gap:10px;
-         grid-template-columns:repeat(6, minmax(150px, 1fr));background:var(--panel);
-         border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;z-index:20}
-  .group{background:rgba(255,255,255,.04);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:8px}
+  #stage{position:relative;width:min(96vw,1200px);margin:10px auto}
+  canvas{display:block;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.45);background:#000}
+  #hs-layer,#pick-layer{position:absolute;inset:0;pointer-events:none}
+  #hs-layer .hotspot{position:absolute;transform:translate(-50%,-50%);pointer-events:auto}
+  .dot{width:26px;height:26px;border-radius:50%;background:#2b74ff;border:1px solid #fff;display:flex;align-items:center;justify-content:center;font:800 12px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+  .popover{position:absolute;top:0;left:0;transform:translate(0,-50%);width:clamp(260px,28vw,360px);background:rgba(18,18,18,.96);border:1px solid rgba(255,255,255,.23);border-radius:12px;padding:12px;display:none}
+  .popover.show{display:block}
+  .popover h3{margin:.2rem 0 .4rem;font-size:1rem}
+  .panel{width:min(96vw,1200px);margin:10px auto;background:var(--card);border-radius:12px;padding:10px;display:grid;gap:8px;grid-template-columns:repeat(6,1fr)}
+  .group{background:rgba(255,255,255,.06);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
   .row{display:flex;gap:8px;flex-wrap:wrap}
   label{font-size:12px;opacity:.75}
-  button{border:0;border-radius:10px;padding:8px 11px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
-  button.on{outline:2px solid rgba(74,222,128,.55)}
   input[type=range]{width:100%}
-
-  /* hotspot numerati + popover */
-  #hs-layer{position:absolute;inset:0;pointer-events:none;z-index:10}
-  .hotspot{position:absolute;transform:translate(-50%,-50%);pointer-events:auto}
-  .hotspot .dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-                background:#2b74ff;border:1px solid #fff;color:#fff;font:800 13px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.45);cursor:pointer}
-  .popover{position:absolute;min-width:260px;max-width:360px;background:rgba(18,18,18,.96);border:1px solid rgba(255,255,255,.18);
-           border-radius:12px;padding:12px;color:#fff;display:none}
-  .popover.show{display:block}
-  .popover h3{margin:0 0 6px;font:700 14px/1.2 system-ui}
-  .popover p{margin:0;font-size:13px;opacity:.92}
-
-  /* misurazione */
-  #pick-layer{position:absolute;inset:0;pointer-events:none;z-index:15}
-  #pick-layer.active{pointer-events:auto;cursor:crosshair}
-  .measure-dot{position:absolute;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2px solid #fff;
-               transform:translate(-50%,-50%);box-shadow:0 2px 8px rgba(0,0,0,.55)}
-  .measure-label{position:absolute;background:#111;color:#fff;border:1px solid rgba(255,255,255,.25);
-                 padding:6px 8px;border-radius:8px;font-size:12px;transform:translate(-50%,-120%)}
-
-  .err{position:fixed;top:12px;right:12px;background:#300;color:#fff;border:1px solid #922;padding:10px 12px;border-radius:10px;max-width:50ch;z-index:30}
-
-  @media (max-width:980px){ .panel{grid-template-columns:repeat(3, minmax(150px, 1fr));} }
-  @media (max-width:560px){ .panel{grid-template-columns:repeat(2, minmax(150px, 1fr));} }
+  button{border:0;border-radius:10px;padding:8px 12px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
+  .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
+  .on{box-shadow:0 0 0 2px rgba(74,222,128,.55) inset}
+  #err{display:none;width:min(96vw,1200px);margin:8px auto;padding:10px;border-radius:10px;background:#3b0b10;border:1px solid #a11}
+  /* misura */
+  #pick-layer{pointer-events:none} #pick-layer.active{pointer-events:auto}
+  .measure-dot{position:absolute;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.55)}
+  .measure-label{position:absolute;transform:translate(-50%,-120%);background:#111;color:#fff;border:1px solid rgba(255,255,255,.25);padding:6px 8px;border-radius:8px;font-size:12px}
+  @media (max-width:900px){.panel{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:560px){.panel{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header><h1 id="title">Viewer 3D</h1></header>
 
-  <div class="stage" id="stage">
-    <canvas id="c"></canvas>
-    <div id="hs-layer"></div>
-    <div id="pick-layer"></div>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div id="hs-layer" aria-hidden="true"></div>
+  <div id="pick-layer" aria-hidden="true"></div>
+</div>
+
+<div id="err"></div>
+
+<div class="panel">
+  <div class="group"><label>Zoom (FOV)</label><input id="fov" type="range" min="20" max="80" step="1" value="45"></div>
+
+  <div class="group"><label>Camera</label>
+    <div class="row"><button id="fit">Inquadra</button><button id="reset" class="btn-ghost">Reset</button></div>
+    <div class="row"><button id="orbitToggle" class="btn-ghost">Orbit ON</button></div>
   </div>
 
-  <!-- pannello -->
-  <div class="panel">
-    <div class="group">
-      <label>Camera</label>
-      <div class="row">
-        <button id="fit">Inquadra</button>
-        <button id="reset">Reset</button>
-        <button id="orbitToggle" class="on">Orbit ON</button>
-      </div>
+  <div class="group"><label>Ambiente (HDR)</label>
+    <div class="row">
+      <button class="btn-ghost env" data-hdr="none">None</button>
+      <button class="btn-ghost env" data-hdr="https://cdn.jsdelivr.net/npm/pmrem-textures@latest/hdris/neutral.hdr">Neutral</button>
+      <button class="btn-ghost env" data-hdr="https://cdn.jsdelivr.net/npm/pmrem-textures@latest/hdris/moon.hdr">Moon</button>
+      <button class="btn-ghost env" data-hdr="https://cdn.jsdelivr.net/npm/pmrem-textures@latest/hdris/spruit_sunrise_1k.hdr">Sunrise</button>
     </div>
+  </div>
 
-    <div class="group">
-      <label>Zoom (FOV)</label>
-      <input id="fov" type="range" min="25" max="85" step="1" value="45">
+  <div class="group"><label>Sfondo</label>
+    <div class="row">
+      <button class="btn-ghost bg" data-bg="dark">Nero</button>
+      <button class="btn-ghost bg" data-bg="light">Bianco</button>
+      <button class="btn-ghost bg" data-bg="transparent">Trasparente</button>
     </div>
+  </div>
 
-    <div class="group">
-      <label>Luci</label>
-      <div class="row">
-        <button id="keyOn" class="on">Key</button>
-        <button id="fillOn" class="on">Fill</button>
-        <button id="rimOn"  class="on">Rim</button>
-      </div>
-      <label>Intensità</label>
-      <input id="intensity" type="range" min="0" max="2" step="0.05" value="1.0">
+  <div class="group"><label>Luci</label>
+    <div class="row">
+      <button id="keyOn"  class="btn-ghost on">Key</button>
+      <button id="fillOn" class="btn-ghost on">Fill</button>
+      <button id="rimOn"  class="btn-ghost on">Rim</button>
     </div>
+    <label>Intensità</label><input id="intensity" type="range" min="0" max="2" step="0.05" value="1.2">
+  </div>
 
-    <div class="group">
-      <label>Ambiente</label>
-      <div class="row">
-        <button class="env" data-hdr="https://cdn.jsdelivr.net/npm/three@0.152/examples/textures/equirectangular/royal_esplanade_1k.hdr">HDR</button>
-        <button class="env" data-hdr="none">None</button>
-      </div>
-    </div>
+  <div class="group"><label>Misurazione</label>
+    <div class="row"><button id="measureToggle" class="btn-ghost">Misura A–B</button><button id="measureReset" class="btn-ghost">Reset misura</button></div>
+    <small id="mhelp" style="opacity:.8">Misura OFF.</small>
+  </div>
 
-    <div class="group">
-      <label>Sfondo</label>
-      <div class="row">
-        <button class="bg" data-bg="dark">Dark</button>
-        <button class="bg" data-bg="light">Light</button>
-        <button class="bg" data-bg="transparent">Transparent</button>
-      </div>
-    </div>
-
-    <div class="group">
-      <label>Hotspot / Misura</label>
-      <div class="row">
-        <button id="closePopovers">Chiudi popover</button>
-        <button id="measureToggle">Misura A–B</button>
-        <button id="measureReset">Reset misura</button>
-      </div>
-      <small id="mhelp" style="opacity:.8">Misura OFF.</small>
-    </div>
+  <div class="group"><label>Hotspot</label>
+    <div class="row"><button id="closePopovers" class="btn-ghost">Chiudi popover</button></div>
   </div>
 </div>
 
-<div id="err" class="err" style="display:none"></div>
-
-<!-- ======= SCRIPT MODULARE con import URL completi ======= -->
+<!-- ===== IMPORT ES MODULE (da URL) ===== -->
 <script type="module">
-import * as THREE from 'https://unpkg.com/three@0.152/build/three.module.js';
-import { OrbitControls } from 'https://unpkg.com/three@0.152/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader }  from 'https://unpkg.com/three@0.152/examples/jsm/loaders/GLTFLoader.js';
-import { RGBELoader }  from 'https://unpkg.com/three@0.152/examples/jsm/loaders/RGBELoader.js';
+import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three@0.152.2/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader }  from 'https://unpkg.com/three@0.152.2/examples/jsm/loaders/GLTFLoader.js';
+import { RGBELoader }  from 'https://unpkg.com/three@0.152.2/examples/jsm/loaders/RGBELoader.js';
 
-/* ---------- viewer “furbo”: normalizza i parametri ---------- */
+/* ---------- util ---------- */
 const qs = new URLSearchParams(location.search);
 const rawModel    = qs.get('model')    || '';
 const rawHotspots = qs.get('hotspots') || '';
@@ -134,346 +101,195 @@ const title       = qs.get('title')    || 'Viewer 3D';
 document.getElementById('title').textContent = title;
 document.title = title;
 
-// http(s) → lascio; "/" → root; altrimenti (siamo in /viewer/) → "../"
+// normalizza percorsi: http(s) → ok; "/" → root; altrimenti (siamo in /viewer/) → "../"
 const toAbs = p => /^https?:\/\//i.test(p) ? p : (p.startsWith('/') ? p : `../${p}`);
-const MODEL_URL    = toAbs(rawModel);
-const HOTSPOTS_URL = toAbs(rawHotspots);
+const MODEL_URL    = rawModel    ? toAbs(rawModel)    : '';
+const HOTSPOTS_URL = rawHotspots ? toAbs(rawHotspots) : '';
 
-/* ---------- Three.js base ---------- */
+const stage   = document.getElementById('stage');
 const canvas  = document.getElementById('c');
 const hsLayer = document.getElementById('hs-layer');
 const pickLay = document.getElementById('pick-layer');
-const stage   = document.getElementById('stage');
+const errBox  = document.getElementById('err');
 
+function showError(msg){ errBox.textContent = msg; errBox.style.display='block'; console.error(msg); }
+
+/* ---------- three.js base ---------- */
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
-renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
 renderer.setSize(stage.clientWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
 renderer.setClearColor(0x101013, 1);
 
 const camera = new THREE.PerspectiveCamera(45, stage.clientWidth / window.innerHeight, 0.01, 100);
-camera.position.set(1.5, 1.0, 1.8);
+camera.position.set(1.6, 1.2, 1.9);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.target.set(0, 0.6, 0);
 
-/* luci */
-const keyLight  = new THREE.DirectionalLight(0xffffff, 1.0); keyLight.position.set( 1.5, 1.2,  1.2);
-const fillLight = new THREE.DirectionalLight(0xffffff, 0.6); fillLight.position.set(-1.4, 0.8,  0.6);
-const rimLight  = new THREE.DirectionalLight(0xffffff, 0.8); rimLight.position.set( 0.2, 0.8, -1.6);
+const keyLight  = new THREE.DirectionalLight(0xffffff, 1.2); keyLight.position.set( 1.5, 1.2,  1.1);
+const fillLight = new THREE.DirectionalLight(0xffffff, 0.7); fillLight.position.set(-1.2, 0.8,  0.6);
+const rimLight  = new THREE.DirectionalLight(0xffffff, 0.8); rimLight.position.set( 0.2, 0.9, -1.6);
 scene.add(keyLight, fillLight, rimLight);
 
 const pmrem = new THREE.PMREMGenerator(renderer);
-let hdrTex = null;
+let rootModel=null, hdrTex=null;
 
-function showError(msg){
-  const o = document.getElementById('err');
-  o.textContent = msg;
-  o.style.display = 'block';
-  console.error(msg);
-}
+/* ---------- carica modello ---------- */
+if(!MODEL_URL){ showError('Parametro "model" mancante nella query.'); }
+const loader = new GLTFLoader(); THREE.Cache.enabled = true;
 
-/* ---------- Caricamento modello ---------- */
-const loader = new GLTFLoader();
-THREE.Cache.enabled = true;
+loader.load(MODEL_URL, (gltf)=>{
+  rootModel = gltf.scene;
+  // se serve una rotazione “di base”, puoi modificarla qui (esempio):
+  // rootModel.rotation.set(1.5708, 25.13274, 4.71239);
+  scene.add(rootModel);
+  fitModel();
+  if (HOTSPOTS_URL) loadHotspots(HOTSPOTS_URL);
+}, undefined, (e)=> showError('Errore nel caricamento modello: ' + (e?.message||e)) );
 
-let rootModel = null;
-
-loader.load(
-  MODEL_URL,
-  (gltf)=>{
-    rootModel = gltf.scene;
-    scene.add(rootModel);
-    fitModel();
-    if (HOTSPOTS_URL) loadHotspots(HOTSPOTS_URL);
-  },
-  undefined,
-  (err)=> showError('Errore nel caricamento modello: ' + (err?.message || err))
-);
-
-/* ---------- Hotspot ---------- */
-const hotspotDots = []; // {el, pop, pos:THREE.Vector3}
+/* ---------- hotspot ---------- */
+const hotspotDots=[]; // {el, pop, pos:THREE.Vector3}
 
 async function loadHotspots(url){
   try{
     const res = await fetch(url, {cache:'no-store'});
-    if(!res.ok) throw new Error('HTTP ' + res.status);
+    if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
-    data.forEach((h, idx)=>{
+    data.forEach((h, i)=>{
       const pos = new THREE.Vector3(...h.position);
-      // bottone
-      const hs = document.createElement('div');
-      hs.className = 'hotspot';
-      const dot = document.createElement('div');
-      dot.className = 'dot';
-      dot.textContent = (h.id ?? (idx+1));
-      hs.appendChild(dot);
-      hsLayer.appendChild(hs);
-      // popover
-      const pop = document.createElement('div');
-      pop.className = 'popover';
-      pop.innerHTML = `<h3>${h.title || ('Hotspot ' + (idx+1))}</h3><p>${h.text || ''}</p>`;
+      const hs  = document.createElement('div'); hs.className='hotspot';
+      const dot = document.createElement('div'); dot.className='dot'; dot.textContent = h.id ?? (i+1);
+      hs.appendChild(dot); hsLayer.appendChild(hs);
+      const pop = document.createElement('div'); pop.className='popover';
+      pop.innerHTML = `<h3>${h.title||('Hotspot '+(i+1))}</h3><p>${h.text||''}</p>`;
       hsLayer.appendChild(pop);
 
-      dot.addEventListener('click', (ev)=>{
+      dot.addEventListener('click',(ev)=>{
         ev.stopPropagation();
         smoothFocus(pos);
         document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show'));
-        pop.classList.add('show');
-        placePopover(pop, hs.getBoundingClientRect());
+        pop.classList.add('show'); placePopover(pop, hs.getBoundingClientRect());
       });
-
       hotspotDots.push({el:hs, pop, pos});
     });
-
-    hsLayer.addEventListener('click', ()=>{
-      document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show'));
-    });
-  }catch(e){
-    showError('Errore JSON: ' + e);
-  }
+    hsLayer.addEventListener('click', ()=>{ document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show')); });
+  }catch(e){ showError('Errore JSON: '+e); }
 }
 
 function updateHotspots(){
-  const w = stage.clientWidth, h = window.innerHeight;
+  const w=stage.clientWidth, h=window.innerHeight;
   hotspotDots.forEach(hs=>{
     const p = hs.pos.clone().project(camera);
-    const x = ( p.x * 0.5 + 0.5) * w;
-    const y = (-p.y * 0.5 + 0.5) * h;
-    hs.el.style.left = x + 'px';
-    hs.el.style.top  = y + 'px';
-    if (hs.pop.classList.contains('show')){
-      placePopover(hs.pop, hs.el.getBoundingClientRect());
-    }
+    const x = ( p.x*0.5 + 0.5) * w;
+    const y = (-p.y*0.5 + 0.5) * h;
+    hs.el.style.left = x+'px'; hs.el.style.top = y+'px';
+    if(hs.pop.classList.contains('show')) placePopover(hs.pop, hs.el.getBoundingClientRect());
   });
 }
-
 function placePopover(pop, rect){
-  const margin = 12;
+  const preferRight = rect.right + 340 < window.innerWidth - 12;
   pop.style.top = (rect.top + rect.height/2) + 'px';
-  const preferRight = rect.right + 320 < window.innerWidth - margin;
-  pop.style.left = (preferRight ? (rect.right + 14) : (rect.left - 14 - 320)) + 'px';
+  pop.style.left = (preferRight ? (rect.right + 14) : (rect.left - 14 - 340)) + 'px';
 }
 
-/* ---------- Fit e focus ---------- */
+/* ---------- fit / focus ---------- */
 function fitModel(){
-  const box = new THREE.Box3().setFromObject(rootModel || scene);
+  const box = new THREE.Box3().setFromObject(rootModel||scene);
   if(!box || !isFinite(box.min.x)) return;
   const size = new THREE.Vector3(); box.getSize(size);
   const center = new THREE.Vector3(); box.getCenter(center);
   controls.target.copy(center);
 
-  const maxDim = Math.max(size.x, size.y, size.z);
-  const dist = maxDim * 1.4 / Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
-
-  const dir = new THREE.Vector3(1.4, 1.1, 1.6).normalize();
+  const maxDim = Math.max(size.x,size.y,size.z);
+  const dist = maxDim * 1.35 / Math.tan(THREE.MathUtils.degToRad(camera.fov*0.5));
+  const dir = new THREE.Vector3(1.4,1.1,1.6).normalize();
   camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
-  camera.near = Math.max(0.001, dist/100);
-  camera.far  = dist*50;
-  camera.updateProjectionMatrix();
-  controls.update();
+  camera.near=Math.max(0.001,dist/100); camera.far=dist*50; camera.updateProjectionMatrix(); controls.update();
+}
+function smoothFocus(target){
+  const start={px:camera.position.x,py:camera.position.y,pz:camera.position.z, tx:controls.target.x,ty:controls.target.y,tz:controls.target.z};
+  const end={px:target.x+0.35,py:target.y+0.25,pz:target.z+0.35, tx:target.x,ty:target.y,tz:target.z};
+  const t0=performance.now(), DUR=650, ease=t=>t<.5?2*t*t:-1+(4-2*t)*t;
+  const step=now=>{ const k=Math.min(1,(now-t0)/DUR),e=ease(k);
+    camera.position.set(start.px+(end.px-start.px)*e, start.py+(end.py-start.py)*e, start.pz+(end.pz-start.pz)*e);
+    controls.target.set(start.tx+(end.tx-start.tx)*e, start.ty+(end.ty-start.ty)*e, start.tz+(end.tz-start.tz)*e);
+    controls.update(); if(k<1) requestAnimationFrame(step);
+  }; requestAnimationFrame(step);
 }
 
-function smoothFocus(targetVec3){
-  const start = {
-    px: camera.position.x, py: camera.position.y, pz: camera.position.z,
-    tx: controls.target.x,  ty: controls.target.y,  tz: controls.target.z
-  };
-  const end = {
-    px: targetVec3.x + 0.35,
-    py: targetVec3.y + 0.25,
-    pz: targetVec3.z + 0.35,
-    tx: targetVec3.x, ty: targetVec3.y, tz: targetVec3.z
-  };
-  const t0 = performance.now(), DUR = 650;
-  const ease = t => t<.5 ? 2*t*t : -1+(4-2*t)*t;
+/* ---------- misura A–B ---------- */
+const ray = new THREE.Raycaster(); const mouse = new THREE.Vector2();
+const measure={active:false,step:0,A:null,B:null,elA:null,elB:null,label:null};
 
-  const step = (now)=>{
-    const k = Math.min(1, (now - t0)/DUR), e = ease(k);
-    camera.position.set(
-      start.px + (end.px - start.px)*e,
-      start.py + (end.py - start.py)*e,
-      start.pz + (end.pz - start.pz)*e
-    );
-    controls.target.set(
-      start.tx + (end.tx - start.tx)*e,
-      start.ty + (end.ty - start.ty)*e,
-      start.tz + (end.tz - start.tz)*e
-    );
-    controls.update();
-    if(k<1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-
-/* ---------- Misurazione A–B (raycast) ---------- */
-const ray = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-const measure = {
-  active:false, step:0,
-  A:null, B:null,
-  elA:null, elB:null, label:null
-};
-
-function setMeasureDot(el, x, y){
-  el.style.left = x+'px';
-  el.style.top  = y+'px';
-}
-
-function ndcToScreen(ndc, out){
-  const w = stage.clientWidth, h = window.innerHeight;
-  out.x = ( ndc.x * 0.5 + 0.5) * w;
-  out.y = (-ndc.y * 0.5 + 0.5) * h;
-}
+function setDot(el,x,y){ el.style.left=x+'px'; el.style.top=y+'px'; }
+function ndcToScreen(ndc,out){ const w=stage.clientWidth,h=window.innerHeight; out.x=( ndc.x*0.5+0.5)*w; out.y=(-ndc.y*0.5+0.5)*h; }
 
 function handlePick(ev){
   if(!measure.active || !rootModel) return;
-
-  const rect = renderer.domElement.getBoundingClientRect();
-  mouse.x =  ((ev.clientX - rect.left) / rect.width)  * 2 - 1;
-  mouse.y = -((ev.clientY - rect.top)  / rect.height) * 2 + 1;
-  ray.setFromCamera(mouse, camera);
-
-  const hits = ray.intersectObject(rootModel, true);
-  if(!hits.length) { console.warn('Nessun punto sulla mesh'); return; }
-
-  const p = hits[0].point.clone();
-  const ndc = p.clone().project(camera);
-  const screen = {x:0,y:0}; ndcToScreen(ndc, screen);
-
-  if(measure.step===0){
-    measure.A = p;
-    if(!measure.elA){ measure.elA = document.createElement('div'); measure.elA.className='measure-dot'; pickLay.appendChild(measure.elA); }
-    setMeasureDot(measure.elA, screen.x, screen.y);
-    measure.step = 1;
-  } else {
-    measure.B = p;
-    if(!measure.elB){ measure.elB = document.createElement('div'); measure.elB.className='measure-dot'; pickLay.appendChild(measure.elB); }
-    setMeasureDot(measure.elB, screen.x, screen.y);
-    // label
-    const mid = p.clone().add(measure.A).multiplyScalar(0.5);
-    const ndcM = mid.clone().project(camera);
-    const sM = {x:0,y:0}; ndcToScreen(ndcM, sM);
-    if(!measure.label){ measure.label = document.createElement('div'); measure.label.className='measure-label'; pickLay.appendChild(measure.label); }
-    const d = measure.A.distanceTo(measure.B);
-    measure.label.textContent = d.toFixed(3)+' m';
-    setMeasureDot(measure.label, sM.x, sM.y);
-    measure.step = 0;
+  const r=renderer.domElement.getBoundingClientRect();
+  mouse.x=((ev.clientX-r.left)/r.width)*2-1; mouse.y=-((ev.clientY-r.top)/r.height)*2+1;
+  ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObject(rootModel,true); if(!hits.length){console.warn('Nessun punto'); return;}
+  const p=hits[0].point.clone(); const ndc=p.clone().project(camera); const s={x:0,y:0}; ndcToScreen(ndc,s);
+  if(measure.step===0){ measure.A=p; if(!measure.elA){measure.elA=document.createElement('div');measure.elA.className='measure-dot'; pickLay.appendChild(measure.elA);} setDot(measure.elA,s.x,s.y); measure.step=1; }
+  else{ measure.B=p; if(!measure.elB){measure.elB=document.createElement('div');measure.elB.className='measure-dot'; pickLay.appendChild(measure.elB);} setDot(measure.elB,s.x,s.y);
+    const mid=p.clone().add(measure.A).multiplyScalar(0.5); const ndcM=mid.clone().project(camera); const sM={x:0,y:0}; ndcToScreen(ndcM,sM);
+    if(!measure.label){measure.label=document.createElement('div');measure.label.className='measure-label'; pickLay.appendChild(measure.label);}
+    measure.label.textContent=measure.A.distanceTo(measure.B).toFixed(3)+' m'; setDot(measure.label,sM.x,sM.y); measure.step=0;
   }
 }
 
 /* ---------- UI ---------- */
-const fov = document.getElementById('fov');
-fov.addEventListener('input', e=>{
-  camera.fov = +e.target.value;
-  camera.updateProjectionMatrix();
-});
-document.getElementById('fit').onclick = fitModel;
-document.getElementById('reset').onclick = ()=>{ camera.fov = 45; camera.updateProjectionMatrix(); controls.reset(); fitModel(); };
+const fov = document.getElementById('fov'); fov.oninput = e=>{ camera.fov=+e.target.value; camera.updateProjectionMatrix(); };
+document.getElementById('fit').onclick   = fitModel;
+document.getElementById('reset').onclick = ()=>{ camera.fov=45; camera.updateProjectionMatrix(); controls.reset(); fitModel(); };
 
-const orbitBtn = document.getElementById('orbitToggle');
-orbitBtn.onclick = ()=>{
-  controls.enabled = !controls.enabled;
-  orbitBtn.classList.toggle('on', controls.enabled);
-  orbitBtn.textContent = controls.enabled ? 'Orbit ON' : 'Orbit OFF';
-};
+const orbitBtn=document.getElementById('orbitToggle');
+orbitBtn.onclick=()=>{ controls.enabled=!controls.enabled; orbitBtn.classList.toggle('on',controls.enabled); orbitBtn.textContent=controls.enabled?'Orbit ON':'Orbit OFF'; };
 
-const intensity = document.getElementById('intensity');
-intensity.addEventListener('input', e=>{
-  const v = +e.target.value;
-  keyLight.intensity = v;
-  fillLight.intensity = v*0.6;
-  rimLight.intensity  = v*0.8;
+const intens=document.getElementById('intensity');
+intens.oninput = e=>{ const v=+e.target.value; keyLight.intensity=v; fillLight.intensity=v*0.6; rimLight.intensity=v*0.8; };
+
+document.getElementById('keyOn').onclick =(e)=>{ keyLight.visible=!keyLight.visible; e.target.classList.toggle('on',keyLight.visible); };
+document.getElementById('fillOn').onclick=(e)=>{ fillLight.visible=!fillLight.visible; e.target.classList.toggle('on',fillLight.visible); };
+document.getElementById('rimOn').onclick =(e)=>{ rimLight.visible=!rimLight.visible; e.target.classList.toggle('on',rimLight.visible); };
+
+document.querySelectorAll('.env').forEach(b=> b.onclick=()=>{
+  const src=b.dataset.hdr;
+  if(src==='none'){ scene.environment=null; hdrTex?.dispose?.(); hdrTex=null; return; }
+  new RGBELoader().load(src,(tex)=>{ hdrTex?.dispose?.(); const env=pmrem.fromEquirectangular(tex).texture; scene.environment=env; tex.dispose(); });
 });
 
-document.getElementById('keyOn').onclick  = (e)=>{ keyLight.visible  = !keyLight.visible;  e.target.classList.toggle('on', keyLight.visible); };
-document.getElementById('fillOn').onclick = (e)=>{ fillLight.visible = !fillLight.visible; e.target.classList.toggle('on', fillLight.visible); };
-document.getElementById('rimOn').onclick  = (e)=>{ rimLight.visible  = !rimLight.visible;  e.target.classList.toggle('on', rimLight.visible); };
-
-document.querySelectorAll('.env').forEach(btn=>{
-  btn.onclick = ()=>{
-    const src = btn.dataset.hdr;
-    if(src === 'none'){
-      scene.environment = null;
-      hdrTex?.dispose?.(); hdrTex = null;
-      return;
-    }
-    new RGBELoader().load(src, (tex)=>{
-      hdrTex?.dispose?.();
-      const env = pmrem.fromEquirectangular(tex).texture;
-      scene.environment = env;
-      tex.dispose();
-    }, undefined, err=> showError('HDR load error: ' + err));
-  };
+document.querySelectorAll('.bg').forEach(b=> b.onclick=()=>{
+  const m=b.dataset.bg;
+  if(m==='transparent'){ renderer.setClearColor(0x000000,0); scene.background=null; }
+  else if(m==='light'){ renderer.setClearColor(0xf3f3f3,1); scene.background=new THREE.Color(0xf3f3f3); }
+  else { renderer.setClearColor(0x101013,1); scene.background=new THREE.Color(0x101013); }
 });
 
-document.querySelectorAll('.bg').forEach(btn=>{
-  btn.onclick = ()=>{
-    const mode = btn.dataset.bg;
-    if(mode === 'transparent'){
-      renderer.setClearColor(0x000000, 0);
-      scene.background = null;
-    }else if(mode === 'light'){
-      renderer.setClearColor(0xf3f3f3, 1);
-      scene.background = new THREE.Color(0xf3f3f3);
-    }else{
-      renderer.setClearColor(0x101013, 1);
-      scene.background = new THREE.Color(0x101013);
-    }
-  };
-});
+document.getElementById('closePopovers').onclick=()=>{ document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show')); };
 
-document.getElementById('closePopovers').onclick = ()=>{
-  document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show'));
-};
-
-const mhelp = document.getElementById('mhelp');
-document.getElementById('measureToggle').onclick = (e)=>{
-  measure.active = !measure.active;
-  measure.step = 0;
-  pickLay.classList.toggle('active', measure.active);
-  e.target.classList.toggle('on', measure.active);
-  mhelp.textContent = measure.active ? 'Misura ON: clicca A poi B sulla mesh.' : 'Misura OFF.';
-};
-document.getElementById('measureReset').onclick = ()=>{
-  measure.active = false; measure.step = 0;
-  pickLay.classList.remove('active');
-  mhelp.textContent = 'Misura OFF.';
-  ['elA','elB','label'].forEach(k=>{ if(measure[k]){ measure[k].remove(); measure[k]=null; } });
-};
-
+const mhelp=document.getElementById('mhelp');
+document.getElementById('measureToggle').onclick=(e)=>{ measure.active=!measure.active; measure.step=0; pickLay.classList.toggle('active',measure.active); e.target.classList.toggle('on',measure.active); mhelp.textContent=measure.active?'Misura ON: clicca A poi B.':'Misura OFF.'; };
+document.getElementById('measureReset').onclick = ()=>{ measure.active=false; measure.step=0; pickLay.classList.remove('active'); mhelp.textContent='Misura OFF.'; ['elA','elB','label'].forEach(k=>{ if(measure[k]){measure[k].remove(); measure[k]=null;} }); };
 pickLay.addEventListener('click', handlePick);
 
-/* ---------- Resize & render ---------- */
-function onResize(){
-  renderer.setSize(stage.clientWidth, window.innerHeight);
-  camera.aspect = stage.clientWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-}
+/* ---------- loop & resize ---------- */
+function onResize(){ renderer.setSize(stage.clientWidth, window.innerHeight); camera.aspect=stage.clientWidth/window.innerHeight; camera.updateProjectionMatrix(); }
 window.addEventListener('resize', onResize);
 
-function animate(){
-  requestAnimationFrame(animate);
-  controls.update();
-  updateHotspots();
-  // aggiorna posizione marker misura se presenti
-  if(measure.elA && measure.A){
-    const s = measure.A.clone().project(camera); const p={x:0,y:0}; ndcToScreen(s,p); setMeasureDot(measure.elA,p.x,p.y);
-  }
-  if(measure.elB && measure.B){
-    const s = measure.B.clone().project(camera); const p={x:0,y:0}; ndcToScreen(s,p); setMeasureDot(measure.elB,p.x,p.y);
-  }
-  if(measure.label && measure.A && measure.B){
-    const mid = measure.A.clone().add(measure.B).multiplyScalar(0.5);
-    const s = mid.project(camera); const p={x:0,y:0}; ndcToScreen(s,p); setMeasureDot(measure.label,p.x,p.y);
-  }
-  renderer.render(scene, camera);
-}
-animate();
-onResize();
+(function anim(){ requestAnimationFrame(anim); controls.update(); updateHotspots();
+  // aggiorna posizione label misura se presente
+  if(measure.elA && measure.A){ const s=measure.A.clone().project(camera); const p={x:0,y:0}; ndcToScreen(s,p); setDot(measure.elA,p.x,p.y); }
+  if(measure.elB && measure.B){ const s=measure.B.clone().project(camera); const p={x:0,y:0}; ndcToScreen(s,p); setDot(measure.elB,p.x,p.y); }
+  if(measure.label && measure.A && measure.B){ const mid=measure.A.clone().add(measure.B).multiplyScalar(0.5); const s=mid.project(camera); const p={x:0,y:0}; ndcToScreen(s,p); setDot(measure.label,p.x,p.y); }
+  renderer.render(scene,camera);
+})(); onResize();
+
 </script>
 </body>
 </html>
