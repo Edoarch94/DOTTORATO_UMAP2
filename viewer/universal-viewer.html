@@ -3,548 +3,414 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title id="docTitle">3D Viewer — Universale</title>
+<title>Viewer 3D</title>
+
+<!-- Three.js (build “classico”, niente moduli) -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.152/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152/examples/js/loaders/RGBELoader.js"></script>
+
 <style>
-  :root{--bg:#111;--card:#1b1b1b}
+  :root{--bg:#0f0f10;--panel:#161618;--accent:#4ade80}
   html,body{height:100%;margin:0;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-  .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px}
-  h1{margin:0 auto;font:700 20px/1.2 system-ui;width:min(96vw,1200px)}
-  #stage{position:relative;width:min(96vw,1200px);height:min(80vh,760px);margin:0 auto;border-radius:14px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.45);background:#0e0e0e}
-  canvas{display:block;width:100%;height:100%}
-  #badge{position:absolute;top:8px;left:8px;z-index:20;padding:6px 8px;border-radius:8px;background:rgba(14,165,233,.12);color:#93c5fd;border:1px solid rgba(147,197,253,.35);font:600 12px/1.2 system-ui;display:none}
+  .wrap{display:grid;grid-template-rows:auto 1fr auto;min-height:100%}
 
-  /* Docks laterali */
-  .dock{position:absolute; top:0; bottom:0; width:28%; display:flex; flex-direction:column; gap:10px; padding:12px; pointer-events:none;}
-  .dock.left  { left:0;  background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,0)); }
-  .dock.right { right:0; background:linear-gradient(-90deg,rgba(0,0,0,.25),rgba(0,0,0,0)); }
-  .dock-card{ pointer-events:auto; background:rgba(18,18,18,.96); border:1px solid rgba(255,255,255,.22); border-radius:12px; padding:14px 16px; max-height:46vh; overflow:auto; width:100%; animation: fadeIn .18s ease-out; }
-  .dock-card h3{margin:0 0 6px 0;font:800 14px/1.2 system-ui}
-  .dock-card p {margin:0;font-size:14px;line-height:1.35}
-  .dock-card .close{float:right;opacity:.75;cursor:pointer;border:0;background:transparent;color:#fff;font-weight:700}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  header{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+  header h1{margin:0;font:700 16px/1.2 system-ui}
 
-  /* Hotspot numeri */
-  .hotspot{position:absolute;width:24px;height:24px;border-radius:50%;background:#2b74ff;border:1px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;font:800 12px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.45);transform:translate(-50%,-50%);cursor:pointer;z-index:10}
+  .stage{position:relative}
+  canvas{display:block;width:100%;height:100vh}
 
-  /* Pannello comandi */
-  .panel{width:min(96vw,1200px);margin:0 auto;background:var(--card);border-radius:12px;padding:12px;display:grid;gap:12px;grid-template-columns:repeat(12,1fr)}
-  .section{grid-column:1/-1;font:700 12px/1.2 system-ui;letter-spacing:.04em;text-transform:uppercase;opacity:.7;margin-top:4px}
-  .group{background:rgba(255,255,255,.05);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
-  .group--2 {grid-column: span 6}
-  .group--3 {grid-column: span 4}
-  .group--4 {grid-column: span 3}
-  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  label{font-size:12px;opacity:.8}
+  /* pannello comandi */
+  .panel{position:fixed;left:12px;bottom:12px;right:12px;display:grid;gap:10px;
+         grid-template-columns:repeat(6, minmax(140px, 1fr));background:var(--panel);
+         border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px}
+  .group{background:rgba(255,255,255,.04);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:8px}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  label{font-size:12px;opacity:.75}
+  button{border:0;border-radius:10px;padding:8px 11px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
+  button.on{outline:2px solid rgba(74,222,128,.55)}
   input[type=range]{width:100%}
-  button{border:0;border-radius:10px;padding:9px 12px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
-  .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
-  .btn-ghost.on{box-shadow:0 0 0 2px rgba(74,222,128,.55) inset; background:#233a2d}
 
-  @media (max-width:1000px){.group--4{grid-column:span 4}.group--3{grid-column:span 6}}
-  @media (max-width:700px){.group--4,.group--3,.group--2{grid-column:span 12}; .dock{width:42%}}
+  /* hotspot numerati + popover */
+  .hotspot{position:absolute;transform:translate(-50%,-50%);z-index:10}
+  .hotspot .dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+                background:#2b74ff;border:1px solid #fff;color:#fff;font:800 13px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.45);cursor:pointer}
+  .popover{position:absolute;min-width:260px;max-width:360px;background:rgba(18,18,18,.96);border:1px solid rgba(255,255,255,.18);
+           border-radius:12px;padding:12px;color:#fff;display:none}
+  .popover.show{display:block}
+  .popover h3{margin:0 0 6px;font:700 14px/1.2 system-ui}
+  .popover p{margin:0;font-size:13px;opacity:.92}
+
+  .err{position:fixed;top:12px;right:12px;background:#300;color:#fff;border:1px solid #922;padding:10px 12px;border-radius:10px;max-width:50ch}
+
+  @media (max-width:980px){ .panel{grid-template-columns:repeat(3, minmax(140px, 1fr));} }
+  @media (max-width:560px){ .panel{grid-template-columns:repeat(2, minmax(140px, 1fr));} }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1 id="pageTitle">3D Viewer</h1>
+  <header><h1 id="title">Viewer 3D</h1></header>
 
-  <div id="stage">
-    <div id="badge">HOTSPOT MODE</div>
-    <div id="dockL" class="dock left"></div>
-    <div id="dockR" class="dock right"></div>
+  <div class="stage" id="stage">
+    <canvas id="c"></canvas>
+    <!-- hotspot container -->
+    <div id="hs-layer" style="position:absolute;inset:0;pointer-events:none"></div>
   </div>
 
+  <!-- pannello -->
   <div class="panel">
-    <div class="section">Visualizzazione</div>
-
-    <div class="group group--4">
-      <label>Orbit (auto-rotate)</label>
-      <div class="row">
-        <button id="orbitToggle" class="btn-ghost">OFF</button>
-        <span style="font-size:12px;opacity:.8">Velocità</span>
-        <input id="orbitSpeed" type="range" min="0" max="2" step="0.05" value="0.5" style="flex:1">
-        <span id="orbitVal" style="font-size:12px;opacity:.8;width:42px;text-align:right">0.5°/s</span>
-      </div>
-    </div>
-
-    <div class="group group--3">
-      <label>Zoom (FOV)</label>
-      <input id="fov" type="range" min="25" max="75" step="1" value="45">
-    </div>
-
-    <div class="group group--3">
-      <label>Luminosità</label>
-      <input id="exposure" type="range" min="1.0" max="3.2" step="0.05" value="2.6">
-    </div>
-
-    <div class="group group--4">
+    <div class="group">
       <label>Camera</label>
       <div class="row">
-        <button id="fit" class="btn-ghost">Inquadra</button>
-        <button id="reset" class="btn-ghost">Reset</button>
+        <button id="fit">Inquadra</button>
+        <button id="reset">Reset</button>
+        <button id="orbitToggle">Orbit ON/OFF</button>
       </div>
     </div>
 
-    <div class="group group--4">
+    <div class="group">
+      <label>Zoom (FOV)</label>
+      <input id="fov" type="range" min="25" max="85" step="1" value="45">
+    </div>
+
+    <div class="group">
+      <label>Luci</label>
+      <div class="row">
+        <button id="keyOn" class="on">Key</button>
+        <button id="fillOn" class="on">Fill</button>
+        <button id="rimOn"  class="on">Rim</button>
+      </div>
+      <label>Intensità</label>
+      <input id="intensity" type="range" min="0" max="2" step="0.05" value="1.0">
+    </div>
+
+    <div class="group">
       <label>Ambiente</label>
       <div class="row">
-        <button class="btn-ghost env on" data-hdr="on">HDR</button>
-        <button class="btn-ghost env" data-hdr="off">None</button>
+        <button class="env" data-hdr="https://cdn.jsdelivr.net/npm/three@0.152/examples/textures/equirectangular/royal_esplanade_1k.hdr">HDR</button>
+        <button class="env" data-hdr="none">None</button>
       </div>
     </div>
 
-    <div class="group group--4">
+    <div class="group">
       <label>Sfondo</label>
       <div class="row">
-        <button class="btn-ghost bg on" data-bg="dark">Nero</button>
-        <button class="btn-ghost bg" data-bg="light">Bianco</button>
-        <button class="btn-ghost bg" data-bg="transparent">Trasparente</button>
-        <button class="btn-ghost bg" data-bg="gradient">Gradiente</button>
+        <button class="bg" data-bg="dark">Dark</button>
+        <button class="bg" data-bg="light">Light</button>
+        <button class="bg" data-bg="transparent">Transparent</button>
       </div>
     </div>
 
-    <div class="group group--4">
-      <label>Orientamento</label>
-      <div class="row">
-        <button id="rzp" class="btn-ghost">Z +90°</button>
-        <button id="ryp" class="btn-ghost">Y +180°</button>
-        <button id="rotReset" class="btn-ghost">Reset rot.</button>
-        <button id="rotDump" class="btn-ghost">Salva rot.</button>
-      </div>
-    </div>
-
-    <div class="section">Annotazioni</div>
-
-    <div class="group group--3">
+    <div class="group">
       <label>Hotspot</label>
-      <div class="row"><button id="toggleH" class="btn-ghost">Modalità H</button></div>
-      <small>Premi anche la <b>H</b> da tastiera</small>
-    </div>
-
-    <div class="group group--3">
-      <label>Misurazione</label>
-      <div class="row"><button id="measure" class="btn-ghost">Misura A–B</button><button id="measureReset" class="btn-ghost">Reset</button></div>
-      <small id="mhelp" style="opacity:.75">Clicca A poi B sulla mesh.</small>
-    </div>
-
-    <div class="group group--3">
-      <label>Hotspot JSON</label>
       <div class="row">
-        <button id="jsonReload" class="btn-ghost">Ricarica JSON</button>
-        <button id="jsonExport" class="btn-ghost">Esporta JSON</button>
+        <button id="closePopovers">Chiudi popover</button>
       </div>
-      <small id="jsonInfo" style="opacity:.75"></small>
-    </div>
-
-    <div class="section">Luci</div>
-
-    <div class="group group--3">
-      <div class="row" style="width:100%">
-        <span style="flex:0 0 110px">Key (destra)</span><span id="valKey" style="width:42px;text-align:right">2.2</span>
-      </div>
-      <input id="keyIntensity" type="range" min="0" max="4" step="0.05" value="2.2">
-    </div>
-
-    <div class="group group--3">
-      <div class="row"><span style="flex:0 0 110px">Direzionale</span><span id="valDir" style="width:42px;text-align:right">3.0</span></div>
-      <input id="dirIntensity" type="range" min="0" max="4" step="0.05" value="3.0">
-    </div>
-
-    <div class="group group--3">
-      <div class="row"><span style="flex:0 0 110px">Fill</span><span id="valFill" style="width:42px;text-align:right">1.8</span></div>
-      <input id="fillIntensity" type="range" min="0" max="3" step="0.05" value="1.8">
-    </div>
-
-    <div class="group group--3">
-      <div class="row"><span style="flex:0 0 110px">Hemi</span><span id="valHemi" style="width:42px;text-align:right">1.6</span></div>
-      <input id="hemiIntensity" type="range" min="0" max="3" step="0.05" value="1.6">
-    </div>
-
-    <div class="group group--3">
-      <div class="row"><span style="flex:0 0 110px">Ambiente</span><span id="valAmb" style="width:42px;text-align:right">0.25</span></div>
-      <input id="ambIntensity" type="range" min="0" max="1" step="0.01" value="0.25">
-    </div>
-
-    <div class="group group--3">
-      <div class="row"><span style="flex:0 0 110px">Riflessi (envMap)</span><span id="valEnvI" style="width:42px;text-align:right">2.6</span></div>
-      <input id="envIntensity" type="range" min="0" max="5" step="0.1" value="2.6">
     </div>
   </div>
 </div>
 
-<!-- Three UMD r146 + tween + helpers -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/renderers/CSS2DRenderer.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+<div id="err" class="err" style="display:none"></div>
 
 <script>
-/* ========= Parametri dall’URL ========= */
-const qp = new URLSearchParams(location.search);
-const MODEL_PATH   = qp.get('model')     || 'modelli/Epigrafe.glb';
-let   HOTSPOT_JSON = qp.get('hotspots')  || 'data/epigrafe.hotspots.json';
-const TITLE        = qp.get('title')     || '3D Viewer';
+/* ========= 1) Normalizzazione parametri (viewer “furbo”) ========= */
+const qs = new URLSearchParams(location.search);
+const rawModel    = qs.get('model')    || '';
+const rawHotspots = qs.get('hotspots') || '';
+const title       = qs.get('title')    || 'Viewer 3D';
+document.getElementById('title').textContent = title;
+document.title = title;
 
-document.getElementById('pageTitle').textContent = TITLE;
-document.getElementById('docTitle').textContent  = TITLE + ' — 3D Viewer';
+/* Se il path è http(s) lo lascio; se inizia per "/" lo considero root-relative;
+   altrimenti (es. "modelli/file.glb") lo rendo relativo a /viewer/ → "../modelli/file.glb" */
+const toAbs = p => /^https?:\/\//i.test(p) ? p : (p.startsWith('/') ? p : `../${p}`);
 
-/* ========= Util UI ========= */
-const fmt = v => (Math.round(+v*100)/100).toString();
-function setActive(btn,on){ btn.classList.toggle('on', !!on); }
+const MODEL_URL    = toAbs(rawModel);
+const HOTSPOTS_URL = toAbs(rawHotspots);
 
-/* ========= Three setup ========= */
-const stage = document.getElementById('stage');
-const dockL = document.getElementById('dockL');
-const dockR = document.getElementById('dockR');
-const badge = document.getElementById('badge');
+/* ========= 2) Setup Three.js ========= */
+const canvas  = document.getElementById('c');
+const hsLayer = document.getElementById('hs-layer');
+const stage   = document.getElementById('stage');
+
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.setSize(stage.clientWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0e0e0e);
+scene.background = new THREE.Color(0x101013);
 
-const camera = new THREE.PerspectiveCamera(45, stage.clientWidth/stage.clientHeight, 0.01, 100);
-camera.position.set(0.9, 0.9, 1.8);
-
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(stage.clientWidth, stage.clientHeight);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 2.6;
-renderer.physicallyCorrectLights = true;
-stage.appendChild(renderer.domElement);
-
-const labelRenderer = new THREE.CSS2DRenderer();
-labelRenderer.setSize(stage.clientWidth, stage.clientHeight);
-labelRenderer.domElement.style.position = 'absolute';
-labelRenderer.domElement.style.left = '0';
-labelRenderer.domElement.style.top = '0';
-labelRenderer.domElement.style.pointerEvents = 'none';
-stage.appendChild(labelRenderer.domElement);
+const camera = new THREE.PerspectiveCamera(45, stage.clientWidth / window.innerHeight, 0.01, 100);
+camera.position.set(1.5, 1.0, 1.8);
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.target.set(0, 0.6, 0);
 
-/* ========= Luci ========= */
-const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.6);
-const dir  = new THREE.DirectionalLight(0xffffff, 3.0); dir.position.set(2,2,2);
-const fill = new THREE.DirectionalLight(0xffffff, 1.8); fill.position.set(-2,1.2,-1.5);
-const amb  = new THREE.AmbientLight(0xffffff, 0.25);
-const rightKey = new THREE.SpotLight(0xffffff, 2.2, 5, Math.PI/8, 0.2, 1.0);
-rightKey.position.set(1.2, 0.6, 0.6);
-rightKey.target.position.set(0.0, 0.3, -0.1);
-scene.add(hemi, dir, fill, amb, rightKey, rightKey.target);
+/* Luci base: key/fill/rim (tutti togglabili) */
+const keyLight  = new THREE.DirectionalLight(0xffffff, 1.0); keyLight.position.set( 1.5, 1.2,  1.2);
+const fillLight = new THREE.DirectionalLight(0xffffff, 0.6); fillLight.position.set(-1.4, 0.8,  0.6);
+const rimLight  = new THREE.DirectionalLight(0xffffff, 0.8); rimLight.position.set( 0.2, 0.8, -1.6);
+scene.add(keyLight, fillLight, rimLight);
 
-/* ========= HDR ========= */
-let envTexture = null;
-new THREE.RGBELoader()
-  .setPath('https://cdn.jsdelivr.net/npm/three@0.146.0/examples/textures/equirectangular/')
-  .load('venice_sunset_1k.hdr', (tex)=>{
-    tex.mapping = THREE.EquirectangularReflectionMapping;
-    envTexture = tex; scene.environment = envTexture;
-  });
+const envPMREM = new THREE.PMREMGenerator(renderer);
+let hdrTexture = null;
 
-/* ========= Modello + orientamento ========= */
-const ORIENT = { x: 1.57080, y: 0.0, z: 4.71239 };
-let model = null;
-const defaultRotation = new THREE.Euler(ORIENT.x, ORIENT.y, ORIENT.z, 'XYZ');
+/* ========= 3) Carica modello ========= */
+const loader = new THREE.GLTFLoader();
+THREE.Cache.enabled = true;
+loader.setCrossOrigin('anonymous');
 
-new THREE.GLTFLoader().load(
-  MODEL_PATH,
-  (g)=>{
-    model = g.scene;
-    model.rotation.copy(defaultRotation);
-    model.traverse(o=>{
-      if(o.isMesh){
-        o.castShadow = o.receiveShadow = true;
-        const m=o.material;
-        if(m){
-          if('envMapIntensity' in m) m.envMapIntensity = +document.getElementById('envIntensity').value || 2.6;
-          if('roughness' in m) m.roughness = Math.min(0.85, m.roughness ?? 0.85);
-          if('metalness' in m) m.metalness = Math.min(0.1, m.metalness ?? 0.0);
-          m.needsUpdate = true;
-        }
-      }
-    });
-    const box=new THREE.Box3().setFromObject(model);
-    const ctr=box.getCenter(new THREE.Vector3());
-    model.position.sub(ctr);
-    scene.add(model);
-    fitToObject(model,1.25);
-  }
+let rootModel = null;
+
+function showError(msg){
+  const o = document.getElementById('err');
+  o.textContent = msg;
+  o.style.display = 'block';
+  console.error(msg);
+}
+
+loader.load(
+  MODEL_URL,
+  (gltf)=>{
+    rootModel = gltf.scene;
+    scene.add(rootModel);
+
+    // Prova a centrare/inquadrare
+    fitModel();
+
+    // Dopo il load, prova a leggere gli hotspot
+    if (HOTSPOTS_URL) loadHotspots(HOTSPOTS_URL);
+  },
+  (xhr)=>{ /* progress */ },
+  (err)=> showError('Errore nel caricamento modello: ' + (err?.message || err))
 );
 
-function fitToObject(object, margin=1.25){
-  const box = new THREE.Box3().setFromObject(object);
-  const size = box.getSize(new THREE.Vector3());
-  const radius = size.length()*0.5;
-  const fov = camera.fov*(Math.PI/180);
-  const dist=(radius/Math.sin(fov/2))*margin;
-  const dirv=new THREE.Vector3(0,0.35,1).normalize();
-  const newPos=dirv.multiplyScalar(dist);
-  controls.target.set(0,0,0);
-  camera.position.copy(newPos);
-  camera.lookAt(controls.target);
+/* ========= 4) Hotspot (da JSON) ========= */
+const hotspotDots = []; // {el, pop, pos:THREE.Vector3}
+
+async function loadHotspots(url){
+  try{
+    const res = await fetch(url, {cache:'no-store'});
+    if(!res.ok) throw new Error('Error: ' + res.status);
+    const data = await res.json();
+
+    data.forEach((h, idx)=>{
+      const pos = new THREE.Vector3(...h.position);
+      // bottone
+      const hs = document.createElement('div');
+      hs.className = 'hotspot';
+      hs.style.pointerEvents = 'auto';
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dot.textContent = (h.id ?? (idx+1));
+      hs.appendChild(dot);
+      hsLayer.appendChild(hs);
+
+      // popover
+      const pop = document.createElement('div');
+      pop.className = 'popover';
+      pop.innerHTML = `<h3>${h.title || ('Hotspot ' + (idx+1))}</h3><p>${h.text || ''}</p>`;
+      hsLayer.appendChild(pop);
+
+      dot.addEventListener('click', (ev)=>{
+        ev.stopPropagation();
+        // zoom dolce verso il punto
+        smoothFocus(pos);
+        // apre popover, chiude gli altri
+        document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show'));
+        pop.classList.add('show');
+        // posizionamento pop a sinistra/destra in base allo spazio
+        placePopover(pop, hs.getBoundingClientRect());
+      });
+
+      hotspotDots.push({el:hs, pop, pos});
+    });
+
+    // chiudi quando clicchi lo sfondo
+    hsLayer.addEventListener('click', ()=> {
+      document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show'));
+    });
+
+  }catch(e){
+    showError('Errore JSON: ' + e);
+  }
+}
+
+/* Proiezione 3D → 2D ad ogni frame */
+function updateHotspots(){
+  const w = stage.clientWidth, h = window.innerHeight;
+  hotspotDots.forEach(hs=>{
+    const p = hs.pos.clone().project(camera); // NDC
+    const x = ( p.x * 0.5 + 0.5) * w;
+    const y = (-p.y * 0.5 + 0.5) * h;
+    hs.el.style.left = x + 'px';
+    hs.el.style.top  = y + 'px';
+
+    if (hs.pop.classList.contains('show')){
+      placePopover(hs.pop, hs.el.getBoundingClientRect());
+    }
+  });
+}
+
+function placePopover(pop, rect){
+  // di default mostro il pop a destra; se non c’è spazio vado a sinistra
+  const margin = 12;
+  pop.style.top = (rect.top + rect.height/2) + 'px';
+  // lato
+  const preferRight = rect.right + 320 < window.innerWidth - margin; // 320 ~ larghezza pop
+  pop.style.left = (preferRight ? (rect.right + 14) : (rect.left - 14 - 320)) + 'px';
+}
+
+/* ========= 5) Utility camera ========= */
+function fitModel(){
+  // bounding box
+  const box = new THREE.Box3().setFromObject(rootModel || scene);
+  if(!box || !isFinite(box.min.x)) return;
+
+  const size = new THREE.Vector3(); box.getSize(size);
+  const center = new THREE.Vector3(); box.getCenter(center);
+
+  // punta al centro
+  controls.target.copy(center);
+
+  // stima distanza
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const dist = maxDim * 1.4 / Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
+
+  const dir = new THREE.Vector3(1.4, 1.1, 1.6).normalize(); // direzione “gradevole”
+  camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
+  camera.near = Math.max(0.001, dist/100);
+  camera.far  = dist*50;
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+
+/* zoom dolce verso una posizione */
+function smoothFocus(targetVec3){
+  const start = {
+    px: camera.position.x, py: camera.position.y, pz: camera.position.z,
+    tx: controls.target.x, ty: controls.target.y, tz: controls.target.z
+  };
+  const end = {
+    px: targetVec3.x + 0.35, // leggera distanza laterale
+    py: targetVec3.y + 0.25,
+    pz: targetVec3.z + 0.35,
+    tx: targetVec3.x, ty: targetVec3.y, tz: targetVec3.z
+  };
+  const t0 = performance.now(), DUR = 650;
+
+  function easeInOut(t){ return t<.5 ? 2*t*t : -1+(4-2*t)*t; }
+
+  function step(now){
+    let k = Math.min(1, (now - t0)/DUR);
+    const e = easeInOut(k);
+
+    camera.position.set(
+      start.px + (end.px - start.px)*e,
+      start.py + (end.py - start.py)*e,
+      start.pz + (end.pz - start.pz)*e
+    );
+    controls.target.set(
+      start.tx + (end.tx - start.tx)*e,
+      start.ty + (end.ty - start.ty)*e,
+      start.tz + (end.tz - start.tz)*e
+    );
+    controls.update();
+    if(k<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ========= 6) UI ========= */
+const fov = document.getElementById('fov');
+fov.addEventListener('input', e=>{
+  camera.fov = +e.target.value;
+  camera.updateProjectionMatrix();
+});
+
+document.getElementById('fit').onclick = fitModel;
+document.getElementById('reset').onclick = ()=>{
+  camera.fov = 45; camera.updateProjectionMatrix();
+  controls.reset();
+  fitModel();
+};
+
+const orbitBtn = document.getElementById('orbitToggle');
+orbitBtn.onclick = ()=>{
+  controls.enabled = !controls.enabled;
+  orbitBtn.classList.toggle('on', controls.enabled);
+};
+
+const intensity = document.getElementById('intensity');
+intensity.addEventListener('input', e=>{
+  const v = +e.target.value;
+  keyLight.intensity = v;
+  fillLight.intensity = v*0.6;
+  rimLight.intensity  = v*0.8;
+});
+
+document.getElementById('keyOn').onclick  = (e)=>{ keyLight.visible  = !keyLight.visible;  e.target.classList.toggle('on', keyLight.visible); };
+document.getElementById('fillOn').onclick = (e)=>{ fillLight.visible = !fillLight.visible; e.target.classList.toggle('on', fillLight.visible); };
+document.getElementById('rimOn').onclick  = (e)=>{ rimLight.visible  = !rimLight.visible;  e.target.classList.toggle('on', rimLight.visible); };
+
+document.querySelectorAll('.env').forEach(btn=>{
+  btn.onclick = ()=>{
+    const src = btn.dataset.hdr;
+    if(src === 'none'){
+      scene.environment?.dispose?.();
+      scene.environment = null;
+      hdrTexture?.dispose?.(); hdrTexture = null;
+      return;
+    }
+    new THREE.RGBELoader().load(src, (tex)=>{
+      hdrTexture?.dispose?.();
+      const env = envPMREM.fromEquirectangular(tex).texture;
+      scene.environment = env;
+      tex.dispose();
+    }, undefined, err=> showError('HDR load error: ' + err));
+  };
+});
+
+document.querySelectorAll('.bg').forEach(btn=>{
+  btn.onclick = ()=>{
+    const mode = btn.dataset.bg;
+    if(mode === 'transparent'){
+      renderer.setClearColor(0x000000, 0);
+      scene.background = null;
+    }else if(mode === 'light'){
+      renderer.setClearColor(0xf3f3f3, 1);
+      scene.background = new THREE.Color(0xf3f3f3);
+    }else{
+      renderer.setClearColor(0x101013, 1);
+      scene.background = new THREE.Color(0x101013);
+    }
+  };
+});
+
+document.getElementById('closePopovers').onclick = ()=>{
+  document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show'));
+};
+
+/* ========= 7) Resize & render ========= */
+function onResize(){
+  renderer.setSize(stage.clientWidth, window.innerHeight);
+  camera.aspect = stage.clientWidth / window.innerHeight;
   camera.updateProjectionMatrix();
 }
+window.addEventListener('resize', onResize);
 
-/* ========= Raycast ========= */
-const raycaster=new THREE.Raycaster();
-const mouse=new THREE.Vector2();
-function raycast(e){
-  const rect=renderer.domElement.getBoundingClientRect();
-  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
-  mouse.y= -((e.clientY-rect.top)/rect.height)*2+1;
-  raycaster.setFromCamera(mouse,camera);
-  const hits = model ? raycaster.intersectObject(model,true) : [];
-  return hits[0]||null;
-}
-
-/* ========= Misurazione ========= */
-const measureBtn   = document.getElementById('measure');
-const measureReset = document.getElementById('measureReset');
-const mhelp        = document.getElementById('mhelp');
-
-const A = new THREE.Mesh(new THREE.SphereGeometry(0.01,16,16), new THREE.MeshBasicMaterial({color:0x22c55e}));
-const B = A.clone(); A.visible=B.visible=false; scene.add(A,B);
-const lineAB = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]), new THREE.LineBasicMaterial({color:0x22c55e}));
-lineAB.visible=false; scene.add(lineAB);
-const distLabelEl=document.createElement('div'); distLabelEl.className='label'; distLabelEl.textContent='0.000 m';
-const distLabel=new THREE.CSS2DObject(distLabelEl); distLabel.visible=false; scene.add(distLabel);
-
-const measuring={active:false,step:0,a:new THREE.Vector3(),b:new THREE.Vector3()};
-function setMeasureActive(on){
-  measuring.active=on; measuring.step=0;
-  A.visible=B.visible=lineAB.visible=distLabel.visible=false;
-  mhelp.textContent=on?'Clicca A poi B sulla mesh.':'Clicca A–B per misurare.';
-  setActive(measureBtn,on);
-}
-measureBtn.onclick = ()=> setMeasureActive(!measuring.active);
-measureReset.onclick= ()=> setMeasureActive(false);
-
-renderer.domElement.addEventListener('click',(e)=>{
-  if(!measuring.active) return;
-  const hit=raycast(e); if(!hit) return;
-  if(measuring.step===0){
-    measuring.a.copy(hit.point); A.position.copy(hit.point); A.visible=true; measuring.step=1;
-  }else{
-    measuring.b.copy(hit.point); B.position.copy(hit.point); B.visible=true;
-    lineAB.geometry.setFromPoints([measuring.a,measuring.b]); lineAB.visible=true;
-    const mid=measuring.a.clone().add(measuring.b).multiplyScalar(0.5);
-    distLabel.position.copy(mid); distLabel.visible=true;
-    distLabelEl.textContent=measuring.a.distanceTo(measuring.b).toFixed(3)+' m';
-    measuring.step=0;
-  }
-});
-
-/* ========= Hotspot JSON ========= */
-let HOTSPOTS = [];       // stato corrente
-let nextId    = 1;
-
-async function loadHotspots(path = HOTSPOT_JSON) {
-  HOTSPOT_JSON = path;
-  const info = document.getElementById('jsonInfo');
-  info.textContent = 'Carico…';
-  try {
-    const res = await fetch(path + '?v=' + Date.now());
-    if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
-    const data = await res.json();
-    HOTSPOTS = (data && Array.isArray(data.items)) ? data.items : [];
-    nextId = HOTSPOTS.reduce((m, h) => Math.max(m, h.id || 0), 0) + 1;
-    clearHotspotUI();
-    buildHotspotsFromState();
-    info.textContent = `Caricati ${HOTSPOTS.length} hotspot`;
-  } catch (err) {
-    console.error('Errore JSON:', err);
-    info.textContent = 'Errore nel caricamento JSON';
-  }
-}
-
-/* UI hotspot */
-const hUI=[];
-function screenXY(v){
-  const s=v.clone().project(camera), r=renderer.domElement.getBoundingClientRect();
-  return {x:(s.x*0.5+0.5)*r.width, y:(-s.y*0.5+0.5)*r.height};
-}
-function clearDocks(){ dockL.innerHTML=''; dockR.innerHTML=''; }
-function clearHotspotUI(){
-  hUI.splice(0, hUI.length);
-  [...stage.querySelectorAll('.hotspot')].forEach(el => el.remove());
-  clearDocks();
-}
-function buildHotspotsFromState(){
-  HOTSPOTS.forEach(h=>{
-    const pos=new THREE.Vector3(...h.position);
-    const nor=new THREE.Vector3(...h.normal).normalize();
-    const btn=document.createElement('div'); btn.className='hotspot'; btn.textContent=h.id ?? '?'; stage.appendChild(btn);
-    btn.addEventListener('click',(e)=>{ e.stopPropagation(); focusOn(pos,nor); openDockCard(pos,h); });
-    hUI.push({pos,nor,btn,data:h});
-  });
-  updateHotspotButtons();
-}
-function updateHotspotButtons(){
-  hUI.forEach(({pos,btn})=>{
-    const s=screenXY(pos);
-    btn.style.left=`${s.x}px`; btn.style.top=`${s.y}px`;
-  });
-}
-function openDockCard(worldPos, data){
-  clearDocks();
-  const s = screenXY(worldPos);
-  const rect = renderer.domElement.getBoundingClientRect();
-  const side = s.x < rect.width/2 ? 'left' : 'right';
-  const dock = (side==='left') ? dockL : dockR;
-  const card = document.createElement('div');
-  card.className='dock-card';
-  card.innerHTML = `<button class="close" title="Chiudi">×</button><h3>${data.title}</h3><p>${data.text}</p>`;
-  card.querySelector('.close').onclick = ()=> card.remove();
-  dock.appendChild(card);
-}
-
-/* Aggiunta hotspot (Hotspot Mode) */
-let hotspotMode=false;
-function toggleH(){ hotspotMode=!hotspotMode; badge.style.display=hotspotMode?'block':'none'; setActive(document.getElementById('toggleH'),hotspotMode); console.log(hotspotMode?'🟦 Hotspot mode ON — clicca la mesh.':'⬛ Hotspot mode OFF'); }
-document.getElementById('toggleH').onclick=toggleH;
-addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='h') toggleH(); });
-
-renderer.domElement.addEventListener('click', (e)=>{
-  if(!hotspotMode) return;
-  const hit = raycast(e); if(!hit) return;
-  const p=hit.point;
-  const n=hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0,0,1);
-  const newItem = {
-    id: nextId++,
-    position: [ +p.x.toFixed(3), +p.y.toFixed(3), +p.z.toFixed(3) ],
-    normal:   [ +n.x.toFixed(3), +n.y.toFixed(3), +n.z.toFixed(3) ],
-    title: "Titolo",
-    text:  `Testo descrizione hotspot ${nextId-1}.`
-  };
-  HOTSPOTS.push(newItem);
-
-  // crea subito il bottone
-  const pos=new THREE.Vector3(...newItem.position);
-  const nor=new THREE.Vector3(...newItem.normal).normalize();
-  const btn=document.createElement('div'); btn.className='hotspot'; btn.textContent=newItem.id; stage.appendChild(btn);
-  btn.addEventListener('click',(ev)=>{ ev.stopPropagation(); focusOn(pos,nor); openDockCard(pos,newItem); });
-  hUI.push({pos,nor,btn,data:newItem});
-  updateHotspotButtons();
-
-  console.log('Aggiunto hotspot:', newItem);
-  console.log('➡️ Clicca "Esporta JSON" per scaricare il file aggiornato e ricaricalo in /data.');
-});
-
-/* Ricarica/Export JSON */
-document.getElementById('jsonReload').onclick = ()=> loadHotspots(HOTSPOT_JSON);
-document.getElementById('jsonExport').onclick = ()=>{
-  const payload = JSON.stringify({version:1, items:HOTSPOTS}, null, 2);
-  const blob = new Blob([payload], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = (HOTSPOT_JSON.split('/').pop() || 'hotspots.json');
-  document.body.appendChild(a);
-  a.click(); a.remove(); URL.revokeObjectURL(a.href);
-};
-
-/* ========= Zoom dolce su hotspot ========= */
-function focusOn(point, normal){
-  const targetFrom=controls.target.clone();
-  const camFrom=camera.position.clone();
-  const currentDist=camera.position.distanceTo(controls.target);
-  const dist=THREE.MathUtils.clamp(currentDist*0.4, 0.22, 0.7);
-  const camTo=point.clone().add(normal.clone().normalize().multiplyScalar(dist));
-  const t={a:0};
-  new TWEEN.Tween(t).to({a:1},650).easing(TWEEN.Easing.Cubic.Out)
-    .onUpdate(()=>{
-      controls.target.lerpVectors(targetFrom, point, t.a);
-      camera.position.lerpVectors(camFrom, camTo, t.a);
-      camera.lookAt(controls.target);
-    }).start();
-}
-
-/* ========= Ambiente/Sfondo/Camera UI ========= */
-document.getElementById('fov').oninput      = e => { camera.fov = +e.target.value; camera.updateProjectionMatrix(); };
-document.getElementById('exposure').oninput = e => { renderer.toneMappingExposure = +e.target.value; };
-document.getElementById('fit').onclick      = ()=> fitToObject(model ?? scene, 1.25);
-document.getElementById('reset').onclick    = ()=>{
-  controls.reset(); controls.target.set(0,0,0);
-  new TWEEN.Tween(camera).to({fov:45},300).easing(TWEEN.Easing.Quadratic.Out).onUpdate(()=> camera.updateProjectionMatrix()).start();
-};
-document.querySelectorAll('.env').forEach(btn=>{
-  btn.onclick=()=>{
-    if(btn.dataset.hdr==='on' && envTexture){
-      scene.environment=envTexture;
-      if(model){
-        model.traverse(o=>{ if(o.isMesh && o.material && 'envMapIntensity' in o.material){ o.material.envMapIntensity = +document.getElementById('envIntensity').value; o.material.needsUpdate=true; }});
-      }
-    } else scene.environment=null;
-    document.querySelectorAll('.env').forEach(b=>setActive(b,b===btn));
-  };
-});
-document.querySelectorAll('.bg').forEach(btn=>{
-  btn.onclick=()=>{
-    const m=btn.dataset.bg;
-    if(m==='dark'){ scene.background=new THREE.Color(0x0e0e0e); stage.style.background='#0e0e0e'; }
-    if(m==='light'){ scene.background=new THREE.Color(0xf7f7f7); stage.style.background='#f7f7f7'; }
-    if(m==='transparent'){ scene.background=null; stage.style.background='transparent'; }
-    if(m==='gradient'){ scene.background=null; stage.style.background='linear-gradient(180deg,#0e0e0e,#1a1a1a)'; }
-    document.querySelectorAll('.bg').forEach(b=>setActive(b,b===btn));
-  };
-});
-
-/* ========= Orientamento debug ========= */
-document.getElementById('rzp').onclick = ()=>{ if(!model) return; model.rotation.z += Math.PI/2; };
-document.getElementById('ryp').onclick = ()=>{ if(!model) return; model.rotation.y += Math.PI; };
-document.getElementById('rotReset').onclick = ()=>{ if(!model) return; model.rotation.copy(defaultRotation); };
-document.getElementById('rotDump').onclick  = ()=>{ if(!model) return; const r=model.rotation; console.log(`ORIENT: { x:${r.x.toFixed(5)}, y:${r.y.toFixed(5)}, z:${r.z.toFixed(5)} }`); };
-
-/* ========= Orbit (auto-rotate) ========= */
-const orbitBtn = document.getElementById('orbitToggle');
-const orbitSpeed = document.getElementById('orbitSpeed');
-const orbitVal = document.getElementById('orbitVal');
-let autoOrbit = { active:false, degPerSec: +orbitSpeed.value };
-
-orbitBtn.onclick = ()=>{
-  autoOrbit.active = !autoOrbit.active;
-  orbitBtn.textContent = autoOrbit.active ? 'ON' : 'OFF';
-  setActive(orbitBtn, autoOrbit.active);
-};
-orbitSpeed.oninput = e=>{
-  autoOrbit.degPerSec = +e.target.value;
-  orbitVal.textContent = `${fmt(autoOrbit.degPerSec)}°/s`;
-};
-
-/* ========= Resize & loop ========= */
-function onResize(){
-  const w=stage.clientWidth, h=stage.clientHeight;
-  camera.aspect=w/h; camera.updateProjectionMatrix();
-  renderer.setSize(w,h); labelRenderer.setSize(w,h);
-  updateHotspotButtons();
-}
-addEventListener('resize', onResize);
-
-let lastT = performance.now();
-(function animate(now){
+function animate(){
   requestAnimationFrame(animate);
-  const dt = (now - lastT)/1000; lastT = now;
-
-  if(autoOrbit.active){
-    const deltaRad = THREE.MathUtils.degToRad(autoOrbit.degPerSec) * dt;
-    const v = camera.position.clone().sub(controls.target);
-    v.applyAxisAngle(new THREE.Vector3(0,1,0), deltaRad);
-    camera.position.copy(controls.target.clone().add(v));
-    camera.lookAt(controls.target);
-  }
-
   controls.update();
-  TWEEN.update();
+  updateHotspots();
   renderer.render(scene, camera);
-  labelRenderer.render(scene, camera);
-  updateHotspotButtons();
-})();
-
-/* ========= Carica gli hotspot all’avvio ========= */
-loadHotspots(HOTSPOT_JSON);
+}
+animate();
+onResize();
 </script>
 </body>
 </html>
