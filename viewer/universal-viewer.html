@@ -5,27 +5,20 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Viewer 3D</title>
 
-<!-- Three.js (build “classico”, niente moduli) -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.152/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.152/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.152/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.152/examples/js/loaders/RGBELoader.js"></script>
-
 <style>
   :root{--bg:#0f0f10;--panel:#161618;--accent:#4ade80}
   html,body{height:100%;margin:0;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-  .wrap{display:grid;grid-template-rows:auto 1fr auto;min-height:100%}
-
+  .wrap{display:grid;grid-template-rows:auto 1fr;min-height:100%}
   header{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
   header h1{margin:0;font:700 16px/1.2 system-ui}
 
   .stage{position:relative}
   canvas{display:block;width:100%;height:100vh}
 
-  /* pannello comandi */
+  /* pannello */
   .panel{position:fixed;left:12px;bottom:12px;right:12px;display:grid;gap:10px;
-         grid-template-columns:repeat(6, minmax(140px, 1fr));background:var(--panel);
-         border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px}
+         grid-template-columns:repeat(6, minmax(150px, 1fr));background:var(--panel);
+         border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px;z-index:20}
   .group{background:rgba(255,255,255,.04);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:8px}
   .row{display:flex;gap:8px;flex-wrap:wrap}
   label{font-size:12px;opacity:.75}
@@ -34,7 +27,8 @@
   input[type=range]{width:100%}
 
   /* hotspot numerati + popover */
-  .hotspot{position:absolute;transform:translate(-50%,-50%);z-index:10}
+  #hs-layer{position:absolute;inset:0;pointer-events:none;z-index:10}
+  .hotspot{position:absolute;transform:translate(-50%,-50%);pointer-events:auto}
   .hotspot .dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
                 background:#2b74ff;border:1px solid #fff;color:#fff;font:800 13px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.45);cursor:pointer}
   .popover{position:absolute;min-width:260px;max-width:360px;background:rgba(18,18,18,.96);border:1px solid rgba(255,255,255,.18);
@@ -43,10 +37,18 @@
   .popover h3{margin:0 0 6px;font:700 14px/1.2 system-ui}
   .popover p{margin:0;font-size:13px;opacity:.92}
 
-  .err{position:fixed;top:12px;right:12px;background:#300;color:#fff;border:1px solid #922;padding:10px 12px;border-radius:10px;max-width:50ch}
+  /* misurazione */
+  #pick-layer{position:absolute;inset:0;pointer-events:none;z-index:15}
+  #pick-layer.active{pointer-events:auto;cursor:crosshair}
+  .measure-dot{position:absolute;width:14px;height:14px;border-radius:50%;background:#22c55e;border:2px solid #fff;
+               transform:translate(-50%,-50%);box-shadow:0 2px 8px rgba(0,0,0,.55)}
+  .measure-label{position:absolute;background:#111;color:#fff;border:1px solid rgba(255,255,255,.25);
+                 padding:6px 8px;border-radius:8px;font-size:12px;transform:translate(-50%,-120%)}
 
-  @media (max-width:980px){ .panel{grid-template-columns:repeat(3, minmax(140px, 1fr));} }
-  @media (max-width:560px){ .panel{grid-template-columns:repeat(2, minmax(140px, 1fr));} }
+  .err{position:fixed;top:12px;right:12px;background:#300;color:#fff;border:1px solid #922;padding:10px 12px;border-radius:10px;max-width:50ch;z-index:30}
+
+  @media (max-width:980px){ .panel{grid-template-columns:repeat(3, minmax(150px, 1fr));} }
+  @media (max-width:560px){ .panel{grid-template-columns:repeat(2, minmax(150px, 1fr));} }
 </style>
 </head>
 <body>
@@ -55,8 +57,8 @@
 
   <div class="stage" id="stage">
     <canvas id="c"></canvas>
-    <!-- hotspot container -->
-    <div id="hs-layer" style="position:absolute;inset:0;pointer-events:none"></div>
+    <div id="hs-layer"></div>
+    <div id="pick-layer"></div>
   </div>
 
   <!-- pannello -->
@@ -66,7 +68,7 @@
       <div class="row">
         <button id="fit">Inquadra</button>
         <button id="reset">Reset</button>
-        <button id="orbitToggle">Orbit ON/OFF</button>
+        <button id="orbitToggle" class="on">Orbit ON</button>
       </div>
     </div>
 
@@ -104,18 +106,27 @@
     </div>
 
     <div class="group">
-      <label>Hotspot</label>
+      <label>Hotspot / Misura</label>
       <div class="row">
         <button id="closePopovers">Chiudi popover</button>
+        <button id="measureToggle">Misura A–B</button>
+        <button id="measureReset">Reset misura</button>
       </div>
+      <small id="mhelp" style="opacity:.8">Misura OFF.</small>
     </div>
   </div>
 </div>
 
 <div id="err" class="err" style="display:none"></div>
 
-<script>
-/* ========= 1) Normalizzazione parametri (viewer “furbo”) ========= */
+<!-- ======= SCRIPT MODULARE con import URL completi ======= -->
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.152/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three@0.152/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader }  from 'https://unpkg.com/three@0.152/examples/jsm/loaders/GLTFLoader.js';
+import { RGBELoader }  from 'https://unpkg.com/three@0.152/examples/jsm/loaders/RGBELoader.js';
+
+/* ---------- viewer “furbo”: normalizza i parametri ---------- */
 const qs = new URLSearchParams(location.search);
 const rawModel    = qs.get('model')    || '';
 const rawHotspots = qs.get('hotspots') || '';
@@ -123,16 +134,15 @@ const title       = qs.get('title')    || 'Viewer 3D';
 document.getElementById('title').textContent = title;
 document.title = title;
 
-/* Se il path è http(s) lo lascio; se inizia per "/" lo considero root-relative;
-   altrimenti (es. "modelli/file.glb") lo rendo relativo a /viewer/ → "../modelli/file.glb" */
+// http(s) → lascio; "/" → root; altrimenti (siamo in /viewer/) → "../"
 const toAbs = p => /^https?:\/\//i.test(p) ? p : (p.startsWith('/') ? p : `../${p}`);
-
 const MODEL_URL    = toAbs(rawModel);
 const HOTSPOTS_URL = toAbs(rawHotspots);
 
-/* ========= 2) Setup Three.js ========= */
+/* ---------- Three.js base ---------- */
 const canvas  = document.getElementById('c');
 const hsLayer = document.getElementById('hs-layer');
+const pickLay = document.getElementById('pick-layer');
 const stage   = document.getElementById('stage');
 
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
@@ -140,31 +150,24 @@ renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 renderer.setSize(stage.clientWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x101013);
+renderer.setClearColor(0x101013, 1);
 
 const camera = new THREE.PerspectiveCamera(45, stage.clientWidth / window.innerHeight, 0.01, 100);
 camera.position.set(1.5, 1.0, 1.8);
 
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.target.set(0, 0.6, 0);
 
-/* Luci base: key/fill/rim (tutti togglabili) */
+/* luci */
 const keyLight  = new THREE.DirectionalLight(0xffffff, 1.0); keyLight.position.set( 1.5, 1.2,  1.2);
 const fillLight = new THREE.DirectionalLight(0xffffff, 0.6); fillLight.position.set(-1.4, 0.8,  0.6);
 const rimLight  = new THREE.DirectionalLight(0xffffff, 0.8); rimLight.position.set( 0.2, 0.8, -1.6);
 scene.add(keyLight, fillLight, rimLight);
 
-const envPMREM = new THREE.PMREMGenerator(renderer);
-let hdrTexture = null;
-
-/* ========= 3) Carica modello ========= */
-const loader = new THREE.GLTFLoader();
-THREE.Cache.enabled = true;
-loader.setCrossOrigin('anonymous');
-
-let rootModel = null;
+const pmrem = new THREE.PMREMGenerator(renderer);
+let hdrTex = null;
 
 function showError(msg){
   const o = document.getElementById('err');
@@ -173,43 +176,42 @@ function showError(msg){
   console.error(msg);
 }
 
+/* ---------- Caricamento modello ---------- */
+const loader = new GLTFLoader();
+THREE.Cache.enabled = true;
+
+let rootModel = null;
+
 loader.load(
   MODEL_URL,
   (gltf)=>{
     rootModel = gltf.scene;
     scene.add(rootModel);
-
-    // Prova a centrare/inquadrare
     fitModel();
-
-    // Dopo il load, prova a leggere gli hotspot
     if (HOTSPOTS_URL) loadHotspots(HOTSPOTS_URL);
   },
-  (xhr)=>{ /* progress */ },
+  undefined,
   (err)=> showError('Errore nel caricamento modello: ' + (err?.message || err))
 );
 
-/* ========= 4) Hotspot (da JSON) ========= */
+/* ---------- Hotspot ---------- */
 const hotspotDots = []; // {el, pop, pos:THREE.Vector3}
 
 async function loadHotspots(url){
   try{
     const res = await fetch(url, {cache:'no-store'});
-    if(!res.ok) throw new Error('Error: ' + res.status);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-
     data.forEach((h, idx)=>{
       const pos = new THREE.Vector3(...h.position);
       // bottone
       const hs = document.createElement('div');
       hs.className = 'hotspot';
-      hs.style.pointerEvents = 'auto';
       const dot = document.createElement('div');
       dot.className = 'dot';
       dot.textContent = (h.id ?? (idx+1));
       hs.appendChild(dot);
       hsLayer.appendChild(hs);
-
       // popover
       const pop = document.createElement('div');
       pop.className = 'popover';
@@ -218,38 +220,31 @@ async function loadHotspots(url){
 
       dot.addEventListener('click', (ev)=>{
         ev.stopPropagation();
-        // zoom dolce verso il punto
         smoothFocus(pos);
-        // apre popover, chiude gli altri
         document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show'));
         pop.classList.add('show');
-        // posizionamento pop a sinistra/destra in base allo spazio
         placePopover(pop, hs.getBoundingClientRect());
       });
 
       hotspotDots.push({el:hs, pop, pos});
     });
 
-    // chiudi quando clicchi lo sfondo
-    hsLayer.addEventListener('click', ()=> {
+    hsLayer.addEventListener('click', ()=>{
       document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show'));
     });
-
   }catch(e){
     showError('Errore JSON: ' + e);
   }
 }
 
-/* Proiezione 3D → 2D ad ogni frame */
 function updateHotspots(){
   const w = stage.clientWidth, h = window.innerHeight;
   hotspotDots.forEach(hs=>{
-    const p = hs.pos.clone().project(camera); // NDC
+    const p = hs.pos.clone().project(camera);
     const x = ( p.x * 0.5 + 0.5) * w;
     const y = (-p.y * 0.5 + 0.5) * h;
     hs.el.style.left = x + 'px';
     hs.el.style.top  = y + 'px';
-
     if (hs.pop.classList.contains('show')){
       placePopover(hs.pop, hs.el.getBoundingClientRect());
     }
@@ -257,31 +252,24 @@ function updateHotspots(){
 }
 
 function placePopover(pop, rect){
-  // di default mostro il pop a destra; se non c’è spazio vado a sinistra
   const margin = 12;
   pop.style.top = (rect.top + rect.height/2) + 'px';
-  // lato
-  const preferRight = rect.right + 320 < window.innerWidth - margin; // 320 ~ larghezza pop
+  const preferRight = rect.right + 320 < window.innerWidth - margin;
   pop.style.left = (preferRight ? (rect.right + 14) : (rect.left - 14 - 320)) + 'px';
 }
 
-/* ========= 5) Utility camera ========= */
+/* ---------- Fit e focus ---------- */
 function fitModel(){
-  // bounding box
   const box = new THREE.Box3().setFromObject(rootModel || scene);
   if(!box || !isFinite(box.min.x)) return;
-
   const size = new THREE.Vector3(); box.getSize(size);
   const center = new THREE.Vector3(); box.getCenter(center);
-
-  // punta al centro
   controls.target.copy(center);
 
-  // stima distanza
   const maxDim = Math.max(size.x, size.y, size.z);
   const dist = maxDim * 1.4 / Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5));
 
-  const dir = new THREE.Vector3(1.4, 1.1, 1.6).normalize(); // direzione “gradevole”
+  const dir = new THREE.Vector3(1.4, 1.1, 1.6).normalize();
   camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
   camera.near = Math.max(0.001, dist/100);
   camera.far  = dist*50;
@@ -289,26 +277,22 @@ function fitModel(){
   controls.update();
 }
 
-/* zoom dolce verso una posizione */
 function smoothFocus(targetVec3){
   const start = {
     px: camera.position.x, py: camera.position.y, pz: camera.position.z,
-    tx: controls.target.x, ty: controls.target.y, tz: controls.target.z
+    tx: controls.target.x,  ty: controls.target.y,  tz: controls.target.z
   };
   const end = {
-    px: targetVec3.x + 0.35, // leggera distanza laterale
+    px: targetVec3.x + 0.35,
     py: targetVec3.y + 0.25,
     pz: targetVec3.z + 0.35,
     tx: targetVec3.x, ty: targetVec3.y, tz: targetVec3.z
   };
   const t0 = performance.now(), DUR = 650;
+  const ease = t => t<.5 ? 2*t*t : -1+(4-2*t)*t;
 
-  function easeInOut(t){ return t<.5 ? 2*t*t : -1+(4-2*t)*t; }
-
-  function step(now){
-    let k = Math.min(1, (now - t0)/DUR);
-    const e = easeInOut(k);
-
+  const step = (now)=>{
+    const k = Math.min(1, (now - t0)/DUR), e = ease(k);
     camera.position.set(
       start.px + (end.px - start.px)*e,
       start.py + (end.py - start.py)*e,
@@ -321,28 +305,80 @@ function smoothFocus(targetVec3){
     );
     controls.update();
     if(k<1) requestAnimationFrame(step);
-  }
+  };
   requestAnimationFrame(step);
 }
 
-/* ========= 6) UI ========= */
+/* ---------- Misurazione A–B (raycast) ---------- */
+const ray = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const measure = {
+  active:false, step:0,
+  A:null, B:null,
+  elA:null, elB:null, label:null
+};
+
+function setMeasureDot(el, x, y){
+  el.style.left = x+'px';
+  el.style.top  = y+'px';
+}
+
+function ndcToScreen(ndc, out){
+  const w = stage.clientWidth, h = window.innerHeight;
+  out.x = ( ndc.x * 0.5 + 0.5) * w;
+  out.y = (-ndc.y * 0.5 + 0.5) * h;
+}
+
+function handlePick(ev){
+  if(!measure.active || !rootModel) return;
+
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x =  ((ev.clientX - rect.left) / rect.width)  * 2 - 1;
+  mouse.y = -((ev.clientY - rect.top)  / rect.height) * 2 + 1;
+  ray.setFromCamera(mouse, camera);
+
+  const hits = ray.intersectObject(rootModel, true);
+  if(!hits.length) { console.warn('Nessun punto sulla mesh'); return; }
+
+  const p = hits[0].point.clone();
+  const ndc = p.clone().project(camera);
+  const screen = {x:0,y:0}; ndcToScreen(ndc, screen);
+
+  if(measure.step===0){
+    measure.A = p;
+    if(!measure.elA){ measure.elA = document.createElement('div'); measure.elA.className='measure-dot'; pickLay.appendChild(measure.elA); }
+    setMeasureDot(measure.elA, screen.x, screen.y);
+    measure.step = 1;
+  } else {
+    measure.B = p;
+    if(!measure.elB){ measure.elB = document.createElement('div'); measure.elB.className='measure-dot'; pickLay.appendChild(measure.elB); }
+    setMeasureDot(measure.elB, screen.x, screen.y);
+    // label
+    const mid = p.clone().add(measure.A).multiplyScalar(0.5);
+    const ndcM = mid.clone().project(camera);
+    const sM = {x:0,y:0}; ndcToScreen(ndcM, sM);
+    if(!measure.label){ measure.label = document.createElement('div'); measure.label.className='measure-label'; pickLay.appendChild(measure.label); }
+    const d = measure.A.distanceTo(measure.B);
+    measure.label.textContent = d.toFixed(3)+' m';
+    setMeasureDot(measure.label, sM.x, sM.y);
+    measure.step = 0;
+  }
+}
+
+/* ---------- UI ---------- */
 const fov = document.getElementById('fov');
 fov.addEventListener('input', e=>{
   camera.fov = +e.target.value;
   camera.updateProjectionMatrix();
 });
-
 document.getElementById('fit').onclick = fitModel;
-document.getElementById('reset').onclick = ()=>{
-  camera.fov = 45; camera.updateProjectionMatrix();
-  controls.reset();
-  fitModel();
-};
+document.getElementById('reset').onclick = ()=>{ camera.fov = 45; camera.updateProjectionMatrix(); controls.reset(); fitModel(); };
 
 const orbitBtn = document.getElementById('orbitToggle');
 orbitBtn.onclick = ()=>{
   controls.enabled = !controls.enabled;
   orbitBtn.classList.toggle('on', controls.enabled);
+  orbitBtn.textContent = controls.enabled ? 'Orbit ON' : 'Orbit OFF';
 };
 
 const intensity = document.getElementById('intensity');
@@ -361,14 +397,13 @@ document.querySelectorAll('.env').forEach(btn=>{
   btn.onclick = ()=>{
     const src = btn.dataset.hdr;
     if(src === 'none'){
-      scene.environment?.dispose?.();
       scene.environment = null;
-      hdrTexture?.dispose?.(); hdrTexture = null;
+      hdrTex?.dispose?.(); hdrTex = null;
       return;
     }
-    new THREE.RGBELoader().load(src, (tex)=>{
-      hdrTexture?.dispose?.();
-      const env = envPMREM.fromEquirectangular(tex).texture;
+    new RGBELoader().load(src, (tex)=>{
+      hdrTex?.dispose?.();
+      const env = pmrem.fromEquirectangular(tex).texture;
       scene.environment = env;
       tex.dispose();
     }, undefined, err=> showError('HDR load error: ' + err));
@@ -395,7 +430,24 @@ document.getElementById('closePopovers').onclick = ()=>{
   document.querySelectorAll('.popover.show').forEach(p=>p.classList.remove('show'));
 };
 
-/* ========= 7) Resize & render ========= */
+const mhelp = document.getElementById('mhelp');
+document.getElementById('measureToggle').onclick = (e)=>{
+  measure.active = !measure.active;
+  measure.step = 0;
+  pickLay.classList.toggle('active', measure.active);
+  e.target.classList.toggle('on', measure.active);
+  mhelp.textContent = measure.active ? 'Misura ON: clicca A poi B sulla mesh.' : 'Misura OFF.';
+};
+document.getElementById('measureReset').onclick = ()=>{
+  measure.active = false; measure.step = 0;
+  pickLay.classList.remove('active');
+  mhelp.textContent = 'Misura OFF.';
+  ['elA','elB','label'].forEach(k=>{ if(measure[k]){ measure[k].remove(); measure[k]=null; } });
+};
+
+pickLay.addEventListener('click', handlePick);
+
+/* ---------- Resize & render ---------- */
 function onResize(){
   renderer.setSize(stage.clientWidth, window.innerHeight);
   camera.aspect = stage.clientWidth / window.innerHeight;
@@ -407,6 +459,17 @@ function animate(){
   requestAnimationFrame(animate);
   controls.update();
   updateHotspots();
+  // aggiorna posizione marker misura se presenti
+  if(measure.elA && measure.A){
+    const s = measure.A.clone().project(camera); const p={x:0,y:0}; ndcToScreen(s,p); setMeasureDot(measure.elA,p.x,p.y);
+  }
+  if(measure.elB && measure.B){
+    const s = measure.B.clone().project(camera); const p={x:0,y:0}; ndcToScreen(s,p); setMeasureDot(measure.elB,p.x,p.y);
+  }
+  if(measure.label && measure.A && measure.B){
+    const mid = measure.A.clone().add(measure.B).multiplyScalar(0.5);
+    const s = mid.project(camera); const p={x:0,y:0}; ndcToScreen(s,p); setMeasureDot(measure.label,p.x,p.y);
+  }
   renderer.render(scene, camera);
 }
 animate();
