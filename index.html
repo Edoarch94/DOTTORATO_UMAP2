@@ -34,62 +34,40 @@
 </footer>
 
 <script>
-/* ===== Configura qui i modelli (uno per card) =====
-   - model:     path al .glb (relativo alla root del sito)
-   - hotspots:  path al JSON degli hotspot
-   - title:     titolo mostrato nel viewer (verrà URL-encoded)
-   - img:       anteprima (thumbs/)
-   - desc:      testo della card
-*/
+// ===== CONFIGURA QUI I TUOI MODELLI =====
+// Ogni oggetto rappresenta un viewer 3D
 const models = [
   {
     id: "epigrafe",
     title: "Epigrafe Claudia Nova",
     desc: "Modello 3D della lastra epigrafica con iscrizione CLAUDIA NOVA.",
-    img: "thumbs/epigrafe.jpeg",
-    model: "modelli/Epigrafe.glb",
-    hotspots: "data/epigrafe.hotspots.json"
+    img: "https://edoarch94.github.io/DOTTORATO_UMAP2/thumbs/epigrafe.jpg", // crea cartella thumbs/
+    url: "viewer/epigrafe-three.html"
   },
-  // ESEMPI — duplica e modifica:
-  // {
-  //   id: "teatro",
-  //   title: "Teatro di Peltuinum",
-  //   desc: "Ricostruzione e annotazioni del teatro.",
-  //   img: "thumbs/teatro.jpeg",
-  //   model: "modelli/Teatro.glb",
-  //   hotspots: "data/teatro.hotspots.json"
-  // },
-  // {
-  //   id: "busto",
-  //   title: "Busto marmoreo",
-  //   desc: "Scansione fotogrammetrica ad alta risoluzione.",
-  //   img: "thumbs/busto.jpg",
-  //   model: "modelli/Busto.glb",
-  //   hotspots: "data/busto.hotspots.json"
-  // }
+  {
+    id: "arco",
+    title: "Arco monumentale",
+    desc: "Ricostruzione 3D dell’arco romano con decorazioni lapidee.",
+    img: "https://edoarch94.github.io/DOTTORATO_UMAP2/thumbs/arco.jpg",
+    url: "viewer/arco-three.html"
+  },
+  {
+    id: "busto",
+    title: "Busto marmoreo",
+    desc: "Scansione del busto in marmo, alta risoluzione fotogrammetrica.",
+    img: "https://edoarch94.github.io/DOTTORATO_UMAP2/thumbs/busto.jpg",
+    url: "viewer/busto-three.html"
+  }
 ];
 
-// ===== Costruzione dinamica delle card =====
+// ===== COSTRUZIONE DINAMICA DELLA GRIGLIA =====
 const grid = document.getElementById("grid");
-
-// base del viewer universale (non toccare)
-const VIEWER_URL = "viewer/universal-viewer.html";
-
-models.forEach(m => {
-  // costruisco l'href con query string sicura
-  const params = new URLSearchParams({
-    model: m.model,
-    hotspots: m.hotspots,
-    title: m.title
-  });
-  const href = `${VIEWER_URL}?${params.toString()}`;
-
+models.forEach(m=>{
   const card = document.createElement("div");
   card.className = "card";
   card.innerHTML = `
     <div class="thumb">
-      <img src="${m.img}?v=${Date.now()}" alt="${m.title}"
-           onerror="this.onerror=null;this.src='https://dummyimage.com/800x600/2b2b2b/ffffff&text=Nessuna+anteprima';">
+      <img src="${m.img}" alt="${m.title}" onerror="this.src='https://dummyimage.com/600x400/2b2b2b/ffffff&text=No+Preview';">
       <span>${m.id}</span>
     </div>
     <div class="content">
@@ -97,9 +75,8 @@ models.forEach(m => {
         <h2>${m.title}</h2>
         <p>${m.desc}</p>
       </div>
-      <a class="btn" href="${href}">Apri viewer</a>
-    </div>
-  `;
+      <a class="btn" href="${m.url}">Apri viewer</a>
+    </div>`;
   grid.appendChild(card);
 });
 </script>
