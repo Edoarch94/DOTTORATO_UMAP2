@@ -5,203 +5,290 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Epigrafe Claudia Nova — Embed</title>
 <style>
-  :root{--bg:#0e0e0e;--card:#1b1b1b;--accent:#4ade80}
+  :root{
+    --bg:#111;
+    --card:#1b1b1b;
+    --accent:#3b82f6;
+  }
   html,body{
-    margin:0;height:100%;
-    background:var(--bg);color:#eee;
+    margin:0;
+    padding:0;
+    background:transparent;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:#eee;
   }
   .wrap{
-    min-height:100dvh;
-    display:flex;flex-direction:column;
-    gap:6px;padding:6px;
-  }
-  header{
-    display:flex;gap:6px;align-items:center;justify-content:space-between;
-    width:min(96vw,1200px);margin:0 auto;
-  }
-  h1{
-    margin:0;font:700 16px/1.2 system-ui;
-  }
-  .actions{
-    display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;
-  }
-  .btn{
-    border:0;border-radius:999px;
-    padding:6px 10px;
-    background:#2a2a2a;color:#fff;
-    font-weight:600;font-size:13px;
-    cursor:pointer;white-space:nowrap;
-  }
-  .btn:hover{background:#333}
-  .btn-ghost{
-    background:transparent;
-    outline:1px solid rgba(255,255,255,.25);
-  }
-  .btn.on{
-    box-shadow:0 0 0 2px rgba(74,222,128,.55) inset;
-    background:#233a2d;
+    width:100%;
+    max-width:480px;
+    margin:0 auto;
+    background:#000;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 6px 18px rgba(0,0,0,.55);
   }
 
-  /* viewer basso per stare dentro al pannello uMap senza scroll */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px 10px;
+    background:#050505;
+    font-size:14px;
+  }
+  .topbar-title{
+    font-weight:600;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    padding-right:8px;
+  }
+  .topbar-link{
+    border-radius:999px;
+    padding:6px 10px;
+    font-size:12px;
+    font-weight:600;
+    border:1px solid rgba(255,255,255,.18);
+    background:rgba(24,24,24,1);
+    color:#f9fafb;
+    text-decoration:none;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .topbar-link::before{
+    content:"📱";
+    font-size:14px;
+  }
+
+  /* viewport compatta per stare nel popup U-Map */
   #stage{
     position:relative;
-    width:min(96vw,1200px);
-    height:min(50vh,360px);
-    margin:0 auto;
-    border-radius:14px;overflow:hidden;
-    box-shadow:0 8px 28px rgba(0,0,0,.45);
-    background:#0e0e0e;
+    width:100%;
+    height:230px;          /* <– altezza modello */
+    background:#050505;
   }
-  canvas{display:block;width:100%;height:100%}
+  canvas{
+    display:block;
+    width:100%;
+    height:100%;
+  }
 
+  /* pannello basso compatto */
   .panel{
-    width:min(96vw,1200px);margin:0 auto;
-    background:var(--card);border-radius:12px;
-    padding:6px 6px 8px;
-    display:grid;gap:6px;
-    grid-template-columns:repeat(12,1fr);
+    background:#121212;
+    padding:8px 10px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    font-size:12px;
   }
-  .group{
-    background:rgba(255,255,255,.06);
-    border-radius:10px;padding:6px;
-    display:flex;flex-direction:column;gap:4px;
-    grid-column:span 6;
+  .row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
   }
-  label{font-size:12px;opacity:.85}
-  input[type=range]{width:100%}
-  .hint{font-size:11px;opacity:.75}
-  .row{display:flex;gap:6px;align-items:center}
-
-  /* pulsanti piccoli in header */
-  .icon-btn{
-    border:0;
+  .row label{
+    font-size:12px;
+    opacity:.85;
+  }
+  .pill-toggle{
+    position:relative;
+    width:52px;
+    height:26px;
     border-radius:999px;
-    padding:6px;
-    width:32px;height:32px;
-    display:inline-flex;align-items:center;justify-content:center;
-    background:#2a2a2a;color:#fff;
+    background:#272727;
+    border:1px solid rgba(255,255,255,.25);
+    display:flex;
+    align-items:center;
+    padding:2px;
+    box-sizing:border-box;
     cursor:pointer;
+    font-size:11px;
+    font-weight:600;
   }
-  .icon-btn:hover{background:#333}
-  .icon-btn.on{
-    box-shadow:0 0 0 2px rgba(74,222,128,.55) inset;
-    background:#233a2d;
+  .pill-knob{
+    width:20px;
+    height:20px;
+    border-radius:999px;
+    background:#111;
+    transition:transform .18s ease, background .18s ease;
+  }
+  .pill-labels{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 8px;
+    pointer-events:none;
+  }
+  .pill-labels span{
+    opacity:.65;
+  }
+  .pill-toggle.on{
+    background:#16a34a;
+    border-color:#16a34a;
+  }
+  .pill-toggle.on .pill-knob{
+    transform:translateX(24px);
+    background:#f9fafb;
+  }
+  .pill-toggle.on .pill-labels span:first-child{opacity:1;}
+  .pill-toggle.on .pill-labels span:last-child{opacity:.5;}
+
+  input[type=range]{
+    -webkit-appearance:none;
+    appearance:none;
+    flex:1;
+    height:6px;
+    border-radius:999px;
+    background:#e5e7eb;
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:var(--accent);
+    border:2px solid #111;
+    box-shadow:0 0 0 2px #111;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:var(--accent);
+    border:2px solid #111;
   }
 
-  /* Pulsante VRButton rimappato: niente testo, solo icona */
+  .value{
+    min-width:48px;
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+    opacity:.9;
+  }
+
+  /* slot a destra della luminosità */
+  .vr-slot{
+    margin-left:8px;
+  }
+
+  /* bottone VR: icona + testo */
   .vr-btn{
-    position:relative !important;
-    inset:auto !important;
-    margin:0;
-    width:32px;height:32px;
-    border-radius:999px;
-    border:0;
-    background:#2a2a2a;
-    cursor:pointer;
-    padding:0;
-    font-size:0;           /* nasconde "ENTER VR" / "VR NOT SUPPORTED" */
     display:inline-flex;
     align-items:center;
-    justify-content:center;
-    overflow:hidden;
+    gap:4px;
+    padding:4px 8px;
+    border-radius:999px;
+    border:1px solid rgba(156,163,175,.7);
+    background:#111;
+    color:#e5e7eb;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
   }
-  .vr-btn:hover{background:#333}
-
-  /* Icona VR disegnata in CSS (visore + orbita) */
-  .vr-btn::before,
-  .vr-btn::after{
-    content:"";
-    position:absolute;
-    box-sizing:border-box;
-  }
-  /* visore */
-  .vr-btn::before{
-    width:20px;height:12px;
-    border-radius:4px;
-    border:2px solid #fff;
-    top:8px;left:50%;
-    transform:translateX(-50%);
-  }
-  /* orbita */
-  .vr-btn::after{
-    width:26px;height:16px;
-    border-radius:50%;
-    border:2px solid #fff;
-    border-top-color:transparent;
-    border-left-color:transparent;
-    top:15px;left:50%;
-    transform:translateX(-50%) rotate(15deg);
-  }
-  /* quando WebXR non è supportato VRButton mette pointer-events:none inline */
-  .vr-btn[style*="pointer-events: none"]{
-    opacity:.35;
+  .vr-btn.vr-disabled{
+    opacity:.45;
     cursor:default;
   }
+  .vr-icon{
+    position:relative;
+    width:20px;
+    height:14px;
+    border-radius:4px;
+    border:2px solid currentColor;
+    box-sizing:border-box;
+  }
+  .vr-icon::before{
+    content:"";
+    position:absolute;
+    left:2px;
+    right:2px;
+    top:3px;
+    height:2px;
+    border-bottom:2px solid currentColor;
+    border-radius:999px;
+    transform:skewX(-12deg);
+  }
+  .vr-icon::after{
+    content:"";
+    position:absolute;
+    left:7px;
+    right:7px;
+    bottom:-4px;
+    height:6px;
+    border-radius:999px;
+    border:2px solid currentColor;
+    border-top:none;
+  }
 
-  @media (max-width:700px){
-    h1{font-size:15px}
-    .group{grid-column:span 12}
+  @media (max-width:480px){
+    #stage{height:210px;}
   }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>Epigrafe Claudia Nova</h1>
-    <div class="actions">
-      <button id="fullViewer" class="btn">Viewer completo</button>
-      <button id="cardBtn" class="btn-ghost icon-btn" title="Cardboard">
-        <span aria-hidden="true">📱</span>
-      </button>
-    </div>
-  </header>
+  <div class="topbar">
+    <div class="topbar-title">Epigrafe Claudia Nova</div>
+    <!-- cambia href con il tuo viewer completo -->
+    <a class="topbar-link" href="https://edoarch94.github.io/DOTTORATO_UMAP2/viewer/epigrafe-three.html" target="_blank" rel="noopener">
+      Viewer completo
+    </a>
+  </div>
 
   <div id="stage"></div>
 
   <div class="panel">
-    <div class="group">
-      <label>Orbit (auto-rotate)</label>
-      <div class="row">
-        <button id="orbitToggle" class="btn-ghost btn">ON</button>
-        <span class="hint">Velocità</span>
-        <input id="orbitSpeed" type="range" min="0" max="4" step="0.05" value="1.2" style="flex:1">
-        <span id="orbitVal" style="font-size:12px;opacity:.8;width:48px;text-align:right">1.20°/s</span>
+    <div class="row">
+      <label style="flex:0 0 120px">Orbit (auto-rotate)</label>
+      <div id="orbitToggle" class="pill-toggle on">
+        <div class="pill-knob"></div>
+        <div class="pill-labels">
+          <span>ON</span><span>OFF</span>
+        </div>
       </div>
+      <span style="font-size:11px;opacity:.8">Velocità</span>
+      <input id="orbitSpeed" type="range" min="0" max="6" step="0.2" value="4">
+      <span id="orbitVal" class="value">4.0°/s</span>
     </div>
 
-    <div class="group">
-      <label>Luminosità</label>
-      <div class="row">
-        <input id="exposure" type="range" min="1.0" max="3.2" step="0.05" value="2.6" style="flex:1">
-        <!-- slot per il pulsante VR -->
-        <span id="vrSlot"></span>
-      </div>
+    <div class="row">
+      <label style="flex:0 0 120px">Luminosità</label>
+      <input id="expo" type="range" min="1.0" max="3.2" step="0.05" value="2.6">
+      <div id="vrSlot" class="vr-slot"></div>
     </div>
   </div>
 </div>
 
-<!-- Three UMD r146 + effetti -->
+<!-- Three.js & VRButton (UMD) -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/effects/StereoEffect.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/DeviceOrientationControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/jsm/webxr/VRButton.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
 
 <script>
-/* ==== base three ==== */
+/* ========== Three.js setup embed ========== */
 const stage = document.getElementById('stage');
-
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0e0e0e);
+scene.background = new THREE.Color(0x050505);
 
-const camera = new THREE.PerspectiveCamera(45, stage.clientWidth/stage.clientHeight, 0.01, 100);
+const camera = new THREE.PerspectiveCamera(
+  45,
+  stage.clientWidth / 230,
+  0.01,
+  100
+);
 camera.position.set(0.9, 0.9, 1.8);
 
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(stage.clientWidth, stage.clientHeight);
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(stage.clientWidth, 230);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 2.6;
@@ -211,162 +298,144 @@ stage.appendChild(renderer.domElement);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-/* ==== Cardboard (stereo + giroscopio) ==== */
-let stereoEffect = null;
-let devOriCtrl   = null;
-let cardboardOn  = false;
-
-function enableCardboard(on){
-  cardboardOn = on;
-  document.getElementById('cardBtn').classList.toggle('on', on);
-
-  if(on){
-    if(!stereoEffect){
-      stereoEffect = new THREE.StereoEffect(renderer);
-      stereoEffect.setSize(stage.clientWidth, stage.clientHeight);
-    }
-    if(!devOriCtrl){
-      devOriCtrl = new THREE.DeviceOrientationControls(camera);
-    }
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission().catch(()=>{}).then(()=>{});
-    }
-  }
-}
-
-/* ==== luci ==== */
+/* luci leggere ma un po' contrastate */
 const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.4);
-const dir  = new THREE.DirectionalLight(0xffffff, 2.6); dir.position.set(2,2,2);
-const fill = new THREE.DirectionalLight(0xffffff, 1.4); fill.position.set(-2,1.2,-1.5);
-scene.add(hemi, dir, fill);
+const dir  = new THREE.DirectionalLight(0xffffff, 3.0); dir.position.set(2,2,2);
+const fill = new THREE.DirectionalLight(0xffffff, 1.3); fill.position.set(-2,1.1,-1.4);
+const amb  = new THREE.AmbientLight(0xffffff, 0.22);
+scene.add(hemi, dir, fill, amb);
 
-/* ==== HDR ==== */
+/* HDR environment */
+let envTexture = null;
 new THREE.RGBELoader()
- .setPath('https://cdn.jsdelivr.net/npm/three@0.146.0/examples/textures/equirectangular/')
- .load('venice_sunset_1k.hdr', (tex)=>{
+  .setPath('https://cdn.jsdelivr.net/npm/three@0.146.0/examples/textures/equirectangular/')
+  .load('venice_sunset_1k.hdr', tex=>{
     tex.mapping = THREE.EquirectangularReflectionMapping;
-    scene.environment = tex;
- });
+    envTexture = tex;
+    scene.environment = envTexture;
+  });
 
-/* ==== modello ==== */
+/* modello */
 const ORIENT = { x: 1.57080, y: 0.0, z: 4.71239 };
 let model = null;
+const defaultRotation = new THREE.Euler(ORIENT.x, ORIENT.y, ORIENT.z, 'XYZ');
 
 new THREE.GLTFLoader().load(
   'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9',
-  (g)=>{
+  g=>{
     model = g.scene;
-    model.rotation.set(ORIENT.x, ORIENT.y, ORIENT.z, 'XYZ');
-
+    model.rotation.copy(defaultRotation);
+    model.traverse(o=>{
+      if(o.isMesh){
+        o.castShadow = o.receiveShadow = true;
+        const m = o.material;
+        if(m){
+          if('envMapIntensity' in m) m.envMapIntensity = 2.6;
+          if('roughness' in m) m.roughness = Math.min(0.85, m.roughness ?? 0.85);
+          if('metalness' in m) m.metalness = Math.min(0.1, m.metalness ?? 0.0);
+          m.needsUpdate = true;
+        }
+      }
+    });
     const box = new THREE.Box3().setFromObject(model);
     const ctr = box.getCenter(new THREE.Vector3());
     model.position.sub(ctr);
     scene.add(model);
-    fitToObject(model, 1.25);
+    fitToObject(model, 1.15);
   }
 );
 
-function fitToObject(object, margin=1.25){
-  if(!object) return;
-  const box = new THREE.Box3().setFromObject(object);
+function fitToObject(obj, margin){
+  const box = new THREE.Box3().setFromObject(obj);
   const size = box.getSize(new THREE.Vector3());
   const radius = size.length()*0.5;
-  const fov = camera.fov*(Math.PI/180);
-  const dist=(radius/Math.sin(fov/2))*margin;
-  const dirv=new THREE.Vector3(0,0.35,1).normalize();
-  const newPos=dirv.multiplyScalar(dist);
+  const fov = camera.fov * (Math.PI/180);
+  const dist = (radius/Math.sin(fov/2)) * margin;
+  const dirv = new THREE.Vector3(0,0.35,1).normalize();
+  const newPos = dirv.multiplyScalar(dist);
   controls.target.set(0,0,0);
   camera.position.copy(newPos);
   camera.lookAt(controls.target);
   camera.updateProjectionMatrix();
 }
 
-/* ==== UI: luminosità ==== */
-const exposure = document.getElementById('exposure');
-exposure.oninput = e => { renderer.toneMappingExposure = +e.target.value; };
+/* ========== Orbit auto-rotate ========== */
+const orbitToggle = document.getElementById('orbitToggle');
+const orbitSpeed  = document.getElementById('orbitSpeed');
+const orbitVal    = document.getElementById('orbitVal');
 
-/* ==== UI: orbit auto-rotate (attivo di default) ==== */
-const orbitBtn  = document.getElementById('orbitToggle');
-const orbitSpd  = document.getElementById('orbitSpeed');
-const orbitVal  = document.getElementById('orbitVal');
+let autoOrbit = { active:true, degPerSec:+orbitSpeed.value };
+orbitVal.textContent = autoOrbit.degPerSec.toFixed(1) + '°/s';
 
-let autoOrbit = { active:true, degPerSec:+orbitSpd.value };
-orbitBtn.textContent = 'ON';
-orbitBtn.classList.add('on');
-
-orbitBtn.onclick = ()=>{
-  autoOrbit.active = !autoOrbit.active;
-  orbitBtn.textContent = autoOrbit.active ? 'ON' : 'OFF';
-  orbitBtn.classList.toggle('on', autoOrbit.active);
-};
-orbitSpd.oninput = e=>{
-  autoOrbit.degPerSec = +e.target.value;
-  orbitVal.textContent = `${(+e.target.value).toFixed(2)}°/s`;
-};
-
-/* ==== Fullscreen viewer completo ==== */
-document.getElementById('fullViewer').onclick = ()=>{
-  window.open('./epigrafe-three.html','_blank','noopener');
-};
-
-/* ==== Cardboard button ==== */
-document.getElementById('cardBtn').onclick = ()=> enableCardboard(!cardboardOn);
-
-/* ==== resize + loop ==== */
-function onResize(){
-  const w = stage.clientWidth, h = stage.clientHeight;
-  camera.aspect=w/h; camera.updateProjectionMatrix();
-  renderer.setSize(w,h);
-  if(stereoEffect) stereoEffect.setSize(w,h);
+function setOrbitActive(on){
+  autoOrbit.active = on;
+  orbitToggle.classList.toggle('on', on);
 }
-addEventListener('resize', onResize);
+setOrbitActive(true);
 
-let last = performance.now();
-renderer.setAnimationLoop(function(now){
-  const dt = (now - last)/1000; last = now;
+orbitToggle.addEventListener('click',()=>{
+  setOrbitActive(!autoOrbit.active);
+});
 
-  if(cardboardOn){
-    devOriCtrl && devOriCtrl.update();
-  }else{
-    controls.update();
-  }
+orbitSpeed.addEventListener('input', e=>{
+  autoOrbit.degPerSec = +e.target.value;
+  orbitVal.textContent = autoOrbit.degPerSec.toFixed(1) + '°/s';
+});
 
-  if(autoOrbit.active && !cardboardOn){
-    const deltaRad = THREE.MathUtils.degToRad(autoOrbit.degPerSec) * dt;
+/* luminosità */
+document.getElementById('expo').addEventListener('input', e=>{
+  renderer.toneMappingExposure = +e.target.value;
+});
+
+/* ========== VR button (icona + "VR") ========== */
+const vrSlot = document.getElementById('vrSlot');
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const canXR   = isMobile && 'xr' in navigator;
+let vrBtn;
+
+if (canXR){
+  // abilito WebXR
+  renderer.xr.enabled = true;
+  vrBtn = THREE.VRButton.createButton(renderer);   // usa VRButton dal file JS
+  vrBtn.className = 'vr-btn';
+} else {
+  renderer.xr.enabled = false;
+  vrBtn = document.createElement('button');
+  vrBtn.type = 'button';
+  vrBtn.className = 'vr-btn vr-disabled';
+}
+
+vrBtn.innerHTML = '<span class="vr-icon"></span><span class="vr-text">VR</span>';
+vrBtn.setAttribute('aria-label','Visualizza in VR');
+vrSlot.appendChild(vrBtn);
+
+/* ========== Resize & loop ========== */
+function onResize(){
+  const w = stage.clientWidth;
+  const h = stage.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+window.addEventListener('resize', onResize);
+
+let lastT = performance.now();
+(function animate(now){
+  requestAnimationFrame(animate);
+  const dt = (now - lastT) / 1000; lastT = now;
+
+  if (autoOrbit.active){
+    const deltaRad = THREE.MathUtils.degToRad(autoOrbit.degPerSec)*dt;
     const v = camera.position.clone().sub(controls.target);
     v.applyAxisAngle(new THREE.Vector3(0,1,0), deltaRad);
     camera.position.copy(controls.target.clone().add(v));
     camera.lookAt(controls.target);
   }
 
-  if(cardboardOn && stereoEffect){
-    stereoEffect.render(scene, camera);
-  }else{
-    renderer.render(scene, camera);
-  }
-});
-
-/* esponi renderer per VRButton */
-window._renderer = renderer;
-</script>
-
-<!-- VRButton: iconico, senza testo -->
-<script type="module">
-  import { VRButton } from 'https://unpkg.com/three@0.146.0/examples/jsm/webxr/VRButton.js';
-
-  const r = window._renderer;
-  r.xr.enabled = true;
-
-  const vrBtn = VRButton.createButton(r);
-  vrBtn.classList.add('vr-btn');          // stile rotondo
-
-  // 🔹 IMPORTANTISSIMO: niente testo, solo icona CSS
-  vrBtn.innerHTML = '';
-  vrBtn.setAttribute('aria-label', 'Entra in VR');  // accessibilità
-
-  const slot = document.getElementById('vrSlot');
-  slot.appendChild(vrBtn);
+  controls.update();
+  renderer.render(scene, camera);
+})();
+onResize();
 </script>
 </body>
 </html>
