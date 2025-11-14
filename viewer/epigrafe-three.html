@@ -16,25 +16,60 @@
   #badge{position:absolute;top:8px;left:8px;z-index:20;padding:6px 8px;border-radius:8px;background:rgba(14,165,233,.12);color:#93c5fd;border:1px solid rgba(147,197,253,.35);font:600 12px/1.2 system-ui;display:none}
 
   /* Docks laterali */
-  .dock{
-    position:absolute; top:0; bottom:0; width:28%;
-    display:flex; flex-direction:column; gap:10px; padding:12px;
-    pointer-events:none;
+    .dock{
+    position:absolute;
+    top:0; bottom:0;
+    width:28%;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    padding:12px;
+    pointer-events:none; /* i click passano, solo le card li catturano */
   }
-  .dock.left  { left:0;  background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,0)); }
-  .dock.right { right:0; background:linear-gradient(-90deg,rgba(0,0,0,.25),rgba(0,0,0,0)); }
+  .dock.left  {
+    left:0;
+    background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,0));
+  }
+  .dock.right {
+    right:0;
+    background:linear-gradient(-90deg,rgba(0,0,0,.25),rgba(0,0,0,0));
+  }
 
   .dock-card{
     pointer-events:auto;
     background:rgba(18,18,18,.96);
     border:1px solid rgba(255,255,255,.22);
-    border-radius:12px; padding:14px 16px;
-    max-height:46vh; overflow:auto; width:100%;
+    border-radius:12px;
+    padding:14px 16px;
+    max-height:46vh;
+    overflow:auto;
+    width:100%;
     animation: fadeIn .18s ease-out;
   }
-  .dock-card h3{margin:0 0 6px 0;font:800 14px/1.2 system-ui}
-  .dock-card p {margin:0;font-size:14px;line-height:1.35}
-  .dock-card .close{float:right;opacity:.7;cursor:pointer;border:0;background:transparent;color:#fff;font-weight:700}
+
+  /* --- MOBILE: pannello in basso, piena larghezza --- */
+  @media (max-width:700px){
+    .dock{
+      top:auto;
+      bottom:0;
+      left:0;
+      right:0;
+      width:100%;
+      padding:10px;
+      flex-direction:column-reverse;   /* ultimo aperto più vicino al bordo */
+      align-items:center;
+      justify-content:flex-end;
+      background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);
+    }
+    .dock.left,
+    .dock.right{
+      background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);
+    }
+    .dock-card{
+      width:92%;
+      max-height:40vh;  /* pannello che non supera metà schermo */
+    }
+  }
 
   @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
@@ -397,18 +432,31 @@ function updateHotspotButtons(){
 function clearDocks(){ dockL.innerHTML=''; dockR.innerHTML=''; }
 function openDockCard(worldPos, data){
   clearDocks();
-  const s = screenXY(worldPos);
-  const rect = stageRect();
-  const side = s.x < rect.width/2 ? 'left' : 'right';
-  const dock = (side==='left') ? dockL : dockR;
+
+  const isMobile = window.innerWidth <= 700;
+  let dock;
+
+  if (isMobile) {
+    // Su mobile usiamo sempre un solo dock “in basso”
+    dock = dockL;         // va bene uno dei due, tanto li sovrapponiamo col CSS
+  } else {
+    // Su desktop manteniamo il comportamento laterale
+    const s = screenXY(worldPos);
+    const rect = stageRect();
+    const side = s.x < rect.width/2 ? 'left' : 'right';
+    dock = (side === 'left') ? dockL : dockR;
+  }
 
   const card = document.createElement('div');
-  card.className='dock-card';
-  card.innerHTML = `<button class="close" title="Chiudi">×</button>
-                    <h3>${data.title}</h3>
-                    <p>${data.text}</p>`;
-  card.querySelector('.close').onclick = ()=> card.remove();
+  card.className = 'dock-card';
+  card.innerHTML = `
+    <button class="close" title="Chiudi">×</button>
+    <h3>${data.title}</h3>
+    <p>${data.text}</p>
+  `;
+  card.querySelector('.close').onclick = () => card.remove();
   dock.appendChild(card);
+}
 }
 buildHotspots();
 
