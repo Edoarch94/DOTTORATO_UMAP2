@@ -269,10 +269,9 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
-<!-- VRButton globale -->
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/webxr/VRButton.js"></script>
 
 <script>
+/* ===== helper slider colorato (parte blu, parte grigia) ===== */
 function styleRange(el){
   const min = +el.min, max = +el.max, val = +el.value;
   const pct = ((val - min) / (max - min)) * 100;
@@ -294,7 +293,9 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 2.6;
 renderer.physicallyCorrectLights = true;
+/* attiva WebXR */
 renderer.xr.enabled = true;
+
 stage.appendChild(renderer.domElement);
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -392,38 +393,46 @@ expoSlider.addEventListener('input', e=>{
   styleRange(expoSlider);
 });
 
-/* ========= VR button sicuro ========= */
+/* ========= Bottone VR: avvia WebXR ========= */
 const vrSlot = document.getElementById('vrSlot');
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-const vrBtn = document.createElement('button');
+const vrBtn  = document.createElement('button');
 vrBtn.type = 'button';
 vrBtn.className = 'vr-btn';
 vrBtn.innerHTML = '<span class="vr-icon"></span><span class="vr-text">VR</span>';
 vrSlot.appendChild(vrBtn);
 
-let xrButton = null;
-if (window.VRButton && navigator.xr) {
-  try{
-    xrButton = VRButton.createButton(renderer);
-    xrButton.style.display = 'none';
-    document.body.appendChild(xrButton);
-  }catch(e){
-    console.warn('VRButton error:', e);
-  }
+let xrSession = null;
+let xrSupported = false;
+
+/* controlla supporto WebXR (Chrome Android, ecc.) */
+if ('xr' in navigator){
+  navigator.xr.isSessionSupported('immersive-vr').then(supported=>{
+    xrSupported = supported;
+    if(!supported){
+      vrBtn.classList.add('vr-disabled');
+      vrBtn.title = 'VR non supportato su questo dispositivo';
+    }
+  }).catch(()=>{
+    vrBtn.classList.add('vr-disabled');
+  });
+}else{
+  vrBtn.classList.add('vr-disabled');
+  vrBtn.title = 'VR non supportato su questo dispositivo';
 }
 
-if(isMobile && xrButton){
-  vrBtn.addEventListener('click', ()=> {
-    xrButton.click();
-  });
-}else if(!isMobile){
-  vrBtn.classList.add('vr-disabled');
-  vrBtn.title = 'VR disponibile solo da smartphone';
-}else{
-  // mobile ma niente WebXR: icona sola, nessuna azione; niente errori
-  vrBtn.classList.add('vr-disabled');
-}
+vrBtn.addEventListener('click', async ()=>{
+  if(!xrSupported || xrSession) return;
+  try{
+    const session = await navigator.xr.requestSession('immersive-vr', {
+      optionalFeatures:['local-floor','bounded-floor','hand-tracking']
+    });
+    xrSession = session;
+    renderer.xr.setSession(session);
+    session.addEventListener('end', ()=>{ xrSession = null; });
+  }catch(err){
+    console.error('Errore avvio VR:', err);
+  }
+});
 
 /* ========= Resize ========= */
 function onResize(){
@@ -438,12 +447,12 @@ function onResize(){
 }
 window.addEventListener('resize', onResize);
 
-/* ========= Loop ========= */
-let lastT = performance.now();
-renderer.setAnimationLoop(function(now){
-  const dt = (now - lastT)/1000; lastT = now;
+/* ========= Loop con WebXR ========= */
+let lastT = 0;
+renderer.setAnimationLoop(function(time){
+  const dt = (time - lastT)/1000; lastT = time;
 
-  if(autoOrbit.active && !renderer.xr.isPresenting){
+  if(autoOrbit.active && !xrSession){
     const deltaRad = THREE.MathUtils.degToRad(autoOrbit.degPerSec) * dt;
     const v = camera.position.clone().sub(controls.target);
     v.applyAxisAngle(new THREE.Vector3(0,1,0), deltaRad);
@@ -455,6 +464,7 @@ renderer.setAnimationLoop(function(now){
   renderer.render(scene, camera);
 });
 
+/* init slider styling + prima sistemata size */
 styleRange(orbitSpeed);
 styleRange(expoSlider);
 onResize();
