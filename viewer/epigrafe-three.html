@@ -31,7 +31,7 @@
     display:none
   }
 
-  /* Docks laterali: colonne per i pannelli (desktop) */
+  /* Docks (desktop: laterali) */
   .dock{
     position:absolute;
     top:0; bottom:0;
@@ -40,7 +40,7 @@
     flex-direction:column;
     gap:10px;
     padding:12px;
-    pointer-events:none; /* i click passano, solo le card li catturano */
+    pointer-events:none;
   }
   .dock.left  { left:0;  background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,0)); }
   .dock.right { right:0; background:linear-gradient(-90deg,rgba(0,0,0,.25),rgba(0,0,0,0)); }
@@ -53,9 +53,12 @@
     padding:14px 16px;
     max-height:46vh;
     overflow:auto;
-    width:100%;
+    max-width:92%;      /* così non arriva mai a toccare il bordo */
     animation: fadeIn .18s ease-out;
   }
+  .dock.left  .dock-card{ margin-right:auto; } /* stacca dal bordo destro */
+  .dock.right .dock-card{ margin-left:auto; }  /* stacca dal bordo sinistro */
+
   .dock-card h3{margin:0 0 6px 0;font:800 14px/1.2 system-ui}
   .dock-card p {margin:0;font-size:14px;line-height:1.35}
   .dock-card .close{float:right;opacity:.7;cursor:pointer;border:0;background:transparent;color:#fff;font-weight:700}
@@ -90,12 +93,20 @@
   .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
   .btn-ghost.on{box-shadow:0 0 0 2px rgba(74,222,128,.55) inset; background:#233a2d}
 
+  .val-small{
+    width:42px;
+    text-align:right;
+    font-size:12px;
+    opacity:.85;
+    font-variant-numeric:tabular-nums;
+  }
+
   @media (max-width:1000px){
     .group--4{grid-column:span 4}
     .group--3{grid-column:span 6}
   }
 
-  /* --- MOBILE: dock in basso, pannello piena larghezza --- */
+  /* --- MOBILE: dock in basso tipo “sheet” --- */
   @media (max-width:700px){
     .group--4,.group--3,.group--2{grid-column:span 12}
 
@@ -106,7 +117,7 @@
       right:0;
       width:100%;
       padding:10px;
-      flex-direction:column-reverse;   /* ultimo aperto più vicino al bordo */
+      flex-direction:column-reverse;
       align-items:center;
       justify-content:flex-end;
       background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);
@@ -116,8 +127,10 @@
       background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);
     }
     .dock-card{
-      width:92%;
-      max-height:40vh;   /* così non si taglia in alto */
+      max-width:calc(100% - 24px);
+      width:calc(100% - 24px);
+      margin:0 auto;
+      max-height:40vh;
     }
   }
 </style>
@@ -207,36 +220,38 @@
 
     <div class="section">Luci</div>
 
-    <div class="group group--3">
+    <!-- UNICO pannello luci -->
+    <div class="group group--4">
       <div class="row" style="width:100%">
-        <span style="flex:0 0 110px">Key (destra)</span><span id="valKey" style="width:42px;text-align:right">2.2</span>
+        <span style="flex:0 0 110px">Key (destra)</span>
+        <input id="keyIntensity" type="range" min="0" max="4" step="0.05" value="2.2" style="flex:1">
+        <span id="valKey" class="val-small">2.2</span>
       </div>
-      <input id="keyIntensity" type="range" min="0" max="4" step="0.05" value="2.2">
-    </div>
-
-    <div class="group group--3">
-      <div class="row"><span style="flex:0 0 110px">Direzionale</span><span id="valDir" style="width:42px;text-align:right">3.0</span></div>
-      <input id="dirIntensity" type="range" min="0" max="4" step="0.05" value="3.0">
-    </div>
-
-    <div class="group group--3">
-      <div class="row"><span style="flex:0 0 110px">Fill</span><span id="valFill" style="width:42px;text-align:right">1.8</span></div>
-      <input id="fillIntensity" type="range" min="0" max="3" step="0.05" value="1.8">
-    </div>
-
-    <div class="group group--3">
-      <div class="row"><span style="flex:0 0 110px">Hemi</span><span id="valHemi" style="width:42px;text-align:right">1.6</span></div>
-      <input id="hemiIntensity" type="range" min="0" max="3" step="0.05" value="1.6">
-    </div>
-
-    <div class="group group--3">
-      <div class="row"><span style="flex:0 0 110px">Ambiente</span><span id="valAmb" style="width:42px;text-align:right">0.25</span></div>
-      <input id="ambIntensity" type="range" min="0" max="1" step="0.01" value="0.25">
-    </div>
-
-    <div class="group group--3">
-      <div class="row"><span style="flex:0 0 110px">Riflessi (envMap)</span><span id="valEnvI" style="width:42px;text-align:right">2.6</span></div>
-      <input id="envIntensity" type="range" min="0" max="5" step="0.1" value="2.6">
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Direzionale</span>
+        <input id="dirIntensity" type="range" min="0" max="4" step="0.05" value="3.0" style="flex:1">
+        <span id="valDir" class="val-small">3.0</span>
+      </div>
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Fill</span>
+        <input id="fillIntensity" type="range" min="0" max="3" step="0.05" value="1.8" style="flex:1">
+        <span id="valFill" class="val-small">1.8</span>
+      </div>
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Hemi</span>
+        <input id="hemiIntensity" type="range" min="0" max="3" step="0.05" value="1.6" style="flex:1">
+        <span id="valHemi" class="val-small">1.6</span>
+      </div>
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Ambiente</span>
+        <input id="ambIntensity" type="range" min="0" max="1" step="0.01" value="0.25" style="flex:1">
+        <span id="valAmb" class="val-small">0.25</span>
+      </div>
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Riflessi (envMap)</span>
+        <input id="envIntensity" type="range" min="0" max="5" step="0.1" value="2.6" style="flex:1">
+        <span id="valEnvI" class="val-small">2.6</span>
+      </div>
     </div>
   </div>
 </div>
@@ -420,8 +435,8 @@ function buildHotspots(){
 
     btn.addEventListener('click',(e)=>{
       e.stopPropagation();
-      focusOn(pos, nor);       // zoom dolce
-      openDockCard(pos, h);    // pannello nel dock
+      focusOn(pos, nor);
+      openDockCard(pos, h);
     });
 
     hUI.push({pos,nor,btn});
@@ -438,7 +453,6 @@ function clearDocks(){
   dockL.innerHTML=''; dockR.innerHTML='';
 }
 
-/* QUI: logica diversa mobile/desktop */
 function openDockCard(worldPos, data){
   clearDocks();
 
@@ -446,8 +460,7 @@ function openDockCard(worldPos, data){
   let dock;
 
   if (isMobile) {
-    // su mobile usiamo sempre un solo dock in basso
-    dock = dockL;
+    dock = dockL;           // unico dock in basso
   } else {
     const s = screenXY(worldPos);
     const rect = stageRect();
@@ -535,7 +548,7 @@ renderer.domElement.addEventListener('click',(e)=>{
   console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"\ndata-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
 });
 
-/* ===== Pannello Luci ===== */
+/* ===== Pannello Luci (JS) ===== */
 function updLbl(el,v){ el.textContent = fmt(v); }
 keyIntensity.oninput = e=>{ rightKey.intensity = +e.target.value; updLbl(valKey,e.target.value); };
 dirIntensity.oninput = e=>{ dir.intensity      = +e.target.value; updLbl(valDir,e.target.value); };
