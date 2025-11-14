@@ -145,7 +145,7 @@
     border-radius:999px;
     background:var(--track);
     outline:none;
-    accent-color:var(--accent);   /* per browser che lo supportano */
+    accent-color:var(--accent);
   }
   input[type=range]::-webkit-slider-thumb{
     -webkit-appearance:none;
@@ -269,6 +269,8 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
+<!-- VRButton globale (fornisce VRButton.createButton) -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/webxr/VRButton.js"></script>
 
 <script>
 /* ===== helper slider colorato (parte blu, parte grigia) ===== */
@@ -298,6 +300,9 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 2.6;
 renderer.physicallyCorrectLights = true;
+/* --- abilita WebXR per il VR --- */
+renderer.xr.enabled = true;
+
 stage.appendChild(renderer.domElement);
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -395,10 +400,14 @@ expoSlider.addEventListener('input', e=>{
   styleRange(expoSlider);
 });
 
-/* ========= Bottone VR (link, non WebXR qui) ========= */
+/* ========= Bottone VR -> WebXR immersivo ========= */
 const vrSlot = document.getElementById('vrSlot');
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-const VR_TARGET_URL = 'https://edoarch94.github.io/DOTTORATO_UMAP2/viewer/epigrafe-three.html#vr';
+
+/* crea il bottone WebXR reale ma nascosto */
+const xrButton = VRButton.createButton(renderer);
+xrButton.style.display = 'none';
+document.body.appendChild(xrButton);
 
 const vrBtn = document.createElement('button');
 vrBtn.type = 'button';
@@ -406,9 +415,9 @@ vrBtn.className = 'vr-btn';
 vrBtn.innerHTML = '<span class="vr-icon"></span><span class="vr-text">VR</span>';
 
 if(isMobile){
-  vrBtn.addEventListener('click', ()=> {
-    // niente nuova pagina: vado direttamente al viewer “completo” in modalità VR
-    window.location.href = VR_TARGET_URL;
+  vrBtn.addEventListener('click', ()=>{
+    // Usa il bottone WebXR di three.js dietro le quinte
+    xrButton.click();
   });
 }else{
   vrBtn.classList.add('vr-disabled');
@@ -416,13 +425,12 @@ if(isMobile){
 }
 vrSlot.appendChild(vrBtn);
 
-/* ========= Resize robusto (anche in iframe uMap) ========= */
+/* ========= Resize robusto ========= */
 function onResize(){
   const rect = stage.getBoundingClientRect();
   let w = rect.width || stage.clientWidth || 320;
   let h = rect.height || 230;
 
-  // assicura un rapporto corretto se uMap stringe il popup
   if(h < 150) h = 150;
   stage.style.height = h + 'px';
 
@@ -434,11 +442,11 @@ window.addEventListener('resize', onResize);
 
 /* ========= Loop ========= */
 let lastT = performance.now();
-(function animate(now){
-  requestAnimationFrame(animate);
+function renderLoop(now){
+  renderer.setAnimationLoop(renderLoop);
   const dt = (now - lastT)/1000; lastT = now;
 
-  if(autoOrbit.active){
+  if(autoOrbit.active && !renderer.xr.isPresenting){
     const deltaRad = THREE.MathUtils.degToRad(autoOrbit.degPerSec) * dt;
     const v = camera.position.clone().sub(controls.target);
     v.applyAxisAngle(new THREE.Vector3(0,1,0), deltaRad);
@@ -448,13 +456,11 @@ let lastT = performance.now();
 
   controls.update();
   renderer.render(scene, camera);
-})();
-
-/* init slider styling + prima sistemata size (anche con piccolo delay per iPhone/iframe) */
+}
+onResize();
 styleRange(orbitSpeed);
 styleRange(expoSlider);
-onResize();
-setTimeout(onResize, 80);
+renderLoop(performance.now());
 </script>
 </body>
 </html>
