@@ -6,24 +6,77 @@
 <title>Epigrafe Claudia Nova — Embed</title>
 <style>
   :root{--bg:#0e0e0e;--card:#1b1b1b;--accent:#4ade80}
-  html,body{margin:0;height:100%;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-  .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:10px;padding:10px}
-  header{display:flex;gap:10px;align-items:center;justify-content:space-between;width:min(96vw,1200px);margin:0 auto}
-  h1{margin:0;font:700 18px/1.2 system-ui}
-  .actions{display:flex;gap:8px;flex-wrap:wrap}
-  .btn{border:0;border-radius:10px;padding:8px 12px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
+  html,body{
+    margin:0;height:100%;
+    background:var(--bg);color:#eee;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif
+  }
+  .wrap{
+    min-height:100dvh;
+    display:flex;flex-direction:column;
+    gap:8px;padding:8px
+  }
+  header{
+    display:flex;gap:8px;align-items:center;justify-content:space-between;
+    width:min(96vw,1200px);margin:0 auto
+  }
+  h1{
+    margin:0;font:700 17px/1.2 system-ui
+  }
+  .actions{
+    display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end
+  }
+  .btn{
+    border:0;border-radius:10px;
+    padding:6px 10px;
+    background:#2a2a2a;color:#fff;
+    font-weight:600;font-size:13px;
+    cursor:pointer;white-space:nowrap
+  }
   .btn:hover{background:#333}
-  .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
-  .btn.on{box-shadow:0 0 0 2px rgba(74,222,128,.55) inset;background:#233a2d}
-  #stage{position:relative;width:min(96vw,1200px);height:min(72vh,680px);margin:0 auto;border-radius:14px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.45);background:#0e0e0e}
+  .btn-ghost{
+    background:transparent;
+    outline:1px solid rgba(255,255,255,.25)
+  }
+  .btn.on{
+    box-shadow:0 0 0 2px rgba(74,222,128,.55) inset;
+    background:#233a2d
+  }
+  a.full{color:#fff;text-decoration:none;font-size:13px}
+  a.full:hover{color:var(--accent)}
+
+  #stage{
+    position:relative;
+    width:min(96vw,1200px);
+    height:min(55vh,420px);          /* più basso per stare nel pannello */
+    margin:0 auto;
+    border-radius:14px;overflow:hidden;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);
+    background:#0e0e0e
+  }
   canvas{display:block;width:100%;height:100%}
-  .panel{width:min(96vw,1200px);margin:0 auto;background:var(--card);border-radius:12px;padding:10px;display:grid;gap:10px;grid-template-columns:repeat(12,1fr)}
-  .group{background:rgba(255,255,255,.06);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;grid-column:span 6}
+
+  .panel{
+    width:min(96vw,1200px);margin:0 auto;
+    background:var(--card);border-radius:12px;
+    padding:8px;
+    display:grid;gap:8px;
+    grid-template-columns:repeat(12,1fr)
+  }
+  .group{
+    background:rgba(255,255,255,.06);
+    border-radius:10px;padding:8px;
+    display:flex;flex-direction:column;gap:6px;
+    grid-column:span 6
+  }
   label{font-size:12px;opacity:.85}
   input[type=range]{width:100%}
-  a.full{color:#fff;text-decoration:none}
-  a.full:hover{color:var(--accent)}
-  .hint{font-size:12px;opacity:.8}
+  .hint{font-size:11px;opacity:.75}
+
+  @media (max-width:700px){
+    h1{font-size:16px}
+    .group{grid-column:span 12}
+  }
 </style>
 </head>
 <body>
@@ -31,10 +84,10 @@
   <header>
     <h1>Epigrafe Claudia Nova</h1>
     <div class="actions">
-      <button id="fs" class="btn">Schermo intero</button>
+      <button id="fs" class="btn">Full</button>
       <button id="vrBtn" class="btn btn-ghost">VR</button>
       <button id="cardBtn" class="btn btn-ghost">Cardboard</button>
-      <a class="btn btn-ghost full" href="./epigrafe-three.html" target="_blank" rel="noopener">Apri viewer completo</a>
+      <a class="btn btn-ghost full" href="./epigrafe-three.html" target="_blank" rel="noopener">Viewer completo</a>
     </div>
   </header>
 
@@ -43,17 +96,17 @@
   <div class="panel">
     <div class="group">
       <label>Orbit (auto-rotate)</label>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="orbitToggle" class="btn-ghost">OFF</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button id="orbitToggle" class="btn-ghost btn">OFF</button>
         <span class="hint">Velocità</span>
         <input id="orbitSpeed" type="range" min="0" max="2" step="0.05" value="0.5" style="flex:1">
-        <span id="orbitVal" style="font-size:12px;opacity:.8;width:48px;text-align:right">0.5°/s</span>
+        <span id="orbitVal" style="font-size:12px;opacity:.8;width:48px;text-align:right">0.50°/s</span>
       </div>
     </div>
     <div class="group">
       <label>Luminosità</label>
       <input id="exposure" type="range" min="1.0" max="3.2" step="0.05" value="2.6">
-      <div class="hint">Se il modello appare scuro su mobile, prova anche “Schermo intero”.</div>
+      <div class="hint">Se il modello appare scuro su smartphone, prova Full o aumenta il valore.</div>
     </div>
   </div>
 </div>
@@ -63,7 +116,6 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
-<!-- Stereo & DeviceOrientation per Cardboard -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/effects/StereoEffect.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/DeviceOrientationControls.js"></script>
 
@@ -106,12 +158,10 @@ function enableCardboard(on){
     if(!devOriCtrl){
       devOriCtrl = new THREE.DeviceOrientationControls(camera);
     }
-    // iOS: richiesta permesso esplicito
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission().catch(()=>{}).then(res=>{ /* ok */ });
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().catch(()=>{}).then(()=>{});
     }
-  }else{
-    // torna a renderer “normale”
   }
 }
 
@@ -171,12 +221,12 @@ const orbitSpd  = document.getElementById('orbitSpeed');
 const orbitVal  = document.getElementById('orbitVal');
 
 let autoOrbit = { active:false, degPerSec:+orbitSpd.value };
-function setActive(btn,on){ btn.classList.toggle('on', !!on); }
+function setBtnActive(btn,on){ btn.classList.toggle('on', !!on); }
 
 orbitBtn.onclick = ()=>{
   autoOrbit.active = !autoOrbit.active;
   orbitBtn.textContent = autoOrbit.active ? 'ON' : 'OFF';
-  setActive(orbitBtn, autoOrbit.active);
+  setBtnActive(orbitBtn, autoOrbit.active);
 };
 orbitSpd.oninput = e=>{
   autoOrbit.degPerSec = +e.target.value;
@@ -192,9 +242,6 @@ document.getElementById('fs').onclick = async ()=>{
     await document.exitFullscreen?.();
   }
 };
-
-/* ==== VR (WebXR) ==== */
-window.renderer = renderer; // esponi per il modulo VRButton
 
 /* ==== resize + loop ==== */
 function onResize(){
@@ -230,20 +277,39 @@ renderer.setAnimationLoop(function(now){
   }
 });
 
-/* ==== Bottoni VR & Cardboard ==== */
+/* ==== bottoni Cardboard ==== */
 document.getElementById('cardBtn').onclick = ()=> enableCardboard(!cardboardOn);
+
+/* ==== esponi renderer per VRButton (modulo) ==== */
+window.renderer = renderer;
 </script>
 
-<!-- VRButton come modulo (usa window.renderer esposto sopra) -->
+<!-- VRButton come modulo, con stile personalizzato nella toolbar -->
 <script type="module">
   import { VRButton } from 'https://unpkg.com/three@0.146.0/examples/jsm/webxr/VRButton.js';
-  // Abilita WebXR
-  window.renderer.xr.enabled = true;
-  // Crea e inserisci il bottone ufficiale (gestisce compatibilità/permessi)
-  const btn = VRButton.createButton(window.renderer);
-  // Sostituisci l'etichetta del pulsante UI
-  const vrBtn = document.getElementById('vrBtn');
-  vrBtn.replaceWith(btn);
+
+  const r = window.renderer;
+  r.xr.enabled = true;
+
+  const threeBtn = VRButton.createButton(r);
+  // personalizza stile: niente posizione assoluta, ma dentro la barra dei bottoni
+  threeBtn.style.position = 'static';
+  threeBtn.style.bottom = '';
+  threeBtn.style.left = '';
+  threeBtn.style.margin = '0';
+  threeBtn.style.padding = '6px 10px';
+  threeBtn.style.width = 'auto';
+  threeBtn.style.background = '#2a2a2a';
+  threeBtn.style.borderRadius = '10px';
+  threeBtn.style.border = '0';
+  threeBtn.style.fontSize = '13px';
+  threeBtn.style.fontWeight = '600';
+  threeBtn.style.cursor = 'pointer';
+  threeBtn.textContent = 'VR';  // etichetta compatta
+
+  const vrPlaceholder = document.getElementById('vrBtn');
+  const actions = vrPlaceholder.parentElement;
+  actions.replaceChild(threeBtn, vrPlaceholder);
 </script>
 </body>
 </html>
