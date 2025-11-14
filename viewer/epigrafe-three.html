@@ -27,20 +27,17 @@
     padding:6px 8px;border-radius:8px;
     background:rgba(14,165,233,.12);color:#93c5fd;
     border:1px solid rgba(147,197,253,.35);
-    font:600 12px/1.2 system-ui;
-    display:none
+    font:600 12px/1.2 system-ui;display:none
   }
 
-  /* Docks (desktop: laterali) */
+  /* Docks laterali: colonne per i pannelli */
   .dock{
-    position:absolute;
-    top:0; bottom:0;
+    position:absolute; top:0; bottom:0;
     width:28%;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    padding:12px;
-    pointer-events:none;
+    display:flex; flex-direction:column;
+    justify-content:flex-start;
+    gap:10px; padding:12px;
+    pointer-events:none; /* i click passano, solo le card li catturano */
   }
   .dock.left  { left:0;  background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,0)); }
   .dock.right { right:0; background:linear-gradient(-90deg,rgba(0,0,0,.25),rgba(0,0,0,0)); }
@@ -53,11 +50,12 @@
     padding:14px 16px;
     max-height:46vh;
     overflow:auto;
-    max-width:92%;      /* così non arriva mai a toccare il bordo */
+    width:100%;
+    max-width:360px;          /* più stretto anche su desktop */
     animation: fadeIn .18s ease-out;
   }
-  .dock.left  .dock-card{ margin-right:auto; } /* stacca dal bordo destro */
-  .dock.right .dock-card{ margin-left:auto; }  /* stacca dal bordo sinistro */
+  .dock.left  .dock-card{margin-right:auto;}
+  .dock.right .dock-card{margin-left:auto;}
 
   .dock-card h3{margin:0 0 6px 0;font:800 14px/1.2 system-ui}
   .dock-card p {margin:0;font-size:14px;line-height:1.35}
@@ -76,13 +74,31 @@
 
   /* pannello comandi ordinato */
   .panel{
-    width:min(96vw,1200px);margin:0 auto;
-    background:var(--card);border-radius:12px;
-    padding:12px;display:grid;gap:12px;
+    width:min(96vw,1200px);
+    margin:0 auto;
+    background:var(--card);
+    border-radius:12px;
+    padding:12px;
+    display:grid;
+    gap:12px;
     grid-template-columns:repeat(12,1fr)
   }
-  .section{grid-column:1/-1;font:700 12px/1.2 system-ui;letter-spacing:.04em;text-transform:uppercase;opacity:.7;margin-top:4px}
-  .group{background:rgba(255,255,255,.05);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+  .section{
+    grid-column:1/-1;
+    font:700 12px/1.2 system-ui;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    opacity:.7;
+    margin-top:4px
+  }
+  .group{
+    background:rgba(255,255,255,.05);
+    border-radius:10px;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    gap:8px
+  }
   .group--2 {grid-column: span 6}
   .group--3 {grid-column: span 4}
   .group--4 {grid-column: span 3}
@@ -93,44 +109,24 @@
   .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
   .btn-ghost.on{box-shadow:0 0 0 2px rgba(74,222,128,.55) inset; background:#233a2d}
 
-  .val-small{
-    width:42px;
-    text-align:right;
-    font-size:12px;
-    opacity:.85;
-    font-variant-numeric:tabular-nums;
-  }
-
   @media (max-width:1000px){
     .group--4{grid-column:span 4}
     .group--3{grid-column:span 6}
   }
 
-  /* --- MOBILE: dock in basso tipo “sheet” --- */
   @media (max-width:700px){
     .group--4,.group--3,.group--2{grid-column:span 12}
 
+    /* dock mobile: pannello centrato e più stretto */
     .dock{
-      top:auto;
-      bottom:0;
-      left:0;
-      right:0;
       width:100%;
-      padding:10px;
-      flex-direction:column-reverse;
-      align-items:center;
       justify-content:flex-end;
-      background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);
-    }
-    .dock.left,
-    .dock.right{
-      background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);
+      align-items:center;
+      padding-inline:8px;
     }
     .dock-card{
-      max-width:calc(100% - 24px);
-      width:calc(100% - 24px);
-      margin:0 auto;
-      max-height:40vh;
+      max-width:min(420px, 96%);
+      width:auto;
     }
   }
 </style>
@@ -221,37 +217,42 @@
     <div class="section">Luci</div>
 
     <!-- UNICO pannello luci -->
-    <div class="group group--4">
+    <div class="group" style="grid-column:1/-1">
       <div class="row" style="width:100%">
         <span style="flex:0 0 110px">Key (destra)</span>
-        <input id="keyIntensity" type="range" min="0" max="4" step="0.05" value="2.2" style="flex:1">
-        <span id="valKey" class="val-small">2.2</span>
+        <span id="valKey" style="width:42px;text-align:right">2.2</span>
       </div>
-      <div class="row" style="width:100%">
+      <input id="keyIntensity" type="range" min="0" max="4" step="0.05" value="2.2">
+
+      <div class="row" style="margin-top:6px">
         <span style="flex:0 0 110px">Direzionale</span>
-        <input id="dirIntensity" type="range" min="0" max="4" step="0.05" value="3.0" style="flex:1">
-        <span id="valDir" class="val-small">3.0</span>
+        <span id="valDir" style="width:42px;text-align:right">3.0</span>
       </div>
-      <div class="row" style="width:100%">
+      <input id="dirIntensity" type="range" min="0" max="4" step="0.05" value="3.0">
+
+      <div class="row" style="margin-top:6px">
         <span style="flex:0 0 110px">Fill</span>
-        <input id="fillIntensity" type="range" min="0" max="3" step="0.05" value="1.8" style="flex:1">
-        <span id="valFill" class="val-small">1.8</span>
+        <span id="valFill" style="width:42px;text-align:right">1.8</span>
       </div>
-      <div class="row" style="width:100%">
+      <input id="fillIntensity" type="range" min="0" max="3" step="0.05" value="1.8">
+
+      <div class="row" style="margin-top:6px">
         <span style="flex:0 0 110px">Hemi</span>
-        <input id="hemiIntensity" type="range" min="0" max="3" step="0.05" value="1.6" style="flex:1">
-        <span id="valHemi" class="val-small">1.6</span>
+        <span id="valHemi" style="width:42px;text-align:right">1.6</span>
       </div>
-      <div class="row" style="width:100%">
+      <input id="hemiIntensity" type="range" min="0" max="3" step="0.05" value="1.6">
+
+      <div class="row" style="margin-top:6px">
         <span style="flex:0 0 110px">Ambiente</span>
-        <input id="ambIntensity" type="range" min="0" max="1" step="0.01" value="0.25" style="flex:1">
-        <span id="valAmb" class="val-small">0.25</span>
+        <span id="valAmb" style="width:42px;text-align:right">0.25</span>
       </div>
-      <div class="row" style="width:100%">
+      <input id="ambIntensity" type="range" min="0" max="1" step="0.01" value="0.25">
+
+      <div class="row" style="margin-top:6px">
         <span style="flex:0 0 110px">Riflessi (envMap)</span>
-        <input id="envIntensity" type="range" min="0" max="5" step="0.1" value="2.6" style="flex:1">
-        <span id="valEnvI" class="val-small">2.6</span>
+        <span id="valEnvI" style="width:42px;text-align:right">2.6</span>
       </div>
+      <input id="envIntensity" type="range" min="0" max="5" step="0.1" value="2.6">
     </div>
   </div>
 </div>
@@ -413,7 +414,7 @@ renderer.domElement.addEventListener('click',(e)=>{
   }
 });
 
-/* ===== Hotspot (dock laterale / bottom sheet) ===== */
+/* ===== Hotspot (dock laterale) ===== */
 const HOTSPOTS=[
   { id:1, pos:[ 0.020, 0.627, -0.192], nor:[0.959, 0.117, 0.257], title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
   { id:2, pos:[ 0.023, 0.331, -0.194], nor:[0.555,-0.060, 0.829], title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
@@ -435,8 +436,8 @@ function buildHotspots(){
 
     btn.addEventListener('click',(e)=>{
       e.stopPropagation();
-      focusOn(pos, nor);
-      openDockCard(pos, h);
+      focusOn(pos, nor);       // zoom dolce
+      openDockCard(pos, h);    // pannello nel dock
     });
 
     hUI.push({pos,nor,btn});
@@ -452,21 +453,12 @@ function updateHotspotButtons(){
 function clearDocks(){
   dockL.innerHTML=''; dockR.innerHTML='';
 }
-
 function openDockCard(worldPos, data){
   clearDocks();
-
-  const isMobile = window.innerWidth <= 700;
-  let dock;
-
-  if (isMobile) {
-    dock = dockL;           // unico dock in basso
-  } else {
-    const s = screenXY(worldPos);
-    const rect = stageRect();
-    const side = s.x < rect.width/2 ? 'left' : 'right';
-    dock = (side==='left') ? dockL : dockR;
-  }
+  const s = screenXY(worldPos);
+  const rect = stageRect();
+  const side = s.x < rect.width/2 ? 'left' : 'right';
+  const dock = (side==='left') ? dockL : dockR;
 
   const card = document.createElement('div');
   card.className='dock-card';
@@ -548,7 +540,7 @@ renderer.domElement.addEventListener('click',(e)=>{
   console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"\ndata-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
 });
 
-/* ===== Pannello Luci (JS) ===== */
+/* ===== Pannello Luci (JS invariato, usa gli stessi id) ===== */
 function updLbl(el,v){ el.textContent = fmt(v); }
 keyIntensity.oninput = e=>{ rightKey.intensity = +e.target.value; updLbl(valKey,e.target.value); };
 dirIntensity.oninput = e=>{ dir.intensity      = +e.target.value; updLbl(valDir,e.target.value); };
