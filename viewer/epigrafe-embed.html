@@ -23,6 +23,7 @@
   input[type=range]{width:100%}
   a.full{color:#fff;text-decoration:none}
   a.full:hover{color:var(--accent)}
+  .hint{font-size:12px;opacity:.8}
 </style>
 </head>
 <body>
@@ -31,6 +32,8 @@
     <h1>Epigrafe Claudia Nova</h1>
     <div class="actions">
       <button id="fs" class="btn">Schermo intero</button>
+      <button id="vrBtn" class="btn btn-ghost">VR</button>
+      <button id="cardBtn" class="btn btn-ghost">Cardboard</button>
       <a class="btn btn-ghost full" href="./epigrafe-three.html" target="_blank" rel="noopener">Apri viewer completo</a>
     </div>
   </header>
@@ -42,7 +45,7 @@
       <label>Orbit (auto-rotate)</label>
       <div style="display:flex;gap:8px;align-items:center">
         <button id="orbitToggle" class="btn-ghost">OFF</button>
-        <span style="font-size:12px;opacity:.8">Velocità</span>
+        <span class="hint">Velocità</span>
         <input id="orbitSpeed" type="range" min="0" max="2" step="0.05" value="0.5" style="flex:1">
         <span id="orbitVal" style="font-size:12px;opacity:.8;width:48px;text-align:right">0.5°/s</span>
       </div>
@@ -50,15 +53,19 @@
     <div class="group">
       <label>Luminosità</label>
       <input id="exposure" type="range" min="1.0" max="3.2" step="0.05" value="2.6">
+      <div class="hint">Se il modello appare scuro su mobile, prova anche “Schermo intero”.</div>
     </div>
   </div>
 </div>
 
-<!-- Three UMD r146 -->
+<!-- Three UMD r146 + effetti -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
+<!-- Stereo & DeviceOrientation per Cardboard -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/effects/StereoEffect.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/DeviceOrientationControls.js"></script>
 
 <script>
 /* ==== base three ==== */
@@ -82,13 +89,39 @@ stage.appendChild(renderer.domElement);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-/* ==== luci minime ma efficaci ==== */
+/* ==== Cardboard (stereo + giroscopio) ==== */
+let stereoEffect = null;
+let devOriCtrl   = null;
+let cardboardOn  = false;
+
+function enableCardboard(on){
+  cardboardOn = on;
+  document.getElementById('cardBtn').classList.toggle('on', on);
+
+  if(on){
+    if(!stereoEffect){
+      stereoEffect = new THREE.StereoEffect(renderer);
+      stereoEffect.setSize(stage.clientWidth, stage.clientHeight);
+    }
+    if(!devOriCtrl){
+      devOriCtrl = new THREE.DeviceOrientationControls(camera);
+    }
+    // iOS: richiesta permesso esplicito
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().catch(()=>{}).then(res=>{ /* ok */ });
+    }
+  }else{
+    // torna a renderer “normale”
+  }
+}
+
+/* ==== luci ==== */
 const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.4);
 const dir  = new THREE.DirectionalLight(0xffffff, 2.6); dir.position.set(2,2,2);
 const fill = new THREE.DirectionalLight(0xffffff, 1.4); fill.position.set(-2,1.2,-1.5);
 scene.add(hemi, dir, fill);
 
-/* ==== HDR soft (opzionale ma utile per luminosità uniforme) ==== */
+/* ==== HDR soft ==== */
 new THREE.RGBELoader()
  .setPath('https://cdn.jsdelivr.net/npm/three@0.146.0/examples/textures/equirectangular/')
  .load('venice_sunset_1k.hdr', (tex)=>{
@@ -97,7 +130,7 @@ new THREE.RGBELoader()
  });
 
 /* ==== modello ==== */
-const ORIENT = { x: 1.57080, y: 0.0, z: 4.71239 }; // il tuo orientamento corretto
+const ORIENT = { x: 1.57080, y: 0.0, z: 4.71239 };
 let model = null;
 
 new THREE.GLTFLoader().load(
@@ -106,7 +139,6 @@ new THREE.GLTFLoader().load(
     model = g.scene;
     model.rotation.set(ORIENT.x, ORIENT.y, ORIENT.z, 'XYZ');
 
-    // centra e adatta
     const box = new THREE.Box3().setFromObject(model);
     const ctr = box.getCenter(new THREE.Vector3());
     model.position.sub(ctr);
@@ -151,7 +183,7 @@ orbitSpd.oninput = e=>{
   orbitVal.textContent = `${(+e.target.value).toFixed(2)}°/s`;
 };
 
-/* ==== fullscreen dentro l’embed ==== */
+/* ==== Fullscreen ==== */
 document.getElementById('fs').onclick = async ()=>{
   const el = stage;
   if (!document.fullscreenElement){
@@ -161,20 +193,29 @@ document.getElementById('fs').onclick = async ()=>{
   }
 };
 
+/* ==== VR (WebXR) ==== */
+window.renderer = renderer; // esponi per il modulo VRButton
+
 /* ==== resize + loop ==== */
 function onResize(){
   const w = stage.clientWidth, h = stage.clientHeight;
   camera.aspect=w/h; camera.updateProjectionMatrix();
   renderer.setSize(w,h);
+  if(stereoEffect) stereoEffect.setSize(w,h);
 }
 addEventListener('resize', onResize);
 
 let last = performance.now();
-(function animate(now){
-  requestAnimationFrame(animate);
-  const dt = (now-last)/1000; last = now;
+renderer.setAnimationLoop(function(now){
+  const dt = (now - last)/1000; last = now;
 
-  if(autoOrbit.active){
+  if(cardboardOn){
+    devOriCtrl && devOriCtrl.update();
+  }else{
+    controls.update();
+  }
+
+  if(autoOrbit.active && !cardboardOn){
     const deltaRad = THREE.MathUtils.degToRad(autoOrbit.degPerSec) * dt;
     const v = camera.position.clone().sub(controls.target);
     v.applyAxisAngle(new THREE.Vector3(0,1,0), deltaRad);
@@ -182,9 +223,27 @@ let last = performance.now();
     camera.lookAt(controls.target);
   }
 
-  controls.update();
-  renderer.render(scene, camera);
-})();
+  if(cardboardOn && stereoEffect){
+    stereoEffect.render(scene, camera);
+  }else{
+    renderer.render(scene, camera);
+  }
+});
+
+/* ==== Bottoni VR & Cardboard ==== */
+document.getElementById('cardBtn').onclick = ()=> enableCardboard(!cardboardOn);
+</script>
+
+<!-- VRButton come modulo (usa window.renderer esposto sopra) -->
+<script type="module">
+  import { VRButton } from 'https://unpkg.com/three@0.146.0/examples/jsm/webxr/VRButton.js';
+  // Abilita WebXR
+  window.renderer.xr.enabled = true;
+  // Crea e inserisci il bottone ufficiale (gestisce compatibilità/permessi)
+  const btn = VRButton.createButton(window.renderer);
+  // Sostituisci l'etichetta del pulsante UI
+  const vrBtn = document.getElementById('vrBtn');
+  vrBtn.replaceWith(btn);
 </script>
 </body>
 </html>
