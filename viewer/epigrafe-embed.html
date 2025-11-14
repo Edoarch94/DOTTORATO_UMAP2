@@ -60,11 +60,11 @@
     font-size:14px;
   }
 
-  /* viewport compatta per stare nel popup U-Map */
+  /* viewport compatta per U-Map */
   #stage{
     position:relative;
     width:100%;
-    height:230px;          /* <– altezza modello */
+    height:230px;
     background:#050505;
   }
   canvas{
@@ -73,7 +73,6 @@
     height:100%;
   }
 
-  /* pannello basso compatto */
   .panel{
     background:#121212;
     padding:8px 10px 10px;
@@ -92,6 +91,8 @@
     font-size:12px;
     opacity:.85;
   }
+
+  /* pill ON/OFF */
   .pill-toggle{
     position:relative;
     width:52px;
@@ -123,9 +124,7 @@
     padding:0 8px;
     pointer-events:none;
   }
-  .pill-labels span{
-    opacity:.65;
-  }
+  .pill-labels span{opacity:.65;}
   .pill-toggle.on{
     background:#16a34a;
     border-color:#16a34a;
@@ -135,7 +134,7 @@
     background:#f9fafb;
   }
   .pill-toggle.on .pill-labels span:first-child{opacity:1;}
-  .pill-toggle.on .pill-labels span:last-child{opacity:.5;}
+  .pill-toggle.on .pill-labels span:last-child{opacity:.4;}
 
   input[type=range]{
     -webkit-appearance:none;
@@ -171,19 +170,19 @@
     opacity:.9;
   }
 
-  /* slot a destra della luminosità */
+  /* slot VR accanto alla luminosità */
   .vr-slot{
-    margin-left:8px;
+    margin-left:6px;
   }
 
-  /* bottone VR: icona + testo */
+  /* bottone VR: icona + testo “VR” */
   .vr-btn{
     display:inline-flex;
     align-items:center;
     gap:4px;
     padding:4px 8px;
     border-radius:999px;
-    border:1px solid rgba(156,163,175,.7);
+    border:1px solid rgba(156,163,175,.8);
     background:#111;
     color:#e5e7eb;
     font-size:11px;
@@ -194,35 +193,37 @@
     opacity:.45;
     cursor:default;
   }
+  /* icona stile cardboard con orbita semplificata */
   .vr-icon{
     position:relative;
     width:20px;
     height:14px;
-    border-radius:4px;
-    border:2px solid currentColor;
     box-sizing:border-box;
   }
   .vr-icon::before{
+    /* visore */
     content:"";
     position:absolute;
-    left:2px;
-    right:2px;
-    top:3px;
-    height:2px;
-    border-bottom:2px solid currentColor;
-    border-radius:999px;
-    transform:skewX(-12deg);
+    left:0;
+    right:0;
+    top:1px;
+    bottom:3px;
+    border-radius:4px;
+    border:2px solid currentColor;
   }
   .vr-icon::after{
+    /* arco/orbita sotto */
     content:"";
     position:absolute;
-    left:7px;
-    right:7px;
-    bottom:-4px;
+    left:1px;
+    right:1px;
+    bottom:-2px;
     height:6px;
     border-radius:999px;
-    border:2px solid currentColor;
-    border-top:none;
+    border-bottom:2px solid currentColor;
+  }
+  .vr-text{
+    letter-spacing:.04em;
   }
 
   @media (max-width:480px){
@@ -234,8 +235,9 @@
 <div class="wrap">
   <div class="topbar">
     <div class="topbar-title">Epigrafe Claudia Nova</div>
-    <!-- cambia href con il tuo viewer completo -->
-    <a class="topbar-link" href="https://edoarch94.github.io/DOTTORATO_UMAP2/viewer/epigrafe-three.html" target="_blank" rel="noopener">
+    <a class="topbar-link"
+       href="https://edoarch94.github.io/DOTTORATO_UMAP2/viewer/epigrafe-three.html"
+       target="_blank" rel="noopener">
       Viewer completo
     </a>
   </div>
@@ -247,9 +249,7 @@
       <label style="flex:0 0 120px">Orbit (auto-rotate)</label>
       <div id="orbitToggle" class="pill-toggle on">
         <div class="pill-knob"></div>
-        <div class="pill-labels">
-          <span>ON</span><span>OFF</span>
-        </div>
+        <div class="pill-labels"><span>ON</span><span>OFF</span></div>
       </div>
       <span style="font-size:11px;opacity:.8">Velocità</span>
       <input id="orbitSpeed" type="range" min="0" max="6" step="0.2" value="4">
@@ -264,23 +264,21 @@
   </div>
 </div>
 
-<!-- Three.js & VRButton (UMD) -->
+<!-- Three.js UMD (come nel viewer grande) -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/jsm/webxr/VRButton.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
 
 <script>
-/* ========== Three.js setup embed ========== */
+/* ========= Three.js base ========= */
 const stage = document.getElementById('stage');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x050505);
 
 const camera = new THREE.PerspectiveCamera(
   45,
-  stage.clientWidth / 230,
+  stage.clientWidth / stage.clientHeight,
   0.01,
   100
 );
@@ -288,7 +286,7 @@ camera.position.set(0.9, 0.9, 1.8);
 
 const renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.setSize(stage.clientWidth, 230);
+renderer.setSize(stage.clientWidth, stage.clientHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 2.6;
@@ -298,7 +296,7 @@ stage.appendChild(renderer.domElement);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-/* luci leggere ma un po' contrastate */
+/* luci (simili al viewer principale) */
 const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.4);
 const dir  = new THREE.DirectionalLight(0xffffff, 3.0); dir.position.set(2,2,2);
 const fill = new THREE.DirectionalLight(0xffffff, 1.3); fill.position.set(-2,1.1,-1.4);
@@ -359,7 +357,7 @@ function fitToObject(obj, margin){
   camera.updateProjectionMatrix();
 }
 
-/* ========== Orbit auto-rotate ========== */
+/* ========= Orbit auto-rotate ========= */
 const orbitToggle = document.getElementById('orbitToggle');
 const orbitSpeed  = document.getElementById('orbitSpeed');
 const orbitVal    = document.getElementById('orbitVal');
@@ -382,34 +380,35 @@ orbitSpeed.addEventListener('input', e=>{
   orbitVal.textContent = autoOrbit.degPerSec.toFixed(1) + '°/s';
 });
 
-/* luminosità */
+/* ========= Luminosità ========= */
 document.getElementById('expo').addEventListener('input', e=>{
   renderer.toneMappingExposure = +e.target.value;
 });
 
-/* ========== VR button (icona + "VR") ========== */
+/* ========= Bottone VR (solo link, niente WebXR qui) ========= */
 const vrSlot = document.getElementById('vrSlot');
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-const canXR   = isMobile && 'xr' in navigator;
-let vrBtn;
+const VR_TARGET_URL = 'https://edoarch94.github.io/DOTTORATO_UMAP2/viewer/epigrafe-three.html#vr';
 
-if (canXR){
-  // abilito WebXR
-  renderer.xr.enabled = true;
-  vrBtn = THREE.VRButton.createButton(renderer);   // usa VRButton dal file JS
-  vrBtn.className = 'vr-btn';
-} else {
-  renderer.xr.enabled = false;
-  vrBtn = document.createElement('button');
-  vrBtn.type = 'button';
-  vrBtn.className = 'vr-btn vr-disabled';
+const vrBtn = document.createElement('button');
+vrBtn.type = 'button';
+vrBtn.className = 'vr-btn';
+vrBtn.innerHTML = '<span class="vr-icon"></span><span class="vr-text">VR</span>';
+
+if(isMobile){
+  // su smartphone: clic aprirà il viewer VR dedicato
+  vrBtn.addEventListener('click', ()=> {
+    window.open(VR_TARGET_URL, '_blank');
+  });
+}else{
+  // su PC: stesso look ma disabilitato
+  vrBtn.classList.add('vr-disabled');
+  vrBtn.title = 'VR disponibile solo da smartphone';
 }
 
-vrBtn.innerHTML = '<span class="vr-icon"></span><span class="vr-text">VR</span>';
-vrBtn.setAttribute('aria-label','Visualizza in VR');
 vrSlot.appendChild(vrBtn);
 
-/* ========== Resize & loop ========== */
+/* ========= Resize & loop ========= */
 function onResize(){
   const w = stage.clientWidth;
   const h = stage.clientHeight;
@@ -422,10 +421,10 @@ window.addEventListener('resize', onResize);
 let lastT = performance.now();
 (function animate(now){
   requestAnimationFrame(animate);
-  const dt = (now - lastT) / 1000; lastT = now;
+  const dt = (now - lastT)/1000; lastT = now;
 
-  if (autoOrbit.active){
-    const deltaRad = THREE.MathUtils.degToRad(autoOrbit.degPerSec)*dt;
+  if(autoOrbit.active){
+    const deltaRad = THREE.MathUtils.degToRad(autoOrbit.degPerSec) * dt;
     const v = camera.position.clone().sub(controls.target);
     v.applyAxisAngle(new THREE.Vector3(0,1,0), deltaRad);
     camera.position.copy(controls.target.clone().add(v));
