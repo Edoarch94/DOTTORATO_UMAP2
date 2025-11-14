@@ -43,7 +43,7 @@
     background:#233a2d;
   }
 
-  /* viewer più basso */
+  /* viewer basso per stare dentro al pannello uMap senza scroll */
   #stage{
     position:relative;
     width:min(96vw,1200px);
@@ -73,7 +73,7 @@
   .hint{font-size:11px;opacity:.75}
   .row{display:flex;gap:6px;align-items:center}
 
-  /* icon buttons */
+  /* pulsanti piccoli in header */
   .icon-btn{
     border:0;
     border-radius:999px;
@@ -89,23 +89,54 @@
     background:#233a2d;
   }
 
-  /* VRButton (inserito nello slot) */
+  /* Pulsante VRButton rimappato: niente testo, solo icona */
   .vr-btn{
+    position:relative !important;
+    inset:auto !important;
+    margin:0;
+    width:32px;height:32px;
     border-radius:999px;
     border:0;
-    padding:0;
-    width:32px;height:32px;
     background:#2a2a2a;
-    display:inline-flex;
-    align-items:center;justify-content:center;
     cursor:pointer;
+    padding:0;
+    font-size:0;           /* nasconde "ENTER VR" / "VR NOT SUPPORTED" */
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
   }
   .vr-btn:hover{background:#333}
-  .vr-btn svg{
-    width:22px;height:22px;
-    stroke:#fff;
-    stroke-width:1.8;
-    fill:none;
+
+  /* Icona VR disegnata in CSS (visore + orbita) */
+  .vr-btn::before,
+  .vr-btn::after{
+    content:"";
+    position:absolute;
+    box-sizing:border-box;
+  }
+  /* visore */
+  .vr-btn::before{
+    width:20px;height:12px;
+    border-radius:4px;
+    border:2px solid #fff;
+    top:8px;left:50%;
+    transform:translateX(-50%);
+  }
+  /* orbita */
+  .vr-btn::after{
+    width:26px;height:16px;
+    border-radius:50%;
+    border:2px solid #fff;
+    border-top-color:transparent;
+    border-left-color:transparent;
+    top:15px;left:50%;
+    transform:translateX(-50%) rotate(15deg);
+  }
+  /* quando WebXR non è supportato VRButton mette pointer-events:none inline */
+  .vr-btn[style*="pointer-events: none"]{
+    opacity:.35;
+    cursor:default;
   }
 
   @media (max-width:700px){
@@ -143,7 +174,7 @@
       <label>Luminosità</label>
       <div class="row">
         <input id="exposure" type="range" min="1.0" max="3.2" step="0.05" value="2.6" style="flex:1">
-        <!-- slot per VRButton -->
+        <!-- slot per il pulsante VR -->
         <span id="vrSlot"></span>
       </div>
     </div>
@@ -210,7 +241,7 @@ const dir  = new THREE.DirectionalLight(0xffffff, 2.6); dir.position.set(2,2,2);
 const fill = new THREE.DirectionalLight(0xffffff, 1.4); fill.position.set(-2,1.2,-1.5);
 scene.add(hemi, dir, fill);
 
-/* ==== HDR soft ==== */
+/* ==== HDR ==== */
 new THREE.RGBELoader()
  .setPath('https://cdn.jsdelivr.net/npm/three@0.146.0/examples/textures/equirectangular/')
  .load('venice_sunset_1k.hdr', (tex)=>{
@@ -237,6 +268,7 @@ new THREE.GLTFLoader().load(
 );
 
 function fitToObject(object, margin=1.25){
+  if(!object) return;
   const box = new THREE.Box3().setFromObject(object);
   const size = box.getSize(new THREE.Vector3());
   const radius = size.length()*0.5;
@@ -254,7 +286,7 @@ function fitToObject(object, margin=1.25){
 const exposure = document.getElementById('exposure');
 exposure.oninput = e => { renderer.toneMappingExposure = +e.target.value; };
 
-/* ==== UI: orbit auto-rotate (attiva di default) ==== */
+/* ==== UI: orbit auto-rotate (attivo di default) ==== */
 const orbitBtn  = document.getElementById('orbitToggle');
 const orbitSpd  = document.getElementById('orbitSpeed');
 const orbitVal  = document.getElementById('orbitVal');
@@ -273,7 +305,7 @@ orbitSpd.oninput = e=>{
   orbitVal.textContent = `${(+e.target.value).toFixed(2)}°/s`;
 };
 
-/* ==== Fullscreen ==== */
+/* ==== Fullscreen viewer completo ==== */
 document.getElementById('fullViewer').onclick = ()=>{
   window.open('./epigrafe-three.html','_blank','noopener');
 };
@@ -319,7 +351,7 @@ renderer.setAnimationLoop(function(now){
 window._renderer = renderer;
 </script>
 
-<!-- VRButton: inserito nello slot accanto alla luminosità -->
+<!-- VRButton: iconico, senza testo -->
 <script type="module">
   import { VRButton } from 'https://unpkg.com/three@0.146.0/examples/jsm/webxr/VRButton.js';
 
@@ -327,19 +359,7 @@ window._renderer = renderer;
   r.xr.enabled = true;
 
   const vrBtn = VRButton.createButton(r);
-  // ripuliamo il testo e lo trasformiamo nel pulsante con icona custom
-  vrBtn.className = 'vr-btn';
-  vrBtn.innerHTML = `
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <ellipse cx="32" cy="40" rx="22" ry="8"></ellipse>
-      <rect x="16" y="20" width="32" height="16" rx="4" ry="4"></rect>
-      <path d="M22 26 l4 4" />
-      <path d="M28 26 l-4 4" />
-      <path d="M30 32 q2 2 4 0" />
-      <path d="M48 16 q6 8 0 20" />
-    </svg>
-  `;
-
+  vrBtn.classList.add('vr-btn');    // stile definito sopra
   const slot = document.getElementById('vrSlot');
   slot.appendChild(vrBtn);
 </script>
