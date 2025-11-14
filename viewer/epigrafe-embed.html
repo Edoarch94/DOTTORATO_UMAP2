@@ -359,7 +359,12 @@ window._renderer = renderer;
   r.xr.enabled = true;
 
   const vrBtn = VRButton.createButton(r);
-  vrBtn.classList.add('vr-btn');    // stile definito sopra
+  vrBtn.classList.add('vr-btn');          // stile rotondo
+
+  // 🔹 IMPORTANTISSIMO: niente testo, solo icona CSS
+  vrBtn.innerHTML = '';
+  vrBtn.setAttribute('aria-label', 'Entra in VR');  // accessibilità
+
   const slot = document.getElementById('vrSlot');
   slot.appendChild(vrBtn);
 </script>
