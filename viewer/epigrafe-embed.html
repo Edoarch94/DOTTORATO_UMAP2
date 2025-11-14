@@ -65,7 +65,7 @@
   #stage{
     position:relative;
     width:100%;
-    height:230px;             /* altezza di base, poi sistemata da JS */
+    height:230px;
     background:#050505;
   }
   canvas{
@@ -269,11 +269,10 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
-<!-- VRButton globale (fornisce VRButton.createButton) -->
+<!-- VRButton globale -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/webxr/VRButton.js"></script>
 
 <script>
-/* ===== helper slider colorato (parte blu, parte grigia) ===== */
 function styleRange(el){
   const min = +el.min, max = +el.max, val = +el.value;
   const pct = ((val - min) / (max - min)) * 100;
@@ -286,12 +285,7 @@ const stage = document.getElementById('stage');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x050505);
 
-const camera = new THREE.PerspectiveCamera(
-  45,
-  1,
-  0.01,
-  100
-);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
 camera.position.set(0.9, 0.9, 1.8);
 
 const renderer = new THREE.WebGLRenderer({ antialias:true });
@@ -300,9 +294,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 2.6;
 renderer.physicallyCorrectLights = true;
-/* --- abilita WebXR per il VR --- */
 renderer.xr.enabled = true;
-
 stage.appendChild(renderer.domElement);
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -400,40 +392,46 @@ expoSlider.addEventListener('input', e=>{
   styleRange(expoSlider);
 });
 
-/* ========= Bottone VR -> WebXR immersivo ========= */
+/* ========= VR button sicuro ========= */
 const vrSlot = document.getElementById('vrSlot');
 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-/* crea il bottone WebXR reale ma nascosto */
-const xrButton = VRButton.createButton(renderer);
-xrButton.style.display = 'none';
-document.body.appendChild(xrButton);
 
 const vrBtn = document.createElement('button');
 vrBtn.type = 'button';
 vrBtn.className = 'vr-btn';
 vrBtn.innerHTML = '<span class="vr-icon"></span><span class="vr-text">VR</span>';
-
-if(isMobile){
-  vrBtn.addEventListener('click', ()=>{
-    // Usa il bottone WebXR di three.js dietro le quinte
-    xrButton.click();
-  });
-}else{
-  vrBtn.classList.add('vr-disabled');
-  vrBtn.title = 'VR disponibile solo da smartphone';
-}
 vrSlot.appendChild(vrBtn);
 
-/* ========= Resize robusto ========= */
+let xrButton = null;
+if (window.VRButton && navigator.xr) {
+  try{
+    xrButton = VRButton.createButton(renderer);
+    xrButton.style.display = 'none';
+    document.body.appendChild(xrButton);
+  }catch(e){
+    console.warn('VRButton error:', e);
+  }
+}
+
+if(isMobile && xrButton){
+  vrBtn.addEventListener('click', ()=> {
+    xrButton.click();
+  });
+}else if(!isMobile){
+  vrBtn.classList.add('vr-disabled');
+  vrBtn.title = 'VR disponibile solo da smartphone';
+}else{
+  // mobile ma niente WebXR: icona sola, nessuna azione; niente errori
+  vrBtn.classList.add('vr-disabled');
+}
+
+/* ========= Resize ========= */
 function onResize(){
   const rect = stage.getBoundingClientRect();
   let w = rect.width || stage.clientWidth || 320;
   let h = rect.height || 230;
-
   if(h < 150) h = 150;
   stage.style.height = h + 'px';
-
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize(w, h, false);
@@ -442,8 +440,7 @@ window.addEventListener('resize', onResize);
 
 /* ========= Loop ========= */
 let lastT = performance.now();
-function renderLoop(now){
-  renderer.setAnimationLoop(renderLoop);
+renderer.setAnimationLoop(function(now){
   const dt = (now - lastT)/1000; lastT = now;
 
   if(autoOrbit.active && !renderer.xr.isPresenting){
@@ -456,11 +453,12 @@ function renderLoop(now){
 
   controls.update();
   renderer.render(scene, camera);
-}
-onResize();
+});
+
 styleRange(orbitSpeed);
 styleRange(expoSlider);
-renderLoop(performance.now());
+onResize();
+setTimeout(onResize, 80);
 </script>
 </body>
 </html>
