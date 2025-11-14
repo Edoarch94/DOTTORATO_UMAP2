@@ -9,72 +9,106 @@
   html,body{
     margin:0;height:100%;
     background:var(--bg);color:#eee;
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   }
   .wrap{
     min-height:100dvh;
     display:flex;flex-direction:column;
-    gap:8px;padding:8px
+    gap:6px;padding:6px;
   }
   header{
-    display:flex;gap:8px;align-items:center;justify-content:space-between;
-    width:min(96vw,1200px);margin:0 auto
+    display:flex;gap:6px;align-items:center;justify-content:space-between;
+    width:min(96vw,1200px);margin:0 auto;
   }
   h1{
-    margin:0;font:700 17px/1.2 system-ui
+    margin:0;font:700 16px/1.2 system-ui;
   }
   .actions{
-    display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end
+    display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;
   }
   .btn{
-    border:0;border-radius:10px;
+    border:0;border-radius:999px;
     padding:6px 10px;
     background:#2a2a2a;color:#fff;
     font-weight:600;font-size:13px;
-    cursor:pointer;white-space:nowrap
+    cursor:pointer;white-space:nowrap;
   }
   .btn:hover{background:#333}
   .btn-ghost{
     background:transparent;
-    outline:1px solid rgba(255,255,255,.25)
+    outline:1px solid rgba(255,255,255,.25);
   }
   .btn.on{
     box-shadow:0 0 0 2px rgba(74,222,128,.55) inset;
-    background:#233a2d
+    background:#233a2d;
   }
   a.full{color:#fff;text-decoration:none;font-size:13px}
   a.full:hover{color:var(--accent)}
 
+  /* viewer più basso */
   #stage{
     position:relative;
     width:min(96vw,1200px);
-    height:min(55vh,420px);          /* più basso per stare nel pannello */
+    height:min(50vh,360px);
     margin:0 auto;
     border-radius:14px;overflow:hidden;
     box-shadow:0 8px 28px rgba(0,0,0,.45);
-    background:#0e0e0e
+    background:#0e0e0e;
   }
   canvas{display:block;width:100%;height:100%}
 
   .panel{
     width:min(96vw,1200px);margin:0 auto;
     background:var(--card);border-radius:12px;
-    padding:8px;
-    display:grid;gap:8px;
-    grid-template-columns:repeat(12,1fr)
+    padding:6px 6px 8px;
+    display:grid;gap:6px;
+    grid-template-columns:repeat(12,1fr);
   }
   .group{
     background:rgba(255,255,255,.06);
-    border-radius:10px;padding:8px;
-    display:flex;flex-direction:column;gap:6px;
-    grid-column:span 6
+    border-radius:10px;padding:6px;
+    display:flex;flex-direction:column;gap:4px;
+    grid-column:span 6;
   }
   label{font-size:12px;opacity:.85}
   input[type=range]{width:100%}
   .hint{font-size:11px;opacity:.75}
+  .row{display:flex;gap:6px;align-items:center}
+
+  /* Icon button per Cardboard */
+  .icon-btn{
+    border-radius:999px;
+    padding:6px 8px;
+    width:32px;height:32px;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:18px;line-height:1;
+  }
+
+  /* Stile globale per VRButton di three.js */
+  .webxr-button{
+    position:static !important;
+    bottom:auto !important;right:auto !important;left:auto !important;
+    margin:0 !important;
+    padding:6px 8px !important;
+    width:32px !important;height:32px !important;
+    border-radius:999px !important;
+    border:0 !important;
+    background:#2a2a2a !important;
+    display:inline-flex !important;
+    align-items:center;justify-content:center;
+    cursor:pointer;
+    font-size:0 !important;          /* nasconde il testo */
+  }
+  .webxr-button::before{
+    content:"🕶️";
+    font-size:18px;
+  }
+  .webxr-button:hover{
+    background:#333 !important;
+  }
 
   @media (max-width:700px){
-    h1{font-size:16px}
+    h1{font-size:15px}
     .group{grid-column:span 12}
   }
 </style>
@@ -85,9 +119,11 @@
     <h1>Epigrafe Claudia Nova</h1>
     <div class="actions">
       <button id="fs" class="btn">Full</button>
-      <button id="vrBtn" class="btn btn-ghost">VR</button>
-      <button id="cardBtn" class="btn btn-ghost">Cardboard</button>
-      <a class="btn btn-ghost full" href="./epigrafe-three.html" target="_blank" rel="noopener">Viewer completo</a>
+      <!-- VRButton verrà inserito qui via JS -->
+      <button id="cardBtn" class="btn-ghost icon-btn" title="Cardboard">
+        <span aria-hidden="true">📱</span>
+      </button>
+      <a class="btn-ghost full" href="./epigrafe-three.html" target="_blank" rel="noopener">Viewer completo</a>
     </div>
   </header>
 
@@ -96,17 +132,16 @@
   <div class="panel">
     <div class="group">
       <label>Orbit (auto-rotate)</label>
-      <div style="display:flex;gap:6px;align-items:center">
-        <button id="orbitToggle" class="btn-ghost btn">OFF</button>
+      <div class="row">
+        <button id="orbitToggle" class="btn-ghost btn">ON</button>
         <span class="hint">Velocità</span>
-        <input id="orbitSpeed" type="range" min="0" max="2" step="0.05" value="0.5" style="flex:1">
-        <span id="orbitVal" style="font-size:12px;opacity:.8;width:48px;text-align:right">0.50°/s</span>
+        <input id="orbitSpeed" type="range" min="0" max="4" step="0.05" value="1.2" style="flex:1">
+        <span id="orbitVal" style="font-size:12px;opacity:.8;width:48px;text-align:right">1.20°/s</span>
       </div>
     </div>
     <div class="group">
       <label>Luminosità</label>
       <input id="exposure" type="range" min="1.0" max="3.2" step="0.05" value="2.6">
-      <div class="hint">Se il modello appare scuro su smartphone, prova Full o aumenta il valore.</div>
     </div>
   </div>
 </div>
@@ -215,18 +250,19 @@ function fitToObject(object, margin=1.25){
 const exposure = document.getElementById('exposure');
 exposure.oninput = e => { renderer.toneMappingExposure = +e.target.value; };
 
-/* ==== UI: orbit auto-rotate ==== */
+/* ==== UI: orbit auto-rotate (attiva di default) ==== */
 const orbitBtn  = document.getElementById('orbitToggle');
 const orbitSpd  = document.getElementById('orbitSpeed');
 const orbitVal  = document.getElementById('orbitVal');
 
-let autoOrbit = { active:false, degPerSec:+orbitSpd.value };
-function setBtnActive(btn,on){ btn.classList.toggle('on', !!on); }
+let autoOrbit = { active:true, degPerSec:+orbitSpd.value };
+orbitBtn.textContent = 'ON';
+orbitBtn.classList.add('on');
 
 orbitBtn.onclick = ()=>{
   autoOrbit.active = !autoOrbit.active;
   orbitBtn.textContent = autoOrbit.active ? 'ON' : 'OFF';
-  setBtnActive(orbitBtn, autoOrbit.active);
+  orbitBtn.classList.toggle('on', autoOrbit.active);
 };
 orbitSpd.oninput = e=>{
   autoOrbit.degPerSec = +e.target.value;
@@ -277,39 +313,23 @@ renderer.setAnimationLoop(function(now){
   }
 });
 
-/* ==== bottoni Cardboard ==== */
+/* ==== bottone Cardboard ==== */
 document.getElementById('cardBtn').onclick = ()=> enableCardboard(!cardboardOn);
 
-/* ==== esponi renderer per VRButton (modulo) ==== */
-window.renderer = renderer;
+/* esponi renderer per il modulo VRButton */
+window._renderer = renderer;
 </script>
 
-<!-- VRButton come modulo, con stile personalizzato nella toolbar -->
+<!-- VRButton come modulo: inserito nella toolbar e stilizzato via .webxr-button -->
 <script type="module">
   import { VRButton } from 'https://unpkg.com/three@0.146.0/examples/jsm/webxr/VRButton.js';
 
-  const r = window.renderer;
+  const r = window._renderer;
   r.xr.enabled = true;
 
-  const threeBtn = VRButton.createButton(r);
-  // personalizza stile: niente posizione assoluta, ma dentro la barra dei bottoni
-  threeBtn.style.position = 'static';
-  threeBtn.style.bottom = '';
-  threeBtn.style.left = '';
-  threeBtn.style.margin = '0';
-  threeBtn.style.padding = '6px 10px';
-  threeBtn.style.width = 'auto';
-  threeBtn.style.background = '#2a2a2a';
-  threeBtn.style.borderRadius = '10px';
-  threeBtn.style.border = '0';
-  threeBtn.style.fontSize = '13px';
-  threeBtn.style.fontWeight = '600';
-  threeBtn.style.cursor = 'pointer';
-  threeBtn.textContent = 'VR';  // etichetta compatta
-
-  const vrPlaceholder = document.getElementById('vrBtn');
-  const actions = vrPlaceholder.parentElement;
-  actions.replaceChild(threeBtn, vrPlaceholder);
+  const vrBtn = VRButton.createButton(r);
+  const actions = document.querySelector('.actions');
+  actions.insertBefore(vrBtn, actions.children[1]); // dopo il bottone Full
 </script>
 </body>
 </html>
