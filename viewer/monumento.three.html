@@ -326,7 +326,7 @@ let model = null;
 const defaultRotation = new THREE.Euler(ORIENT.x, ORIENT.y, ORIENT.z, 'XYZ');
 
 new THREE.GLTFLoader().load(
-  'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb?v=9',
+  'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Monumento.glb',
   (g)=>{
     model = g.scene;
     model.rotation.copy(defaultRotation);
