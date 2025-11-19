@@ -221,7 +221,8 @@
         <button id="rotSave" class="btn-ghost">Salva rot.</button>
       </div>
       <small style="font-size:11px;opacity:.75">
-        Slider in gradi. I valori mostrati sono in radianti (X, Y, Z dell'Euler del modello).
+        Slider in gradi. I valori mostrati sono in radianti (X, Y, Z dell'Euler del modello).<br>
+        Per ruotare il modello col cursore: tieni premuto <b>Shift</b> e trascina.
       </small>
     </div>
 
@@ -313,7 +314,7 @@ renderer.toneMappingExposure = 2.6;
 renderer.physicallyCorrectLights = true;
 stage.appendChild(renderer.domElement);
 
-/* ===== CSS2DRenderer sicuro ===== */
+/* ===== CSS2DRenderer ===== */
 let labelRenderer = null;
 if (THREE.CSS2DRenderer) {
   labelRenderer = new THREE.CSS2DRenderer();
@@ -324,7 +325,7 @@ if (THREE.CSS2DRenderer) {
   labelRenderer.domElement.style.pointerEvents = 'none';
   stage.appendChild(labelRenderer.domElement);
 } else {
-  console.warn('CSS2DRenderer non disponibile: le etichette 2D saranno disabilitate.');
+  console.warn('CSS2DRenderer non disponibile: etichette 2D disabilitate.');
 }
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -383,11 +384,9 @@ const rotSave   = document.getElementById('rotSave');
 
 function syncRotUIFromModel(){
   if (!model) return;
-  // slider in gradi
   rotXRange.value = radToDeg(model.rotation.x).toFixed(0);
   rotYRange.value = radToDeg(model.rotation.y).toFixed(0);
   rotZRange.value = radToDeg(model.rotation.z).toFixed(0);
-  // label in radianti
   rotXVal.textContent = fmt(model.rotation.x);
   rotYVal.textContent = fmt(model.rotation.y);
   rotZVal.textContent = fmt(model.rotation.z);
@@ -469,6 +468,38 @@ function fitToObject(object, margin=1.25){
   camera.lookAt(controls.target);
   camera.updateProjectionMatrix();
 }
+
+/* ===== Rotazione modello con Shift+drag ===== */
+let isRotatingModel = false;
+let startX = 0, startY = 0;
+let startRotX = 0, startRotY = 0;
+
+renderer.domElement.addEventListener('mousedown', (e)=>{
+  if (!model) return;
+  if (!e.shiftKey) return; // solo se tieni premuto Shift
+  isRotatingModel = true;
+  controls.enabled = false;   // blocca l'orbita della camera
+  startX = e.clientX;
+  startY = e.clientY;
+  startRotX = model.rotation.x;
+  startRotY = model.rotation.y;
+});
+
+window.addEventListener('mousemove', (e)=>{
+  if (!isRotatingModel || !model) return;
+  const dx = e.clientX - startX;
+  const dy = e.clientY - startY;
+  const sens = 0.01; // sensibilità rotazione
+  model.rotation.y = startRotY + dx * sens;
+  model.rotation.x = startRotX + dy * sens;
+  syncRotUIFromModel();
+});
+
+window.addEventListener('mouseup', ()=>{
+  if (!isRotatingModel) return;
+  isRotatingModel = false;
+  controls.enabled = true;
+});
 
 /* ===== Raycast ===== */
 const raycaster=new THREE.Raycaster();
