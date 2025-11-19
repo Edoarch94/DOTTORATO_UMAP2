@@ -53,11 +53,11 @@
     padding:14px 16px;
     max-height:46vh;
     overflow:auto;
-    max-width:92%;      /* così non arriva mai a toccare il bordo */
+    max-width:92%;
     animation: fadeIn .18s ease-out;
   }
-  .dock.left  .dock-card{ margin-right:auto; } /* stacca dal bordo destro */
-  .dock.right .dock-card{ margin-left:auto; }  /* stacca dal bordo sinistro */
+  .dock.left  .dock-card{ margin-right:auto; }
+  .dock.right .dock-card{ margin-left:auto; }
 
   .dock-card h3{margin:0 0 6px 0;font:800 14px/1.2 system-ui}
   .dock-card p {margin:0;font-size:14px;line-height:1.35}
@@ -194,12 +194,11 @@
       </div>
     </div>
 
-    <!-- ORIENTAMENTO con salvataggio -->
+    <!-- ORIENTAMENTO con salvataggio e modalità cursore -->
     <div class="group group--4">
       <label>Orientamento</label>
       <div class="row">
-        <button id="rzp" class="btn-ghost">Z +90°</button>
-        <button id="ryp" class="btn-ghost">Y +180°</button>
+        <button id="orientMode" class="btn-ghost">Mod. cursore</button>
         <button id="rotReset" class="btn-ghost">Reset rot.</button>
         <button id="rotDump" class="btn-ghost">Salva rot.</button>
       </div>
@@ -331,7 +330,6 @@ const LS_KEY_ORIENT = 'epigrafe-orient';
 const FALLBACK_ORIENT = { x: 1.57080, y: 0.0, z: 4.71239 };
 
 function loadOrientation(){
-  // se localStorage non è disponibile o dà errore, uso fallback
   try{
     if (typeof localStorage === 'undefined') return FALLBACK_ORIENT;
     const raw = localStorage.getItem(LS_KEY_ORIENT);
@@ -346,7 +344,7 @@ function loadOrientation(){
   return FALLBACK_ORIENT;
 }
 
-let savedOrient = loadOrientation();    // stato "predefinito" corrente
+let savedOrient = loadOrientation();    // predefinito corrente
 let model = null;
 
 function getDefaultEuler(){
@@ -369,7 +367,6 @@ new THREE.GLTFLoader().load(
   'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Monumento.glb?v=9',
   (g)=>{
     model = g.scene;
-    // applica l'orientamento di default corrente (salvato o di fabbrica)
     model.rotation.copy(getDefaultEuler());
     model.traverse(o=>{
       if(o.isMesh){
@@ -502,7 +499,7 @@ function openDockCard(worldPos, data){
   let dock;
 
   if (isMobile) {
-    dock = dockL;           // unico dock in basso
+    dock = dockL;
   } else {
     const s = screenXY(worldPos);
     const rect = stageRect();
@@ -571,22 +568,24 @@ bgBtns.forEach(btn=>{
   };
 });
 
-/* ===== Orientamento (UI + salvataggio) ===== */
-const btnRZP     = document.getElementById('rzp');
-const btnRYP     = document.getElementById('ryp');
-const btnRotReset= document.getElementById('rotReset');
-const btnRotDump = document.getElementById('rotDump');
+/* ===== Orientamento (UI + salvataggio + drag modello) ===== */
+const btnOrientMode = document.getElementById('orientMode');
+const btnRotReset   = document.getElementById('rotReset');
+const btnRotDump    = document.getElementById('rotDump');
 
-btnRZP.onclick = ()=>{
-  if (!model) return;
-  model.rotation.z += Math.PI/2;
-  updateRotLabels();
-};
+let orientMode = false;
+let draggingOrient = false;
+let lastX = 0, lastY = 0;
 
-btnRYP.onclick = ()=>{
-  if (!model) return;
-  model.rotation.y += Math.PI;
-  updateRotLabels();
+function setOrientMode(on){
+  orientMode = !!on;
+  setActive(btnOrientMode, orientMode);
+  // quando editi orientamento, disabilito la rotazione della camera
+  controls.enableRotate = !orientMode;
+}
+
+btnOrientMode.onclick = () => {
+  setOrientMode(!orientMode);
 };
 
 btnRotReset.onclick = ()=>{
@@ -600,7 +599,6 @@ btnRotDump.onclick = ()=>{
   const r = model.rotation;
   const data = { x: r.x, y: r.y, z: r.z };
 
-  // salva in localStorage
   try{
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(LS_KEY_ORIENT, JSON.stringify(data));
@@ -609,11 +607,41 @@ btnRotDump.onclick = ()=>{
     console.warn('Impossibile salvare ORIENT in localStorage', e);
   }
 
-  // aggiorna il “default” in memoria
   savedOrient = data;
   updateRotLabels();
   console.log(`Nuovo ORIENT salvato: { x:${r.x.toFixed(5)}, y:${r.y.toFixed(5)}, z:${r.z.toFixed(5)} }`);
 };
+
+/* drag sul modello quando orientMode è attivo */
+renderer.domElement.addEventListener('mousedown', (e)=>{
+  if (!orientMode || !model) return;
+  if (e.button !== 0) return; // solo tasto sinistro
+  draggingOrient = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
+});
+
+window.addEventListener('mousemove', (e)=>{
+  if (!draggingOrient || !model) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  lastX = e.clientX;
+  lastY = e.clientY;
+
+  // fattore di scala per la sensibilità
+  const factor = 0.01;
+  model.rotation.y += dx * factor;
+  model.rotation.x += dy * factor;
+
+  updateRotLabels();
+});
+
+window.addEventListener('mouseup', ()=>{
+  draggingOrient = false;
+});
+window.addEventListener('mouseleave', ()=>{
+  draggingOrient = false;
+});
 
 /* ===== Hotspot mode (H) ===== */
 let hotspotMode=false;
@@ -685,9 +713,10 @@ let lastT = performance.now();
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera);
   updateHotspotButtons();
+  updateRotLabels(); // assicura che le label siano sempre aggiornate
 })();
 
-// inizializza le label anche prima del load (usa orientamento attuale)
+// inizializza le label anche prima del load
 updateRotLabels();
 </script>
 </body>
