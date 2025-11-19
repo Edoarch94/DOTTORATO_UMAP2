@@ -580,8 +580,16 @@ let lastX = 0, lastY = 0;
 function setOrientMode(on){
   orientMode = !!on;
   setActive(btnOrientMode, orientMode);
-  // quando editi orientamento, disabilito la rotazione della camera
-  controls.enableRotate = !orientMode;
+
+  // disabilita COMPLETAMENTE gli OrbitControls in modalità orientamento
+  controls.enabled = !orientMode;
+
+  // se entro in modalità orientamento, spengo eventuale auto-orbit
+  if (orientMode && autoOrbit.active) {
+    autoOrbit.active = false;
+    orbitBtn.textContent = 'OFF';
+    setActive(orbitBtn, false);
+  }
 }
 
 btnOrientMode.onclick = () => {
@@ -616,6 +624,10 @@ btnRotDump.onclick = ()=>{
 renderer.domElement.addEventListener('mousedown', (e)=>{
   if (!orientMode || !model) return;
   if (e.button !== 0) return; // solo tasto sinistro
+
+  e.preventDefault();
+  e.stopPropagation();
+
   draggingOrient = true;
   lastX = e.clientX;
   lastY = e.clientY;
@@ -623,13 +635,14 @@ renderer.domElement.addEventListener('mousedown', (e)=>{
 
 window.addEventListener('mousemove', (e)=>{
   if (!draggingOrient || !model) return;
+
   const dx = e.clientX - lastX;
   const dy = e.clientY - lastY;
   lastX = e.clientX;
   lastY = e.clientY;
 
-  // fattore di scala per la sensibilità
-  const factor = 0.01;
+  const factor = 0.01; // sensibilità
+  // ruota il modello: dx → asse Y, dy → asse X
   model.rotation.y += dx * factor;
   model.rotation.x += dy * factor;
 
