@@ -53,11 +53,11 @@
     padding:14px 16px;
     max-height:46vh;
     overflow:auto;
-    max-width:92%;      /* così non arriva mai a toccare il bordo */
+    max-width:92%;
     animation: fadeIn .18s ease-out;
   }
-  .dock.left  .dock-card{ margin-right:auto; } /* stacca dal bordo destro */
-  .dock.right .dock-card{ margin-left:auto; }  /* stacca dal bordo sinistro */
+  .dock.left  .dock-card{ margin-right:auto; }
+  .dock.right .dock-card{ margin-left:auto; }
 
   .dock-card h3{margin:0 0 6px 0;font:800 14px/1.2 system-ui}
   .dock-card p {margin:0;font-size:14px;line-height:1.35}
@@ -222,7 +222,7 @@
       </div>
       <small style="font-size:11px;opacity:.75">
         Slider in gradi. I valori mostrati sono in radianti (X, Y, Z dell'Euler del modello).<br>
-        Per ruotare il modello col cursore: tieni premuto <b>Shift</b> e trascina.
+        Ruota il modello con <b>tasto sinistro</b> del mouse.
       </small>
     </div>
 
@@ -330,6 +330,9 @@ if (THREE.CSS2DRenderer) {
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+/* usiamo solo tasto destro per la camera, sinistro “libero” per il modello */
+controls.mouseButtons.LEFT  = THREE.MOUSE.PAN;   // ma pan disabilitato
+controls.enablePan = false;
 
 /* ===== Luci ===== */
 const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.6);
@@ -431,7 +434,6 @@ new THREE.GLTFLoader().load(
   (g)=>{
     model = g.scene;
 
-    // applica orientamento salvato (o fallback)
     model.rotation.set(savedOrient.x, savedOrient.y, savedOrient.z, 'XYZ');
 
     model.traverse(o=>{
@@ -469,16 +471,15 @@ function fitToObject(object, margin=1.25){
   camera.updateProjectionMatrix();
 }
 
-/* ===== Rotazione modello con Shift+drag ===== */
+/* ===== Rotazione modello con tasto sinistro ===== */
 let isRotatingModel = false;
 let startX = 0, startY = 0;
 let startRotX = 0, startRotY = 0;
 
 renderer.domElement.addEventListener('mousedown', (e)=>{
   if (!model) return;
-  if (!e.shiftKey) return; // solo se tieni premuto Shift
+  if (e.button !== 0) return; // solo tasto sinistro
   isRotatingModel = true;
-  controls.enabled = false;   // blocca l'orbita della camera
   startX = e.clientX;
   startY = e.clientY;
   startRotX = model.rotation.x;
@@ -489,16 +490,14 @@ window.addEventListener('mousemove', (e)=>{
   if (!isRotatingModel || !model) return;
   const dx = e.clientX - startX;
   const dy = e.clientY - startY;
-  const sens = 0.01; // sensibilità rotazione
+  const sens = 0.01;
   model.rotation.y = startRotY + dx * sens;
-  model.rotation.x = startRotX + dy * sens;
+  model.rotation.x = startRotX + dy * sens;  // puoi “capovolgere” andando in su/giù
   syncRotUIFromModel();
 });
 
 window.addEventListener('mouseup', ()=>{
-  if (!isRotatingModel) return;
   isRotatingModel = false;
-  controls.enabled = true;
 });
 
 /* ===== Raycast ===== */
@@ -597,7 +596,7 @@ function openDockCard(worldPos, data){
   let dock;
 
   if (isMobile) {
-    dock = dockL;           // unico dock in basso
+    dock = dockL;
   } else {
     const s = screenXY(worldPos);
     const rect = stageRect();
