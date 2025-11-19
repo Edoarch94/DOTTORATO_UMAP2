@@ -53,11 +53,11 @@
     padding:14px 16px;
     max-height:46vh;
     overflow:auto;
-    max-width:92%;      /* così non arriva mai a toccare il bordo */
+    max-width:92%;
     animation: fadeIn .18s ease-out;
   }
-  .dock.left  .dock-card{ margin-right:auto; } /* stacca dal bordo destro */
-  .dock.right .dock-card{ margin-left:auto; }  /* stacca dal bordo sinistro */
+  .dock.left  .dock-card{ margin-right:auto; }
+  .dock.right .dock-card{ margin-left:auto; }
 
   .dock-card h3{margin:0 0 6px 0;font:800 14px/1.2 system-ui}
   .dock-card p {margin:0;font-size:14px;line-height:1.35}
@@ -194,88 +194,4 @@
       </div>
     </div>
 
-    <!-- ORIENTAMENTO: slider X/Y/Z + reset/salva -->
-    <div class="group group--4">
-      <label>Orientamento (modello)</label>
-
-      <div class="row" style="align-items:center;gap:6px">
-        <span style="font-size:12px;opacity:.8;width:18px">X</span>
-        <input id="rotXRange" type="range" min="-180" max="180" step="1" value="0" style="flex:1">
-        <span id="rotXVal" class="val-small">0.00</span>
-      </div>
-
-      <div class="row" style="align-items:center;gap:6px">
-        <span style="font-size:12px;opacity:.8;width:18px">Y</span>
-        <input id="rotYRange" type="range" min="-180" max="180" step="1" value="0" style="flex:1">
-        <span id="rotYVal" class="val-small">0.00</span>
-      </div>
-
-      <div class="row" style="align-items:center;gap:6px">
-        <span style="font-size:12px;opacity:.8;width:18px">Z</span>
-        <input id="rotZRange" type="range" min="-180" max="180" step="1" value="0" style="flex:1">
-        <span id="rotZVal" class="val-small">0.00</span>
-      </div>
-
-      <div class="row">
-        <button id="rotReset" class="btn-ghost">Reset rot.</button>
-        <button id="rotSave" class="btn-ghost">Salva rot.</button>
-      </div>
-      <small style="font-size:11px;opacity:.75">
-        Slider in gradi. I valori mostrati sono in radianti (X, Y, Z dell'Euler del modello).
-      </small>
-    </div>
-
-    <div class="section">Annotazioni</div>
-
-    <div class="group group--3">
-      <label>Hotspot</label>
-      <div class="row"><button id="toggleH" class="btn-ghost">Modalità H</button></div>
-      <small>Premi anche la <b>H</b> da tastiera</small>
-    </div>
-
-    <div class="group group--3">
-      <label>Misurazione</label>
-      <div class="row"><button id="measure" class="btn-ghost">Misura A–B</button><button id="measureReset" class="btn-ghost">Reset</button></div>
-      <small id="mhelp" style="opacity:.75">Clicca A poi B sulla mesh.</small>
-    </div>
-
-    <div class="section">Luci</div>
-
-    <!-- UNICO pannello luci -->
-    <div class="group group--4">
-      <div class="row" style="width:100%">
-        <span style="flex:0 0 110px">Key (destra)</span>
-        <input id="keyIntensity" type="range" min="0" max="4" step="0.05" value="2.2" style="flex:1">
-        <span id="valKey" class="val-small">2.2</span>
-      </div>
-      <div class="row" style="width:100%">
-        <span style="flex:0 0 110px">Direzionale</span>
-        <input id="dirIntensity" type="range" min="0" max="4" step="0.05" value="3.0" style="flex:1">
-        <span id="valDir" class="val-small">3.0</span>
-      </div>
-      <div class="row" style="width:100%">
-        <span style="flex:0 0 110px">Fill</span>
-        <input id="fillIntensity" type="range" min="0" max="3" step="0.05" value="1.8" style="flex:1">
-        <span id="valFill" class="val-small">1.8</span>
-      </div>
-      <div class="row" style="width:100%">
-        <span style="flex:0 0 110px">Hemi</span>
-        <input id="hemiIntensity" type="range" min="0" max="3" step="0.05" value="1.6" style="flex:1">
-        <span id="valHemi" class="val-small">1.6</span>
-      </div>
-      <div class="row" style="width:100%">
-        <span style="flex:0 0 110px">Ambiente</span>
-        <input id="ambIntensity" type="range" min="0" max="1" step="0.01" value="0.25" style="flex:1">
-        <span id="valAmb" class="val-small">0.25</span>
-      </div>
-      <div class="row" style="width:100%">
-        <span style="flex:0 0 110px">Riflessi (envMap)</span>
-        <input id="envIntensity" type="range" min="0" max="5" step="0.1" value="2.6" style="flex:1">
-        <span id="valEnvI" class="val-small">2.6</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Three UMD r146 + tween + helpers -->
-<script src="https://cdn.jsdelivr.net/npm/thr
+    <!-- ORIENTAMENTO: tastiera + lettura rotazioni -->
