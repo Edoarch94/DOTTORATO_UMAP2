@@ -221,8 +221,7 @@
         <button id="rotSave" class="btn-ghost">Salva rot.</button>
       </div>
       <small style="font-size:11px;opacity:.75">
-        Slider in gradi. I valori mostrati sono in radianti (X, Y, Z dell'Euler del modello).<br>
-        Ruota il modello tenendo premuto il <b>tasto sinistro</b> del mouse.
+        Slider in gradi. I valori mostrati sono in radianti (X, Y, Z dell'Euler del modello).
       </small>
     </div>
 
@@ -242,6 +241,7 @@
 
     <div class="section">Luci</div>
 
+    <!-- UNICO pannello luci -->
     <div class="group group--4">
       <div class="row" style="width:100%">
         <span style="flex:0 0 110px">Key (destra)</span>
@@ -286,11 +286,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
 
 <script>
+/* ===== Mini util ===== */
 const fmt = v => (Math.round(+v*100)/100).toString();
 function setActive(btn,on){ btn.classList.toggle('on', !!on); }
 const degToRad = d => d * Math.PI / 180;
 const radToDeg = r => r * 180 / Math.PI;
 
+/* ===== Three.js ===== */
 const stage = document.getElementById('stage');
 const dockL = document.getElementById('dockL');
 const dockR = document.getElementById('dockR');
@@ -311,23 +313,18 @@ renderer.toneMappingExposure = 2.6;
 renderer.physicallyCorrectLights = true;
 stage.appendChild(renderer.domElement);
 
-/* CSS2DRenderer */
-let labelRenderer = null;
-if (THREE.CSS2DRenderer) {
-  labelRenderer = new THREE.CSS2DRenderer();
-  labelRenderer.setSize(stage.clientWidth, stage.clientHeight);
-  labelRenderer.domElement.style.position = 'absolute';
-  labelRenderer.domElement.style.left = '0';
-  labelRenderer.domElement.style.top = '0';
-  labelRenderer.domElement.style.pointerEvents = 'none';
-  stage.appendChild(labelRenderer.domElement);
-}
+const labelRenderer = new THREE.CSS2DRenderer();
+labelRenderer.setSize(stage.clientWidth, stage.clientHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+stage.appendChild(labelRenderer.domElement);
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.enablePan = false; // niente pan, così non “scivola”
 
-/* Luci */
+/* ===== Luci ===== */
 const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.6);
 const dir  = new THREE.DirectionalLight(0xffffff, 3.0); dir.position.set(2,2,2);
 const fill = new THREE.DirectionalLight(0xffffff, 1.8); fill.position.set(-2,1.2,-1.5);
@@ -337,18 +334,19 @@ rightKey.position.set(1.2, 0.6, 0.6);
 rightKey.target.position.set(0.0, 0.3, -0.1);
 scene.add(hemi, dir, fill, amb, rightKey, rightKey.target);
 
-/* HDR */
+/* ===== HDR ===== */
 let envTexture = null;
 new THREE.RGBELoader()
   .setPath('https://cdn.jsdelivr.net/npm/three@0.146.0/examples/textures/equirectangular/')
-  .load('venice_sunset_1k.hdr', tex=>{
+  .load('venice_sunset_1k.hdr', (tex)=>{
     tex.mapping = THREE.EquirectangularReflectionMapping;
     envTexture = tex; scene.environment = envTexture;
   });
 
-/* Orientamento salvato */
+/* ===== Orientamento (con salvataggio) ===== */
 const LS_KEY_ORIENT = 'epigrafe-orient';
-const FALLBACK_ORIENT = { x: 1.57080, y: 0.0, z: 4.71239 };
+/* QUI metto l'orientamento che mi hai dato: 3.14, 3.14, 3.14 */
+const FALLBACK_ORIENT = { x: 3.14, y: 3.14, z: 3.14 };
 
 function loadOrientation(){
   try{
@@ -395,6 +393,7 @@ function applyRotFromSliders(){
   model.rotation.z = degToRad(+rotZRange.value);
   syncRotUIFromModel();
 }
+
 rotXRange.oninput = applyRotFromSliders;
 rotYRange.oninput = applyRotFromSliders;
 rotZRange.oninput = applyRotFromSliders;
@@ -420,11 +419,13 @@ rotSave.onclick = ()=>{
   console.log(`Nuovo ORIENT salvato: { x:${r.x.toFixed(5)}, y:${r.y.toFixed(5)}, z:${r.z.toFixed(5)} }`);
 };
 
-/* Modello */
+/* ===== Modello ===== */
 new THREE.GLTFLoader().load(
   'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Monumento.glb?v=9',
-  g=>{
+  (g)=>{
     model = g.scene;
+
+    // applica orientamento salvato (o fallback)
     model.rotation.set(savedOrient.x, savedOrient.y, savedOrient.z, 'XYZ');
 
     model.traverse(o=>{
@@ -462,40 +463,7 @@ function fitToObject(object, margin=1.25){
   camera.updateProjectionMatrix();
 }
 
-/* Rotazione modello con tasto sinistro (disabilitando OrbitControls) */
-let isRotatingModel = false;
-let startX = 0, startY = 0;
-let startRotX = 0, startRotY = 0;
-
-renderer.domElement.addEventListener('mousedown', e=>{
-  if (!model) return;
-  if (e.button !== 0) return; // solo tasto sinistro
-  e.preventDefault();
-  isRotatingModel = true;
-  controls.enabled = false;   // blocca la camera
-  startX = e.clientX;
-  startY = e.clientY;
-  startRotX = model.rotation.x;
-  startRotY = model.rotation.y;
-});
-
-window.addEventListener('mousemove', e=>{
-  if (!isRotatingModel || !model) return;
-  const dx = e.clientX - startX;
-  const dy = e.clientY - startY;
-  const sens = 0.01;
-  model.rotation.y = startRotY + dx * sens;
-  model.rotation.x = startRotX + dy * sens;  // su/giù per capovolgere
-  syncRotUIFromModel();
-});
-
-window.addEventListener('mouseup', ()=>{
-  if (!isRotatingModel) return;
-  isRotatingModel = false;
-  controls.enabled = true;  // riattiva camera
-});
-
-/* Raycast */
+/* ===== Raycast ===== */
 const raycaster=new THREE.Raycaster();
 const mouse=new THREE.Vector2();
 function raycast(e){
@@ -507,7 +475,7 @@ function raycast(e){
   return hits[0]||null;
 }
 
-/* Misurazione */
+/* ===== Misurazione ===== */
 const measureBtn   = document.getElementById('measure');
 const measureReset = document.getElementById('measureReset');
 const mhelp        = document.getElementById('mhelp');
@@ -529,7 +497,7 @@ function setMeasureActive(on){
 measureBtn.onclick = ()=> setMeasureActive(!measuring.active);
 measureReset.onclick= ()=> setMeasureActive(false);
 
-renderer.domElement.addEventListener('click',e=>{
+renderer.domElement.addEventListener('click',(e)=>{
   if(!measuring.active) return;
   const hit=raycast(e); if(!hit) return;
   if(measuring.step===0){
@@ -544,7 +512,7 @@ renderer.domElement.addEventListener('click',e=>{
   }
 });
 
-/* Hotspot */
+/* ===== Hotspot (dock laterale / bottom sheet) ===== */
 const HOTSPOTS=[
   { id:1, pos:[ 0.020, 0.627, -0.192], nor:[0.959, 0.117, 0.257], title:'Lettera S', text:'Errato calcolo dello spazio → lettera S incisa sopra la cornice.' },
   { id:2, pos:[ 0.023, 0.331, -0.194], nor:[0.555,-0.060, 0.829], title:'Lettera M', text:'Ravvicinamento delle lettere e sbordatura della M sulla cornice.' },
@@ -564,7 +532,7 @@ function buildHotspots(){
     const nor=new THREE.Vector3(...h.nor).normalize();
     const btn=document.createElement('div'); btn.className='hotspot'; btn.textContent=h.id; stage.appendChild(btn);
 
-    btn.addEventListener('click',e=>{
+    btn.addEventListener('click',(e)=>{
       e.stopPropagation();
       focusOn(pos, nor);
       openDockCard(pos, h);
@@ -591,7 +559,7 @@ function openDockCard(worldPos, data){
   let dock;
 
   if (isMobile) {
-    dock = dockL;
+    dock = dockL;           // unico dock in basso
   } else {
     const s = screenXY(worldPos);
     const rect = stageRect();
@@ -609,7 +577,7 @@ function openDockCard(worldPos, data){
 }
 buildHotspots();
 
-/* Zoom dolce su hotspot */
+/* ===== Zoom dolce su hotspot ===== */
 function focusOn(point, normal){
   const targetFrom=controls.target.clone();
   const camFrom=camera.position.clone();
@@ -625,7 +593,7 @@ function focusOn(point, normal){
     }).start();
 }
 
-/* UI base */
+/* ===== UI base ===== */
 document.getElementById('fov').oninput      = e => { camera.fov = +e.target.value; camera.updateProjectionMatrix(); };
 document.getElementById('exposure').oninput = e => { renderer.toneMappingExposure = +e.target.value; };
 document.getElementById('fit').onclick = ()=> fitToObject(model ?? scene, 1.25);
@@ -660,17 +628,12 @@ bgBtns.forEach(btn=>{
   };
 });
 
-/* Hotspot mode (H) */
+/* ===== Hotspot mode (H) ===== */
 let hotspotMode=false;
-function toggleH(){ 
-  hotspotMode=!hotspotMode; 
-  badge.style.display=hotspotMode?'block':'none'; 
-  setActive(document.getElementById('toggleH'),hotspotMode); 
-  console.log(hotspotMode?'🟦 Hotspot mode ON — clicca la pietra.':'⬛ Hotspot mode OFF'); 
-}
+function toggleH(){ hotspotMode=!hotspotMode; badge.style.display=hotspotMode?'block':'none'; setActive(document.getElementById('toggleH'),hotspotMode); console.log(hotspotMode?'🟦 Hotspot mode ON — clicca la pietra.':'⬛ Hotspot mode OFF'); }
 document.getElementById('toggleH').onclick=toggleH;
 addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='h') toggleH(); });
-renderer.domElement.addEventListener('click',e=>{
+renderer.domElement.addEventListener('click',(e)=>{
   if(!hotspotMode) return;
   const hit=raycast(e); if(!hit) return;
   const p=hit.point; const n=hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0,0,1);
@@ -678,16 +641,14 @@ renderer.domElement.addEventListener('click',e=>{
   console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"\ndata-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
 });
 
-/* Pannello luci */
-function updLbl(el,v){ if(el) el.textContent = fmt(v); }
-
+/* ===== Pannello Luci (JS) ===== */
+function updLbl(el,v){ el.textContent = fmt(v); }
 const valKey  = document.getElementById('valKey');
 const valDir  = document.getElementById('valDir');
 const valFill = document.getElementById('valFill');
 const valHemi = document.getElementById('valHemi');
 const valAmb  = document.getElementById('valAmb');
 const valEnvI = document.getElementById('valEnvI');
-
 const keyIntensity  = document.getElementById('keyIntensity');
 const dirIntensity  = document.getElementById('dirIntensity');
 const fillIntensity = document.getElementById('fillIntensity');
@@ -707,7 +668,7 @@ envIntensity.oninput = e=>{
   }
 };
 
-/* Orbit (auto-rotate) */
+/* ===== Orbit (auto-rotate) ===== */
 const orbitBtn = document.getElementById('orbitToggle');
 const orbitSpeed = document.getElementById('orbitSpeed');
 const orbitVal = document.getElementById('orbitVal');
@@ -723,12 +684,11 @@ orbitSpeed.oninput = e=>{
   orbitVal.textContent = `${fmt(autoOrbit.degPerSec)}°/s`;
 };
 
-/* Resize & loop */
+/* ===== Resize & loop ===== */
 function onResize(){
   const w=stage.clientWidth, h=stage.clientHeight;
   camera.aspect=w/h; camera.updateProjectionMatrix();
-  renderer.setSize(w,h);
-  if(labelRenderer) labelRenderer.setSize(w,h);
+  renderer.setSize(w,h); labelRenderer.setSize(w,h);
   updateHotspotButtons();
 }
 addEventListener('resize', onResize);
@@ -749,7 +709,7 @@ let lastT = performance.now();
   controls.update();
   TWEEN.update();
   renderer.render(scene, camera);
-  if(labelRenderer) labelRenderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
   updateHotspotButtons();
 })();
 </script>
