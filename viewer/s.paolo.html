@@ -585,7 +585,7 @@ function focusOn(point, normal){
   const targetFrom=controls.target.clone();
   const camFrom=camera.position.clone();
   const currentDist=camera.position.distanceTo(controls.target);
-  const dist=THREE.MathUtils.clamp(currentDist*1, 0.7, 1.2);
+  const dist=THREE.MathUtils.clamp(currentDist*1, 1, 2);
   const camTo=point.clone().add(normal.clone().normalize().multiplyScalar(dist));
   const t={a:0};
   new TWEEN.Tween(t).to({a:1},650).easing(TWEEN.Easing.Cubic.Out)
