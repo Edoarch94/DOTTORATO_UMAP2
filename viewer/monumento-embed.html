@@ -340,9 +340,21 @@ new THREE.GLTFLoader().load(
         }
       }
     });
-    const box = new THREE.Box3().setFromObject(model);
-    const ctr = box.getCenter(new THREE.Vector3());
-    model.position.sub(ctr);
+    // 1) Bounding box
+const box = new THREE.Box3().setFromObject(model);
+const ctr = box.getCenter(new THREE.Vector3());
+
+// 2) Centra il modello sull’origine
+model.position.sub(ctr);
+
+// 3) Ricalcola box dopo il centraggio
+const box2 = new THREE.Box3().setFromObject(model);
+
+// 4) Porta la base del modello esattamente a quota terreno (y = 0)
+model.position.y -= box2.min.y;
+
+// 5) Per VR: posiziona il modello 2 metri davanti all’utente
+model.position.z -= 2;
     scene.add(model);
     fitToObject(model, 1.15);
   }
