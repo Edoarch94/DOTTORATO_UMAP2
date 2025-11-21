@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Chiesa di S. Paolo in Peltuinum — Embed</title>
+<style>
+  :root{
+    --bg:#111;
+    --card:#1b1b1b;
+    --accent:#3b82f6;
+    --track:#e5e7eb;
+  }
+  html,body{
+    margin:0;
+    padding:0;
+    background:transparent;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color:#eee;
+  }
+  .wrap{
+    width:100%;
+    max-width:480px;
+    margin:0 auto;
+    background:#000;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 6px 18px rgba(0,0,0,.55);
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:8px 10px;
+    background:#050505;
+    font-size:14px;
+  }
+  .topbar-title{
+    font-weight:600;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    padding-right:8px;
+  }
+  .topbar-link{
+    border-radius:999px;
+    padding:6px 10px;
+    font-size:12px;
+    font-weight:600;
+    border:1px solid rgba(255,255,255,.18);
+    background:rgba(24,24,24,1);
+    color:#f9fafb;
+    text-decoration:none;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .topbar-link::before{
+    content:"📱";
+    font-size:14px;
+  }
+
+  /* viewport compatta per U-Map */
+  #stage{
+    position:relative;
+    width:100%;
+    height:230px;
+    background:#050505;
+  }
+  canvas{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+
+  .panel{
+    background:#121212;
+    padding:8px 10px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    font-size:12px;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .row label{
+    font-size:12px;
+    opacity:.85;
+  }
+
+  /* pill ON/OFF */
+  .pill-toggle{
+    position:relative;
+    width:52px;
+    height:26px;
+    border-radius:999px;
+    background:#272727;
+    border:1px solid rgba(255,255,255,.25);
+    display:flex;
+    align-items:center;
+    padding:2px;
+    box-sizing:border-box;
+    cursor:pointer;
+    font-size:11px;
+    font-weight:600;
+  }
+  .pill-knob{
+    width:20px;
+    height:20px;
+    border-radius:999px;
+    background:#111;
+    transition:transform .18s ease, background .18s ease;
+  }
+  .pill-labels{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 8px;
+    pointer-events:none;
+  }
+  .pill-labels span{opacity:.65;}
+  .pill-toggle.on{
+    background:#16a34a;
+    border-color:#16a34a;
+  }
+  .pill-toggle.on .pill-knob{
+    transform:translateX(24px);
+    background:#f9fafb;
+  }
+  .pill-toggle.on .pill-labels span:first-child{opacity:1;}
+  .pill-toggle.on .pill-labels span:last-child{opacity:.4;}
+
+  input[type=range]{
+    -webkit-appearance:none;
+    appearance:none;
+    flex:1;
+    height:6px;
+    border-radius:999px;
+    background:var(--track);
+    outline:none;
+    accent-color:var(--accent);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:var(--accent);
+    border:2px solid #111;
+    box-shadow:0 0 0 2px #111;
+    cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:var(--accent);
+    border:2px solid #111;
+    cursor:pointer;
+  }
+
+  .value{
+    min-width:48px;
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+    opacity:.9;
+  }
+
+  /* slot VR accanto alla luminosità */
+  .vr-slot{
+    margin-left:6px;
+  }
+
+  .vr-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:4px 8px;
+    border-radius:999px;
+    border:1px solid rgba(156,163,175,.8);
+    background:#111;
+    color:#e5e7eb;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .vr-btn.vr-disabled{
+    opacity:.45;
+    cursor:default;
+  }
+  .vr-icon{
+    position:relative;
+    width:20px;
+    height:14px;
+    box-sizing:border-box;
+  }
+  .vr-icon::before{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    top:1px;
+    bottom:3px;
+    border-radius:4px;
+    border:2px solid currentColor;
+  }
+  .vr-icon::after{
+    content:"";
+    position:absolute;
+    left:1px;
+    right:1px;
+    bottom:-2px;
+    height:6px;
+    border-radius:999px;
+    border-bottom:2px solid currentColor;
+  }
+  .vr-text{
+    letter-spacing:.04em;
+  }
+
+  @media (max-width:480px){
+    #stage{height:210px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="topbar-title">Epigrafe Claudia Nova</div>
+    <a class="topbar-link"
+       href="https://edoarch94.github.io/DOTTORATO_UMAP2/viewer/s.paolo.html"
+       target="_blank" rel="noopener">
+      Viewer completo
+    </a>
+  </div>
+
+  <div id="stage"></div>
+
+  <div class="panel">
+    <div class="row">
+      <label style="flex:0 0 120px">Orbit (auto-rotate)</label>
+      <div id="orbitToggle" class="pill-toggle on">
+        <div class="pill-knob"></div>
+        <div class="pill-labels"><span>ON</span><span>OFF</span></div>
+      </div>
+      <span style="font-size:11px;opacity:.8">Velocità</span>
+      <input id="orbitSpeed" type="range" min="0" max="6" step="0.2" value="4">
+      <span id="orbitVal" class="value">4.0°/s</span>
+    </div>
+
+    <div class="row">
+      <label style="flex:0 0 120px">Luminosità</label>
+      <input id="expo" type="range" min="1.0" max="3.2" step="0.05" value="2.6">
+      <div id="vrSlot" class="vr-slot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Three.js UMD -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
+
+<script>
+/* ===== helper slider colorato (parte blu, parte grigia) ===== */
+function styleRange(el){
+  const min = +el.min, max = +el.max, val = +el.value;
+  const pct = ((val - min) / (max - min)) * 100;
+  el.style.background =
+    `linear-gradient(to right, var(--accent) 0%, var(--accent) ${pct}%, var(--track) ${pct}%, var(--track) 100%)`;
+}
+
+/* ========= Three.js base ========= */
+const stage = document.getElementById('stage');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050505);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
+camera.position.set(0.9, 0.9, 1.8);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 2.6;
+renderer.physicallyCorrectLights = true;
+/* attiva WebXR */
+renderer.xr.enabled = true;
+
+stage.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+/* luci */
+const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.4);
+const dir  = new THREE.DirectionalLight(0xffffff, 3.0); dir.position.set(2,2,2);
+const fill = new THREE.DirectionalLight(0xffffff, 1.3); fill.position.set(-2,1.1,-1.4);
+const amb  = new THREE.AmbientLight(0xffffff, 0.22);
+scene.add(hemi, dir, fill, amb);
+
+/* HDR env */
+let envTexture = null;
+new THREE.RGBELoader()
+  .setPath('https://cdn.jsdelivr.net/npm/three@0.146.0/examples/textures/equirectangular/')
+  .load('venice_sunset_1k.hdr', tex=>{
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    envTexture = tex;
+    scene.environment = envTexture;
+  });
+
+/* modello */
+const ORIENT = { x: 3.14, y: 3.14, z: 3.14 };
+let model = null;
+const defaultRotation = new THREE.Euler(ORIENT.x, ORIENT.y, ORIENT.z, 'XYZ');
+
+new THREE.GLTFLoader().load(
+  'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/S.Paolo.glb?v=9',
+  g=>{
+    model = g.scene;
+    model.rotation.copy(defaultRotation);
+    model.traverse(o=>{
+      if(o.isMesh){
+        o.castShadow = o.receiveShadow = true;
+        const m = o.material;
+        if(m){
+          if('envMapIntensity' in m) m.envMapIntensity = 2.6;
+          if('roughness' in m) m.roughness = Math.min(0.85, m.roughness ?? 0.85);
+          if('metalness' in m) m.metalness = Math.min(0.1, m.metalness ?? 0.0);
+          m.needsUpdate = true;
+        }
+      }
+    });
+    const box = new THREE.Box3().setFromObject(model);
+    const ctr = box.getCenter(new THREE.Vector3());
+    model.position.sub(ctr);
+    scene.add(model);
+    fitToObject(model, 1.15);
+  }
+);
+
+function fitToObject(obj, margin){
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = box.getSize(new THREE.Vector3());
+  const radius = size.length()*0.5;
+  const fov = camera.fov * (Math.PI/180);
+  const dist = (radius/Math.sin(fov/2)) * margin;
+  const dirv = new THREE.Vector3(0,0.35,1).normalize();
+  const newPos = dirv.multiplyScalar(dist);
+  controls.target.set(0,0,0);
+  camera.position.copy(newPos);
+  camera.lookAt(controls.target);
+  camera.updateProjectionMatrix();
+}
+
+/* ========= Orbit ========= */
+const orbitToggle = document.getElementById('orbitToggle');
+const orbitSpeed  = document.getElementById('orbitSpeed');
+const orbitVal    = document.getElementById('orbitVal');
+
+let autoOrbit = { active:true, degPerSec:+orbitSpeed.value };
+orbitVal.textContent = autoOrbit.degPerSec.toFixed(1) + '°/s';
+
+function setOrbitActive(on){
+  autoOrbit.active = on;
+  orbitToggle.classList.toggle('on', on);
+}
+setOrbitActive(true);
+
+orbitToggle.addEventListener('click',()=>{
+  setOrbitActive(!autoOrbit.active);
+});
+
+orbitSpeed.addEventListener('input', e=>{
+  autoOrbit.degPerSec = +e.target.value;
+  orbitVal.textContent = autoOrbit.degPerSec.toFixed(1) + '°/s';
+  styleRange(orbitSpeed);
+});
+
+/* ========= Luminosità ========= */
+const expoSlider = document.getElementById('expo');
+expoSlider.addEventListener('input', e=>{
+  renderer.toneMappingExposure = +e.target.value;
+  styleRange(expoSlider);
+});
+
+/* ========= Bottone VR: avvia WebXR ========= */
+const vrSlot = document.getElementById('vrSlot');
+const vrBtn  = document.createElement('button');
+vrBtn.type = 'button';
+vrBtn.className = 'vr-btn';
+vrBtn.innerHTML = '<span class="vr-icon"></span><span class="vr-text">VR</span>';
+vrSlot.appendChild(vrBtn);
+
+let xrSession = null;
+let xrSupported = false;
+
+/* controlla supporto WebXR (Chrome Android, ecc.) */
+if ('xr' in navigator){
+  navigator.xr.isSessionSupported('immersive-vr').then(supported=>{
+    xrSupported = supported;
+    if(!supported){
+      vrBtn.classList.add('vr-disabled');
+      vrBtn.title = 'VR non supportato su questo dispositivo';
+    }
+  }).catch(()=>{
+    vrBtn.classList.add('vr-disabled');
+  });
+}else{
+  vrBtn.classList.add('vr-disabled');
+  vrBtn.title = 'VR non supportato su questo dispositivo';
+}
+
+vrBtn.addEventListener('click', async ()=>{
+  if(!xrSupported || xrSession) return;
+  try{
+    const session = await navigator.xr.requestSession('immersive-vr', {
+      optionalFeatures:['local-floor','bounded-floor','hand-tracking']
+    });
+    xrSession = session;
+    renderer.xr.setSession(session);
+    session.addEventListener('end', ()=>{ xrSession = null; });
+  }catch(err){
+    console.error('Errore avvio VR:', err);
+  }
+});
+
+/* ========= Resize ========= */
+function onResize(){
+  const rect = stage.getBoundingClientRect();
+  let w = rect.width || stage.clientWidth || 320;
+  let h = rect.height || 230;
+  if(h < 150) h = 150;
+  stage.style.height = h + 'px';
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+}
+window.addEventListener('resize', onResize);
+
+/* ========= Loop con WebXR ========= */
+let lastT = 0;
+renderer.setAnimationLoop(function(time){
+  const dt = (time - lastT)/1000; lastT = time;
+
+  if(autoOrbit.active && !xrSession){
+    const deltaRad = THREE.MathUtils.degToRad(autoOrbit.degPerSec) * dt;
+    const v = camera.position.clone().sub(controls.target);
+    v.applyAxisAngle(new THREE.Vector3(0,1,0), deltaRad);
+    camera.position.copy(controls.target.clone().add(v));
+    camera.lookAt(controls.target);
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+});
+
+/* init slider styling + prima sistemata size */
+styleRange(orbitSpeed);
+styleRange(expoSlider);
+onResize();
+setTimeout(onResize, 80);
+</script>
+</body>
+</html>
