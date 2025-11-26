@@ -1,0 +1,721 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Epigrafe Claudia Nova — Three.js (Dock laterali)</title>
+<style>
+  :root{--bg:#111;--card:#1b1b1b}
+  html,body{height:100%;margin:0;background:var(--bg);color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  .wrap{min-height:100dvh;display:flex;flex-direction:column;gap:12px;padding:12px}
+  h1{margin:0 auto;font:700 20px/1.2 system-ui;width:min(96vw,1200px)}
+
+  /* STAGE + DOCKS */
+  #stage{
+    position:relative;
+    width:min(96vw,1200px);
+    height:min(80vh,760px);
+    margin:0 auto;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 8px 28px rgba(0,0,0,.45);
+    background:#0e0e0e
+  }
+  canvas{display:block;width:100%;height:100%}
+  #badge{
+    position:absolute;top:8px;left:8px;z-index:20;
+    padding:6px 8px;border-radius:8px;
+    background:rgba(14,165,233,.12);color:#93c5fd;
+    border:1px solid rgba(147,197,253,.35);
+    font:600 12px/1.2 system-ui;
+    display:none
+  }
+
+  /* Docks (desktop: laterali) */
+  .dock{
+    position:absolute;
+    top:0; bottom:0;
+    width:28%;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    padding:12px;
+    pointer-events:none;
+  }
+  .dock.left  { left:0;  background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,0)); }
+  .dock.right { right:0; background:linear-gradient(-90deg,rgba(0,0,0,.25),rgba(0,0,0,0)); }
+
+  .dock-card{
+    pointer-events:auto;
+    background:rgba(18,18,18,.96);
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:12px;
+    padding:14px 16px;
+    max-height:46vh;
+    overflow:auto;
+    max-width:92%;
+    animation: fadeIn .18s ease-out;
+  }
+  .dock.left  .dock-card{ margin-right:auto; }
+  .dock.right .dock-card{ margin-left:auto; }
+
+  .dock-card h3{margin:0 0 6px 0;font:800 14px/1.2 system-ui}
+  .dock-card p {margin:0;font-size:14px;line-height:1.35}
+  .dock-card .close{float:right;opacity:.7;cursor:pointer;border:0;background:transparent;color:#fff;font-weight:700}
+
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* Hotspot buttons */
+  .hotspot{
+    position:absolute;width:24px;height:24px;border-radius:50%;
+    background:#2b74ff;border:1px solid #fff;color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font:800 12px/1 system-ui;box-shadow:0 2px 6px rgba(0,0,0,.45);
+    transform:translate(-50%,-50%);cursor:pointer;z-index:10
+  }
+
+  /* pannello comandi ordinato */
+  .panel{
+    width:min(96vw,1200px);margin:0 auto;
+    background:var(--card);border-radius:12px;
+    padding:12px;display:grid;gap:12px;
+    grid-template-columns:repeat(12,1fr)
+  }
+  .section{grid-column:1/-1;font:700 12px/1.2 system-ui;letter-spacing:.04em;text-transform:uppercase;opacity:.7;margin-top:4px}
+  .group{background:rgba(255,255,255,.05);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+  .group--2 {grid-column: span 6}
+  .group--3 {grid-column: span 4}
+  .group--4 {grid-column: span 3}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  label{font-size:12px;opacity:.8}
+  input[type=range]{width:100%}
+  button{border:0;border-radius:10px;padding:9px 12px;background:#2a2a2a;color:#fff;font-weight:600;cursor:pointer}
+  .btn-ghost{background:transparent;outline:1px solid rgba(255,255,255,.25)}
+  .btn-ghost.on{box-shadow:0 0 0 2px rgba(74,222,128,.55) inset; background:#233a2d}
+
+  .val-small{
+    width:42px;
+    text-align:right;
+    font-size:12px;
+    opacity:.85;
+    font-variant-numeric:tabular-nums;
+  }
+
+  @media (max-width:1000px){
+    .group--4{grid-column:span 4}
+    .group--3{grid-column:span 6}
+  }
+
+  /* --- MOBILE: dock in basso tipo “sheet” --- */
+  @media (max-width:700px){
+    .group--4,.group--3,.group--2{grid-column:span 12}
+
+    .dock{
+      top:auto;
+      bottom:0;
+      left:0;
+      right:0;
+      width:100%;
+      padding:10px;
+      flex-direction:column-reverse;
+      align-items:center;
+      justify-content:flex-end;
+      background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);
+    }
+    .dock.left,
+    .dock.right{
+      background:linear-gradient(0deg,rgba(0,0,0,.65),transparent);
+    }
+    .dock-card{
+      max-width:calc(100% - 24px);
+      width:calc(100% - 24px);
+      margin:0 auto;
+      max-height:40vh;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Epigrafe Claudia Nova</h1>
+
+  <div id="stage">
+    <div id="badge">HOTSPOT MODE</div>
+    <div id="dockL" class="dock left"></div>
+    <div id="dockR" class="dock right"></div>
+  </div>
+
+  <div class="panel">
+    <div class="section">Visualizzazione</div>
+
+    <div class="group group--4">
+      <label>Orbit (auto-rotate)</label>
+      <div class="row">
+        <button id="orbitToggle" class="btn-ghost">OFF</button>
+        <span style="font-size:12px;opacity:.8">Velocità</span>
+        <input id="orbitSpeed" type="range" min="0" max="2" step="0.05" value="0.5" style="flex:1">
+        <span id="orbitVal" style="font-size:12px;opacity:.8;width:42px;text-align:right">0.5°/s</span>
+      </div>
+    </div>
+
+    <div class="group group--3">
+      <label>Zoom (FOV)</label>
+      <input id="fov" type="range" min="25" max="75" step="1" value="45">
+    </div>
+
+    <div class="group group--3">
+      <label>Luminosità</label>
+      <input id="exposure" type="range" min="1.0" max="3.2" step="0.05" value="2.6">
+    </div>
+
+    <div class="group group--4">
+      <label>Camera</label>
+      <div class="row">
+        <button id="fit" class="btn-ghost">Inquadra</button>
+        <button id="reset" class="btn-ghost">Reset</button>
+      </div>
+    </div>
+
+    <div class="group group--4">
+      <label>Ambiente</label>
+      <div class="row">
+        <button class="btn-ghost env on" data-hdr="on">HDR</button>
+        <button class="btn-ghost env" data-hdr="off">None</button>
+      </div>
+    </div>
+
+    <div class="group group--4">
+      <label>Sfondo</label>
+      <div class="row">
+        <button class="btn-ghost bg on" data-bg="dark">Nero</button>
+        <button class="btn-ghost bg" data-bg="light">Bianco</button>
+        <button class="btn-ghost bg" data-bg="transparent">Trasparente</button>
+        <button class="btn-ghost bg" data-bg="gradient">Gradiente</button>
+      </div>
+    </div>
+
+    <!-- ORIENTAMENTO: slider X/Y/Z + reset/salva -->
+    <div class="group group--4">
+      <label>Orientamento (modello)</label>
+
+      <div class="row" style="align-items:center;gap:6px">
+        <span style="font-size:12px;opacity:.8;width:18px">X</span>
+        <input id="rotXRange" type="range" min="-180" max="180" step="1" value="0" style="flex:1">
+        <span id="rotXVal" class="val-small">0.00</span>
+      </div>
+
+      <div class="row" style="align-items:center;gap:6px">
+        <span style="font-size:12px;opacity:.8;width:18px">Y</span>
+        <input id="rotYRange" type="range" min="-180" max="180" step="1" value="0" style="flex:1">
+        <span id="rotYVal" class="val-small">0.00</span>
+      </div>
+
+      <div class="row" style="align-items:center;gap:6px">
+        <span style="font-size:12px;opacity:.8;width:18px">Z</span>
+        <input id="rotZRange" type="range" min="-180" max="180" step="1" value="0" style="flex:1">
+        <span id="rotZVal" class="val-small">0.00</span>
+      </div>
+
+      <div class="row">
+        <button id="rotReset" class="btn-ghost">Reset rot.</button>
+        <button id="rotSave" class="btn-ghost">Salva rot.</button>
+      </div>
+      <small style="font-size:11px;opacity:.75">
+        Slider in gradi. I valori mostrati sono in radianti (X, Y, Z dell'Euler del modello).
+      </small>
+    </div>
+
+    <div class="section">Annotazioni</div>
+
+    <div class="group group--3">
+      <label>Hotspot</label>
+      <div class="row"><button id="toggleH" class="btn-ghost">Modalità H</button></div>
+      <small>Premi anche la <b>H</b> da tastiera</small>
+    </div>
+
+    <div class="group group--3">
+      <label>Misurazione</label>
+      <div class="row"><button id="measure" class="btn-ghost">Misura A–B</button><button id="measureReset" class="btn-ghost">Reset</button></div>
+      <small id="mhelp" style="opacity:.75">Clicca A poi B sulla mesh.</small>
+    </div>
+
+    <div class="section">Luci</div>
+
+    <!-- UNICO pannello luci -->
+    <div class="group group--4">
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Key (destra)</span>
+        <input id="keyIntensity" type="range" min="0" max="4" step="0.05" value="2.2" style="flex:1">
+        <span id="valKey" class="val-small">2.2</span>
+      </div>
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Direzionale</span>
+        <input id="dirIntensity" type="range" min="0" max="4" step="0.05" value="3.0" style="flex:1">
+        <span id="valDir" class="val-small">3.0</span>
+      </div>
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Fill</span>
+        <input id="fillIntensity" type="range" min="0" max="3" step="0.05" value="1.8" style="flex:1">
+        <span id="valFill" class="val-small">1.8</span>
+      </div>
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Hemi</span>
+        <input id="hemiIntensity" type="range" min="0" max="3" step="0.05" value="1.6" style="flex:1">
+        <span id="valHemi" class="val-small">1.6</span>
+      </div>
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Ambiente</span>
+        <input id="ambIntensity" type="range" min="0" max="1" step="0.01" value="0.25" style="flex:1">
+        <span id="valAmb" class="val-small">0.25</span>
+      </div>
+      <div class="row" style="width:100%">
+        <span style="flex:0 0 110px">Riflessi (envMap)</span>
+        <input id="envIntensity" type="range" min="0" max="5" step="0.1" value="2.6" style="flex:1">
+        <span id="valEnvI" class="val-small">2.6</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Three UMD r146 + tween + helpers -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/RGBELoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/renderers/CSS2DRenderer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+
+<script>
+/* ===== Mini util ===== */
+const fmt = v => (Math.round(+v*100)/100).toString();
+function setActive(btn,on){ btn.classList.toggle('on', !!on); }
+const degToRad = d => d * Math.PI / 180;
+const radToDeg = r => r * 180 / Math.PI;
+
+/* ===== Three.js ===== */
+const stage = document.getElementById('stage');
+const dockL = document.getElementById('dockL');
+const dockR = document.getElementById('dockR');
+const badge = document.getElementById('badge');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e0e0e);
+
+const camera = new THREE.PerspectiveCamera(45, stage.clientWidth/stage.clientHeight, 0.01, 100);
+camera.position.set(0.9, 0.9, 1.8);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(stage.clientWidth, stage.clientHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 2.6;
+renderer.physicallyCorrectLights = true;
+stage.appendChild(renderer.domElement);
+
+const labelRenderer = new THREE.CSS2DRenderer();
+labelRenderer.setSize(stage.clientWidth, stage.clientHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+stage.appendChild(labelRenderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+/* ===== Luci ===== */
+const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 1.6);
+const dir  = new THREE.DirectionalLight(0xffffff, 3.0); dir.position.set(2,2,2);
+const fill = new THREE.DirectionalLight(0xffffff, 1.8); fill.position.set(-2,1.2,-1.5);
+const amb  = new THREE.AmbientLight(0xffffff, 0.25);
+const rightKey = new THREE.SpotLight(0xffffff, 2.2, 5, Math.PI/8, 0.2, 1.0);
+rightKey.position.set(1.2, 0.6, 0.6);
+rightKey.target.position.set(0.0, 0.3, -0.1);
+scene.add(hemi, dir, fill, amb, rightKey, rightKey.target);
+
+/* ===== HDR ===== */
+let envTexture = null;
+new THREE.RGBELoader()
+  .setPath('https://cdn.jsdelivr.net/npm/three@0.146.0/examples/textures/equirectangular/')
+  .load('venice_sunset_1k.hdr', (tex)=>{
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    envTexture = tex; scene.environment = envTexture;
+  });
+
+/* ===== Orientamento (con salvataggio) ===== */
+const LS_KEY_ORIENT = 'epigrafe-orient';
+/* QUI metto l'orientamento che mi hai dato: -0.66, -3.14, 1.59 */
+const FALLBACK_ORIENT = { x: -0.66, y: -3.14, z: 1.59 };
+
+function loadOrientation(){
+  try{
+    if (typeof localStorage === 'undefined') return FALLBACK_ORIENT;
+    const raw = localStorage.getItem(LS_KEY_ORIENT);
+    if (!raw) return FALLBACK_ORIENT;
+    const saved = JSON.parse(raw);
+    if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) && Number.isFinite(saved.z)) {
+      return saved;
+    }
+  }catch(e){
+    console.warn('Impossibile leggere ORIENT da localStorage, uso fallback.', e);
+  }
+  return FALLBACK_ORIENT;
+}
+
+let savedOrient = loadOrientation();
+let model = null;
+
+/* UI rotazione */
+const rotXRange = document.getElementById('rotXRange');
+const rotYRange = document.getElementById('rotYRange');
+const rotZRange = document.getElementById('rotZRange');
+const rotXVal   = document.getElementById('rotXVal');
+const rotYVal   = document.getElementById('rotYVal');
+const rotZVal   = document.getElementById('rotZVal');
+const rotReset  = document.getElementById('rotReset');
+const rotSave   = document.getElementById('rotSave');
+
+function syncRotUIFromModel(){
+  if (!model) return;
+  rotXRange.value = radToDeg(model.rotation.x).toFixed(0);
+  rotYRange.value = radToDeg(model.rotation.y).toFixed(0);
+  rotZRange.value = radToDeg(model.rotation.z).toFixed(0);
+  rotXVal.textContent = fmt(model.rotation.x);
+  rotYVal.textContent = fmt(model.rotation.y);
+  rotZVal.textContent = fmt(model.rotation.z);
+}
+
+function applyRotFromSliders(){
+  if (!model) return;
+  model.rotation.x = degToRad(+rotXRange.value);
+  model.rotation.y = degToRad(+rotYRange.value);
+  model.rotation.z = degToRad(+rotZRange.value);
+  syncRotUIFromModel();
+}
+
+rotXRange.oninput = applyRotFromSliders;
+rotYRange.oninput = applyRotFromSliders;
+rotZRange.oninput = applyRotFromSliders;
+
+rotReset.onclick = ()=>{
+  if (!model) return;
+  model.rotation.set(savedOrient.x, savedOrient.y, savedOrient.z, 'XYZ');
+  syncRotUIFromModel();
+};
+
+rotSave.onclick = ()=>{
+  if (!model) return;
+  const r = model.rotation;
+  const data = { x:r.x, y:r.y, z:r.z };
+  try{
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(LS_KEY_ORIENT, JSON.stringify(data));
+    }
+  }catch(e){
+    console.warn('Impossibile salvare ORIENT in localStorage', e);
+  }
+  savedOrient = data;
+  console.log(`Nuovo ORIENT salvato: { x:${r.x.toFixed(5)}, y:${r.y.toFixed(5)}, z:${r.z.toFixed(5)} }`);
+};
+
+/* ===== Modello ===== */
+new THREE.GLTFLoader().load(
+  'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/Epigrafe.glb',
+  (g)=>{
+    model = g.scene;
+
+    // applica orientamento salvato (o fallback)
+    model.rotation.set(savedOrient.x, savedOrient.y, savedOrient.z, 'XYZ');
+
+    model.traverse(o=>{
+      if(o.isMesh){
+        o.castShadow = o.receiveShadow = true;
+        const m=o.material;
+        if(m){
+          if('envMapIntensity' in m) m.envMapIntensity = +document.getElementById('envIntensity').value;
+          if('roughness' in m) m.roughness = Math.min(0.85, m.roughness ?? 0.85);
+          if('metalness' in m) m.metalness = Math.min(0.1, m.metalness ?? 0.0);
+          m.needsUpdate = true;
+        }
+      }
+    });
+    const box=new THREE.Box3().setFromObject(model);
+    const ctr=box.getCenter(new THREE.Vector3());
+    model.position.sub(ctr);
+    scene.add(model);
+    fitToObject(model,1.25);
+    syncRotUIFromModel();
+  }
+);
+
+function fitToObject(object, margin=1.25){
+  const box = new THREE.Box3().setFromObject(object);
+  const size = box.getSize(new THREE.Vector3());
+  const radius = size.length()*0.5;
+  const fov = camera.fov*(Math.PI/180);
+  const dist=(radius/Math.sin(fov/2))*margin;
+  const dirv=new THREE.Vector3(0,0.35,1).normalize();
+  const newPos=dirv.multiplyScalar(dist);
+  controls.target.set(0,0,0);
+  camera.position.copy(newPos);
+  camera.lookAt(controls.target);
+  camera.updateProjectionMatrix();
+}
+
+/* ===== Raycast ===== */
+const raycaster=new THREE.Raycaster();
+const mouse=new THREE.Vector2();
+function raycast(e){
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y= -((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits = model ? raycaster.intersectObject(model,true) : [];
+  return hits[0]||null;
+}
+
+/* ===== Misurazione ===== */
+const measureBtn   = document.getElementById('measure');
+const measureReset = document.getElementById('measureReset');
+const mhelp        = document.getElementById('mhelp');
+
+const A = new THREE.Mesh(new THREE.SphereGeometry(0.01,16,16), new THREE.MeshBasicMaterial({color:0x22c55e}));
+const B = A.clone(); A.visible=B.visible=false; scene.add(A,B);
+const lineAB = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]), new THREE.LineBasicMaterial({color:0x22c55e}));
+lineAB.visible=false; scene.add(lineAB);
+const distLabelEl=document.createElement('div'); distLabelEl.className='label'; distLabelEl.textContent='0.000 m';
+const distLabel=new THREE.CSS2DObject(distLabelEl); distLabel.visible=false; scene.add(distLabel);
+
+const measuring={active:false,step:0,a:new THREE.Vector3(),b:new THREE.Vector3()};
+function setMeasureActive(on){
+  measuring.active=on; measuring.step=0;
+  A.visible=B.visible=lineAB.visible=distLabel.visible=false;
+  mhelp.textContent=on?'Clicca A poi B sulla mesh.':'Clicca A–B per misurare.';
+  setActive(measureBtn,on);
+}
+measureBtn.onclick = ()=> setMeasureActive(!measuring.active);
+measureReset.onclick= ()=> setMeasureActive(false);
+
+renderer.domElement.addEventListener('click',(e)=>{
+  if(!measuring.active) return;
+  const hit=raycast(e); if(!hit) return;
+  if(measuring.step===0){
+    measuring.a.copy(hit.point); A.position.copy(hit.point); A.visible=true; measuring.step=1;
+  }else{
+    measuring.b.copy(hit.point); B.position.copy(hit.point); B.visible=true;
+    lineAB.geometry.setFromPoints([measuring.a,measuring.b]); lineAB.visible=true;
+    const mid=measuring.a.clone().add(measuring.b).multiplyScalar(0.5);
+    distLabel.position.copy(mid); distLabel.visible=true;
+    distLabelEl.textContent=measuring.a.distanceTo(measuring.b).toFixed(3)+' m';
+    measuring.step=0;
+  }
+});
+
+/* ===== Hotspot (dock laterale / bottom sheet) ===== */
+const HOTSPOTS=[
+  { id:1, pos:[ 3.293, -3.410, 3.975], nor: [-0.994, -0.043, 0.099], title:'Cubilia', text:'Elementi lapidei riutilizzati in opera reticolata provenienti dalla vicina Peltuinum' },
+  { id:2, pos:[ -8.158, -3.634, -1.412], nor:[0.182, 0.102, 0.978], title:'Colonna e Capitello', text:'Elementi architettonici relativi ad una struttura preesistente riutilizzati all’interno della muratura della Chiesa' },
+  { id:3, pos:[ -2.008, -1.155, -2.506], nor:[0.097, -0.403, 0.910], title:'Elemento decorativo', text:'Decorazione architettonica relativa ad una struttura della vicina Peltuinum, tagliata e riutilizzata come blocco murario.' },
+  { id:4, pos:[ -5.130, -1.158, -1.947], nor:[0.197, -0.027, 0.980], title:'Blocchi', text:'Blocchi squadrati di dimensioni differenti riferibili a strutture preesistenti e riutilizzati per la costruzione della Chiesa.' },
+  { id:5, pos:[ -10.917, -5.096, -2.212], nor:[-0.150, 0.102, -0.983], title:'Capitello Ionico', text:'Capitello ionico rovesciato, riutilizzato come blocco murario.' },
+  { id:6, pos:[ -8.457, -2.203, 3.962], nor:[-0.169, -0.017, -0.985], title:'Pittura', text:'Unici lacerti di pittura conservati all’interno della Chiesa.' },
+  { id:7, pos:[ 9.908, 0.691, -7.786], nor:[0.994, 0.085, -0.064], title:'Iscrizione', text:'Epigrafe riutilizzata come blocco angolare.' },
+];
+
+const hUI=[];
+function stageRect(){ return renderer.domElement.getBoundingClientRect(); }
+function screenXY(v){
+  const s=v.clone().project(camera), r=stageRect();
+  return {x:(s.x*0.5+0.5)*r.width, y:(-s.y*0.5+0.5)*r.height};
+}
+function buildHotspots(){
+  HOTSPOTS.forEach(h=>{
+    const pos=new THREE.Vector3(...h.pos);
+    const nor=new THREE.Vector3(...h.nor).normalize();
+    const btn=document.createElement('div'); btn.className='hotspot'; btn.textContent=h.id; stage.appendChild(btn);
+
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      focusOn(pos, nor);
+      openDockCard(pos, h);
+    });
+
+    hUI.push({pos,nor,btn});
+  });
+}
+function updateHotspotButtons(){
+  hUI.forEach(({pos,btn})=>{
+    const s=screenXY(pos);
+    btn.style.left=`${s.x}px`;
+    btn.style.top =`${s.y}px`;
+  });
+}
+function clearDocks(){
+  dockL.innerHTML=''; dockR.innerHTML='';
+}
+
+function openDockCard(worldPos, data){
+  clearDocks();
+
+  const isMobile = window.innerWidth <= 700;
+  let dock;
+
+  if (isMobile) {
+    dock = dockL;           // unico dock in basso
+  } else {
+    const s = screenXY(worldPos);
+    const rect = stageRect();
+    const side = s.x < rect.width/2 ? 'left' : 'right';
+    dock = (side==='left') ? dockL : dockR;
+  }
+
+  const card = document.createElement('div');
+  card.className='dock-card';
+  card.innerHTML = `<button class="close" title="Chiudi">×</button>
+                    <h3>${data.title}</h3>
+                    <p>${data.text}</p>`;
+  card.querySelector('.close').onclick = ()=> card.remove();
+  dock.appendChild(card);
+}
+buildHotspots();
+
+/* ===== Zoom dolce su hotspot ===== */
+function focusOn(point, normal){
+  const targetFrom=controls.target.clone();
+  const camFrom=camera.position.clone();
+  const currentDist=camera.position.distanceTo(controls.target);
+  const dist=THREE.MathUtils.clamp(currentDist* 2.0, 1.2, 3.5);
+  const camTo=point.clone().add(normal.clone().normalize().multiplyScalar(dist));
+  const t={a:0};
+  new TWEEN.Tween(t).to({a:1},650).easing(TWEEN.Easing.Cubic.Out)
+    .onUpdate(()=>{
+      controls.target.lerpVectors(targetFrom, point, t.a);
+      camera.position.lerpVectors(camFrom, camTo, t.a);
+      camera.lookAt(controls.target);
+    }).start();
+}
+
+/* ===== UI base ===== */
+document.getElementById('fov').oninput      = e => { camera.fov = +e.target.value; camera.updateProjectionMatrix(); };
+document.getElementById('exposure').oninput = e => { renderer.toneMappingExposure = +e.target.value; };
+document.getElementById('fit').onclick = ()=> fitToObject(model ?? scene, 1.25);
+document.getElementById('reset').onclick = ()=>{
+  controls.reset(); controls.target.set(0,0,0);
+  new TWEEN.Tween(camera).to({fov:45},300).easing(TWEEN.Easing.Quadratic.Out)
+    .onUpdate(()=> camera.updateProjectionMatrix()).start();
+};
+
+const envBtns=document.querySelectorAll('.env');
+envBtns.forEach(btn=>{
+  btn.onclick=()=>{
+    if(btn.dataset.hdr==='on' && envTexture){
+      scene.environment=envTexture;
+      if(model){
+        model.traverse(o=>{ if(o.isMesh && o.material && 'envMapIntensity' in o.material){ o.material.envMapIntensity = +document.getElementById('envIntensity').value; o.material.needsUpdate=true; }});
+      }
+    } else scene.environment=null;
+    envBtns.forEach(b=>setActive(b,b===btn));
+  };
+});
+
+const bgBtns=document.querySelectorAll('.bg');
+bgBtns.forEach(btn=>{
+  btn.onclick=()=>{
+    const m=btn.dataset.bg;
+    if(m==='dark'){ scene.background=new THREE.Color(0x0e0e0e); stage.style.background='#0e0e0e'; }
+    if(m==='light'){ scene.background=new THREE.Color(0xf7f7f7); stage.style.background='#f7f7f7'; }
+    if(m==='transparent'){ scene.background=null; stage.style.background='transparent'; }
+    if(m==='gradient'){ scene.background=null; stage.style.background='linear-gradient(180deg,#0e0e0e,#1a1a1a)'; }
+    bgBtns.forEach(b=>setActive(b,b===btn));
+  };
+});
+
+/* ===== Hotspot mode (H) ===== */
+let hotspotMode=false;
+function toggleH(){ hotspotMode=!hotspotMode; badge.style.display=hotspotMode?'block':'none'; setActive(document.getElementById('toggleH'),hotspotMode); console.log(hotspotMode?'🟦 Hotspot mode ON — clicca la pietra.':'⬛ Hotspot mode OFF'); }
+document.getElementById('toggleH').onclick=toggleH;
+addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='h') toggleH(); });
+renderer.domElement.addEventListener('click',(e)=>{
+  if(!hotspotMode) return;
+  const hit=raycast(e); if(!hit) return;
+  const p=hit.point; const n=hit.face?.normal?.clone().transformDirection(hit.object.matrixWorld) || new THREE.Vector3(0,0,1);
+  console.clear();
+  console.log(`data-position="${p.x.toFixed(3)}m ${p.y.toFixed(3)}m ${p.z.toFixed(3)}m"\ndata-normal="${n.x.toFixed(3)}m ${n.y.toFixed(3)}m ${n.z.toFixed(3)}m"`);
+});
+
+/* ===== Pannello Luci (JS) ===== */
+function updLbl(el,v){ el.textContent = fmt(v); }
+const valKey  = document.getElementById('valKey');
+const valDir  = document.getElementById('valDir');
+const valFill = document.getElementById('valFill');
+const valHemi = document.getElementById('valHemi');
+const valAmb  = document.getElementById('valAmb');
+const valEnvI = document.getElementById('valEnvI');
+const keyIntensity  = document.getElementById('keyIntensity');
+const dirIntensity  = document.getElementById('dirIntensity');
+const fillIntensity = document.getElementById('fillIntensity');
+const hemiIntensity = document.getElementById('hemiIntensity');
+const ambIntensity  = document.getElementById('ambIntensity');
+const envIntensity  = document.getElementById('envIntensity');
+
+keyIntensity.oninput = e=>{ rightKey.intensity = +e.target.value; updLbl(valKey,e.target.value); };
+dirIntensity.oninput = e=>{ dir.intensity      = +e.target.value; updLbl(valDir,e.target.value); };
+fillIntensity.oninput= e=>{ fill.intensity     = +e.target.value; updLbl(valFill,e.target.value); };
+hemiIntensity.oninput= e=>{ hemi.intensity     = +e.target.value; updLbl(valHemi,e.target.value); };
+ambIntensity.oninput = e=>{ amb.intensity      = +e.target.value; updLbl(valAmb,e.target.value); };
+envIntensity.oninput = e=>{
+  updLbl(valEnvI,e.target.value);
+  if(model){
+    model.traverse(o=>{ if(o.isMesh && o.material && 'envMapIntensity' in o.material){ o.material.envMapIntensity = +e.target.value; o.material.needsUpdate=true; }});
+  }
+};
+
+/* ===== Orbit (auto-rotate) ===== */
+const orbitBtn = document.getElementById('orbitToggle');
+const orbitSpeed = document.getElementById('orbitSpeed');
+const orbitVal = document.getElementById('orbitVal');
+let autoOrbit = { active:false, degPerSec: +orbitSpeed.value };
+
+orbitBtn.onclick = ()=>{
+  autoOrbit.active = !autoOrbit.active;
+  orbitBtn.textContent = autoOrbit.active ? 'ON' : 'OFF';
+  setActive(orbitBtn, autoOrbit.active);
+};
+orbitSpeed.oninput = e=>{
+  autoOrbit.degPerSec = +e.target.value;
+  orbitVal.textContent = `${fmt(autoOrbit.degPerSec)}°/s`;
+};
+
+/* ===== Resize & loop ===== */
+function onResize(){
+  const w=stage.clientWidth, h=stage.clientHeight;
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+  renderer.setSize(w,h); labelRenderer.setSize(w,h);
+  updateHotspotButtons();
+}
+addEventListener('resize', onResize);
+
+let lastT = performance.now();
+(function animate(now){
+  requestAnimationFrame(animate);
+  const dt = (now - lastT)/1000; lastT = now;
+
+  if(autoOrbit.active){
+    const deltaRad = THREE.MathUtils.degToRad(autoOrbit.degPerSec) * dt;
+    const v = camera.position.clone().sub(controls.target);
+    v.applyAxisAngle(new THREE.Vector3(0,1,0), deltaRad);
+    camera.position.copy(controls.target.clone().add(v));
+    camera.lookAt(controls.target);
+  }
+
+  controls.update();
+  TWEEN.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+  updateHotspotButtons();
+})();
+</script>
+</body>
+</html>
