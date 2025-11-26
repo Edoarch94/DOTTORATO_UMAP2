@@ -355,7 +355,7 @@ const box2 = new THREE.Box3().setFromObject(model);
 model.position.y -= box2.min.y;
 
 // 5) Per VR: posiziona il modello 2 metri davanti all’utente
-model.position.z -= 2;
+model.position.z -= 3;
     
     scene.add(model);
     fitToObject(model, 1.15);
