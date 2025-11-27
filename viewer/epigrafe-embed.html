@@ -319,6 +319,11 @@ new THREE.RGBELoader()
     scene.environment = envTexture;
   });
 
+  let model = null;
+let modelBaseY = 0;                // verrà riempito nel loader
+let savedModelPos = null;          // per salvare la posizione originale
+let savedModelRot = null;          // per salvare la rotazione originale
+
 /* modello */
 const ORIENT = {x:-1.65806, y:-3.14159, z:-3.14159 };
 let model = null;
@@ -341,29 +346,17 @@ new THREE.GLTFLoader().load(
         }
       }
     });
-   // 1) Bounding box
-const box = new THREE.Box3().setFromObject(model);
-const ctr = box.getCenter(new THREE.Vector3());
+       // ========== POSIZIONAMENTO "NORMALE" (come all'inizio) ==========
+    const box = new THREE.Box3().setFromObject(model);
+    const ctr = box.getCenter(new THREE.Vector3());
+    model.position.sub(ctr);   // centro del modello in (0,0,0)
 
-// 2) Centra il modello in scena
-model.position.sub(ctr);
+    // memorizzo per VR la quota base (min.y)
+    modelBaseY = box.min.y;
 
-// 3) Ricalcola bounding dopo il centraggio
-const box2 = new THREE.Box3().setFromObject(model);
-
-// 4) Imposta altezza terreno con offset regolabile
-const offsetY = 0.25;  // <--- QUI REGOLI L'ALTEZZA (es. 0.25 = 25cm)
-model.position.y -= box2.min.y - offsetY;
-
-// ===== 🔥 ECCO LA RIGA CHE TI MANCAVA =====
-// Così la rotazione avviene intorno al modello e non si sposta più
-controls.target.set(0, offsetY, 0);
-
-// ===== distanza VR =====
-model.position.z -= 2;
-    
     scene.add(model);
-    fitToObject(model, 1.15);
+    fitToObject(model, 1.15);  // inquadra bene
+    
   }
 );
 
@@ -440,14 +433,37 @@ if ('xr' in navigator){
 }
 
 vrBtn.addEventListener('click', async ()=>{
-  if(!xrSupported || xrSession) return;
+  if (!xrSupported || xrSession) return;
+  if (!model) return;  // modello non ancora caricato
+
   try{
+    // 🔹 Salva posizione/rotazione originali (vista normale)
+    savedModelPos = model.position.clone();
+    savedModelRot = model.rotation.clone();
+
+    // 🔹 Porta la base del modello a quota terreno (y = 0)
+    //    Il modello è centrato, quindi la base è a modelBaseY (negativo)
+    model.position.y -= modelBaseY;
+
+    // 🔹 Sposta il modello 2 metri davanti all'utente in VR
+    model.position.z -= 2;
+
     const session = await navigator.xr.requestSession('immersive-vr', {
       optionalFeatures:['local-floor','bounded-floor','hand-tracking']
     });
+
     xrSession = session;
     renderer.xr.setSession(session);
-    session.addEventListener('end', ()=>{ xrSession = null; });
+
+    // Quando esci dalla VR, ripristina tutto
+    session.addEventListener('end', ()=>{
+      xrSession = null;
+      if (model && savedModelPos && savedModelRot){
+        model.position.copy(savedModelPos);
+        model.rotation.copy(savedModelRot);
+      }
+    });
+
   }catch(err){
     console.error('Errore avvio VR:', err);
   }
