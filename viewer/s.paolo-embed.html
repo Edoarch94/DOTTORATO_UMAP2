@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Chiesa di S. Paolo in Peltuinum — Embed</title>
+<title>Chiesa di S.Paolo in Peltuinum — Embed</title>
 <style>
   :root{
     --bg:#111;
@@ -318,16 +318,22 @@ new THREE.RGBELoader()
     scene.environment = envTexture;
   });
 
-/* modello */
-const ORIENT = { x: 3.14, y: 3.14, z: 3.14 };
+/* ===== variabili modello / VR ===== */
 let model = null;
+let modelBaseY = 0;        // quota base dopo centraggio
+let savedModelPos = null;  // posizione originale per uscita VR
+let savedModelRot = null;  // rotazione originale per uscita VR
+
+/* modello */
+const ORIENT = { x:3.14, y:-3.14, z:-3.14 };
 const defaultRotation = new THREE.Euler(ORIENT.x, ORIENT.y, ORIENT.z, 'XYZ');
 
 new THREE.GLTFLoader().load(
-  'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/S.Paolo.glb?v=9',
+  'https://edoarch94.github.io/DOTTORATO_UMAP2/modelli/S.Paolo.glb',
   g=>{
     model = g.scene;
     model.rotation.copy(defaultRotation);
+
     model.traverse(o=>{
       if(o.isMesh){
         o.castShadow = o.receiveShadow = true;
@@ -340,11 +346,18 @@ new THREE.GLTFLoader().load(
         }
       }
     });
+
+    // ========== POSIZIONAMENTO "NORMALE" (embed) ==========
     const box = new THREE.Box3().setFromObject(model);
     const ctr = box.getCenter(new THREE.Vector3());
-    model.position.sub(ctr);
+    model.position.sub(ctr);   // centro del modello in (0,0,0)
+
+    // ricalcolo bounding dopo centraggio e salvo quota base
+    const box2 = new THREE.Box3().setFromObject(model);
+    modelBaseY = box2.min.y;
+
     scene.add(model);
-    fitToObject(model, 1.15);
+    fitToObject(model, 1.15);  // inquadra bene il modello
   }
 );
 
@@ -421,14 +434,37 @@ if ('xr' in navigator){
 }
 
 vrBtn.addEventListener('click', async ()=>{
-  if(!xrSupported || xrSession) return;
+  if (!xrSupported || xrSession) return;
+  if (!model) return;  // modello non ancora caricato
+
   try{
+    // Salva posizione/rotazione originali (vista normale)
+    savedModelPos = model.position.clone();
+    savedModelRot = model.rotation.clone();
+
+    // Porta la base del modello a quota terreno (y = 0)
+    // modelBaseY è negativo -> così lo alziamo finché min.y = 0
+    model.position.y -= modelBaseY;
+
+    // Sposta il modello 2 metri davanti all’utente in VR
+    model.position.z -= 2;
+
     const session = await navigator.xr.requestSession('immersive-vr', {
       optionalFeatures:['local-floor','bounded-floor','hand-tracking']
     });
+
     xrSession = session;
     renderer.xr.setSession(session);
-    session.addEventListener('end', ()=>{ xrSession = null; });
+
+    // Quando esci dalla VR, ripristina tutto
+    session.addEventListener('end', ()=>{
+      xrSession = null;
+      if (model && savedModelPos && savedModelRot){
+        model.position.copy(savedModelPos);
+        model.rotation.copy(savedModelRot);
+      }
+    });
+
   }catch(err){
     console.error('Errore avvio VR:', err);
   }
